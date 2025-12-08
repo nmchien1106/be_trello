@@ -126,7 +126,7 @@ class BoardController {
     }
 
     inviteByEmail = async (req: AuthRequest, res: Response, next: NextFunction) => {
-        const { email } = req.body
+        const { email, role } = req.body
         const boardId = req.params.boardId
 
         if (!email) {
@@ -138,26 +138,45 @@ class BoardController {
         }
 
         try {
-            const user = await userRepository.findByEmailAsync(email)
-            if (!user) {
-                return res.status(Status.FORBIDDEN).json(errorResponse(Status.FORBIDDEN, 'User not found'))
-            }
-            const isMember = await BoardRepository.findMemberByEmail(boardId, email)
-            if (isMember) {
-                return res.status(Status.FORBIDDEN).json(errorResponse(Status.FORBIDDEN, 'Already a member'))
+            const isExistRole = await roleRepo.findOne({ where: { name: role } })
+            if (!isExistRole) {
+                return next(errorResponse(Status.NOT_FOUND, 'Role not found'))
             }
 
-            const token = await this.sendInvitationEmail(boardId, email)
-            return res.status(Status.OK).json(successResponse(Status.OK, 'Invitation sent successfully', { token }))
+            const user = await userRepository.findByEmailAsync(email)
+            if (!user) {
+                return res
+                    .status(Status.FORBIDDEN)
+                    .json(errorResponse(Status.FORBIDDEN, 'User not found'))
+            }
+
+            const isMember = await BoardRepository.findMemberByEmail(boardId, email)
+            if (isMember) {
+                return res
+                    .status(Status.FORBIDDEN)
+                    .json(errorResponse(Status.FORBIDDEN, 'Already a member'))
+            }
+
+            const token = await this.sendInvitationEmail(boardId, email, isExistRole.name)
+
+            return res
+                .status(Status.OK)
+                .json(successResponse(Status.OK, 'Invitation sent successfully', { token }))
+
         } catch (err) {
             return next(err)
         }
     }
 
-    sendInvitationEmail = async (boardId: string, email: string) => {
+
+    sendInvitationEmail = async (boardId: string, email: string, role: string) => {
         const token = crypto.randomUUID()
 
-        await redisClient.setEx(`invite:${token}`, 7 * 24 * 60 * 60, JSON.stringify({ boardId, email }))
+        redisClient.setEx(
+            `invite:${token}`,
+            7 * 24 * 60 * 60, 
+            JSON.stringify({ boardId, email, role })
+        )
 
         const inviteLink = `${Config.baseUrl}/api/boards/join?token=${token}`
         const mailOptions = {
@@ -165,14 +184,15 @@ class BoardController {
             to: email,
             subject: 'Invitation to join board',
             html: `
-                <p>You have been invited to join a board.</p>
+                <p>You have been invited to join the board as <b>${role}</b>.</p>
                 <a href="${inviteLink}">Accept Invitation</a>
             `
         }
 
-        await emailTransporter.sendMail(mailOptions)
+        emailTransporter.sendMail(mailOptions)
         return token
     }
+
 
     async joinBoard(req: AuthRequest, res: Response, next: NextFunction) {
         try {
@@ -190,7 +210,7 @@ class BoardController {
                 return next(errorResponse(Status.BAD_REQUEST, 'Invalid or expired token'))
             }
 
-            const { boardId } = JSON.parse(dataStr)
+            const { boardId, role = 'board_member' } = JSON.parse(dataStr)
 
             const userId = req.user!.id
 
@@ -199,7 +219,7 @@ class BoardController {
                 return res.status(Status.OK).json(successResponse(Status.OK, 'Already a member of the board'))
             }
 
-            await BoardRepository.addMemberToBoard(boardId, userId, 'board_member')
+            await BoardRepository.addMemberToBoard(boardId, userId, role)
 
             if (type === 'invite') {
                 await redisClient.del(`invite:${token}`)

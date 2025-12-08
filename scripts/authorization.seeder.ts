@@ -114,6 +114,15 @@ export class seedAuthorization {
                         perm.name === 'board:read_members' ||
                         perm.name === 'board:add_member'
                 )
+            },
+            {
+                name: 'board_viewer',
+                description: 'Board viewer with read-only access',
+                permissions: createdPermissions.filter(
+                    (perm) =>
+                        perm.name === 'board:read' ||
+                        perm.name === 'board:read_members'
+                )
             }
         ]
 

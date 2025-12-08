@@ -22,7 +22,11 @@ boardsRegisterPath()
 // Get Public Boards
 route.get('/public', boardController.getPublicBoards)
 
-route.get('/join', verifyAccessToken, validateHandle(acceptInviteSchema), boardController.joinBoard)
+route.get('/join', 
+    verifyAccessToken, 
+    validateHandle(acceptInviteSchema), 
+    boardController.joinBoard
+)
 
 route.delete(
     '/revoke-link',
@@ -40,7 +44,9 @@ route.post(
     boardController.createBoard
 )
 
-route.get('/', verifyAccessToken, boardController.getAllBoards)
+route.get('/', 
+    verifyAccessToken, 
+    boardController.getAllBoards)
 
 // Invite via email
 route.post(
