@@ -6,6 +6,7 @@ import { BoardMembers } from '@/entities/board-member.entity'
 import { Workspace } from '@/entities/workspace.entity'
 import { WorkspaceMembers } from '@/entities/workspace-member.entity'
 import { Brackets } from 'typeorm'
+import { Permissions } from '@/enums/permissions.enum';
 class BoardRepository {
     private repo = AppDataSource.getRepository(Board)
     private roleRepo = AppDataSource.getRepository(Role)
@@ -265,6 +266,21 @@ class BoardRepository {
                 permissionLevel: savedBoard.permissionLevel
             }
         })
+    }
+    async hasPermission(userId: string, boardId: string, requiredPermission: string): Promise<boolean> {
+        const board = await this.repo.findOne({ where: { id: boardId }, relations: ['owner'] });
+        if (!board) return false;
+
+        if (board.owner?.id === userId) return true;
+
+        const member = await this.boardMembersRepository.findOne({
+            where: { board: { id: boardId }, user: { id: userId } },
+            relations: ['role', 'role.permissions']
+        });
+
+        if (!member || !member.role) return false;
+
+        return member.role.permissions.some(p => p.name === requiredPermission);
     }
 }
 export default new BoardRepository()

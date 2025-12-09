@@ -31,7 +31,7 @@ export class seedAuthorization {
             { name: 'workspace:change_member_role', description: "Change a member's role in a workspace" },
             { name: 'workspace:read_members', description: 'Read workspace members' },
 
-            //board permissions
+            // board permissions
             { name: 'board:create', description: 'Create a board' },
             { name: 'board:read', description: 'Read board' },
             { name: 'board:update', description: 'Update board' },
@@ -42,7 +42,17 @@ export class seedAuthorization {
             { name: 'board:revoke_share_link', description: 'Revoke share link' },
             { name: 'board:manage', description: 'Full board administrators' },
             { name: 'board:read_members', description: 'Read board members' },
-            { name: 'board:update_member_role', description: 'Update member role' }
+            { name: 'board:update_member_role', description: 'Update member role' },
+
+            // list permissions
+            { name: 'list:create', description: 'Create list' },
+            { name: 'list:update', description: 'Update list status/info' },
+            { name: 'list:delete', description: 'Delete list permanently' },
+
+            // card permissions
+            { name: 'card:create', description: 'Create card' },
+            { name: 'card:update', description: 'Update card info' },
+            { name: 'card:delete', description: 'Delete card permanently' }
         ]
 
         // save permissions
@@ -102,7 +112,7 @@ export class seedAuthorization {
             {
                 name: 'board_admin',
                 description: 'Board administrator with full access to board',
-                permissions: createdPermissions.filter((perm) => perm.name.includes('board:'))
+                permissions: createdPermissions.filter(perm => perm.name.includes('board:') || perm.name.includes('list:') || perm.name.includes('card:'))
             },
             {
                 name: 'board_member',
@@ -112,7 +122,11 @@ export class seedAuthorization {
                         perm.name === 'board:read' ||
                         perm.name === 'board:update' ||
                         perm.name === 'board:read_members' ||
-                        perm.name === 'board:add_member'
+                        perm.name === 'board:add_member' ||
+                        perm.name === 'list:create' ||
+                        perm.name === 'list:update' ||
+                        perm.name === 'card:create' ||
+                        perm.name === 'card:update'
                 )
             }
         ]
