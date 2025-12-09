@@ -26,6 +26,9 @@ export class Board extends DateTimeEntity {
     @Column({ type: 'varchar', length: 255, nullable: true })
     public backgroundPath: string
 
+    @Column({ type: 'boolean', default: false})
+    public isTemplate: boolean
+
     // TODO : owner relation
     @ManyToOne(() => User, (user) => user.boards, { onDelete: 'SET NULL' })
     @JoinColumn({ name: 'ownerId' })
@@ -37,7 +40,7 @@ export class Board extends DateTimeEntity {
     @OneToMany(() => BoardMembers, (boardMember) => boardMember.board)
     public boardMembers: BoardMembers[]
 
-    @ManyToOne(() => Workspace, (workspace) => workspace.id, { onDelete: 'CASCADE' })
+    @ManyToOne(() => Workspace, (workspace) => workspace.boards, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'workspaceId' })
     public workspace: Workspace
 

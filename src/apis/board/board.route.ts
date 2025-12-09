@@ -22,6 +22,13 @@ boardsRegisterPath()
 // Get Public Boards
 route.get('/public', boardController.getPublicBoards)
 
+//Get Template
+route.get(
+    '/template',
+    verifyAccessToken,
+    boardController.getAllTemplates
+)
+
 route.get('/join', verifyAccessToken, validateHandle(acceptInviteSchema), boardController.joinBoard)
 
 route.delete(
@@ -142,6 +149,14 @@ route.get(
     verifyAccessToken,
     authorizeBoardPermission(Permissions.READ_BOARD),
     boardController.getAllMembers
+)
+
+
+//Get Template By Id
+route.get(
+    '/template/:id',
+    verifyAccessToken,
+    boardController.getTemplateById
 )
 
 export default route

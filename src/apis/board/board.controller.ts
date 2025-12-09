@@ -19,6 +19,9 @@ import { BoardService } from './board.service'
 import { CreateBoardDto } from './board.dto'
 import { WorkspaceMembers } from '@/entities/workspace-member.entity'
 import { Permissions } from '@/enums/permissions.enum'
+import { Auth } from 'typeorm'
+
+
 const roleRepo = AppDataSource.getRepository(Role)
 const boardService = new BoardService()
 
@@ -430,6 +433,44 @@ class BoardController {
             return res.json(successResponse(Status.OK, 'Get board members successfully', result))
         } catch (err) {
             next(err)
+        }
+    }
+
+    getAllTemplates = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            console.log("Get All Template")
+
+            const templates = await BoardRepository.findTemplates();
+
+            return res.status(Status.OK).json({
+                status: Status.OK,
+                message: 'Templates fetched successfully',
+                data: templates
+            });
+        } catch (err) {
+            console.error("ERROR GET TEMPLATE: ", err); 
+            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to get templates', err));
+        }
+    }
+
+
+    getTemplateById = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            const { id } = req.params;
+
+            const template = await BoardRepository.getTemplateDetail(id);
+
+            if (!template) {
+                return next(errorResponse(Status.NOT_FOUND, 'Template not found'));
+            }
+
+            return res.status(Status.OK).json({
+                status: Status.OK,
+                message: 'Template fetched successfully',
+                data: template
+            });
+        } catch (err) {
+            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to get template', err));
         }
     }
 }

@@ -349,4 +349,42 @@ export const boardsRegisterPath = () => {
             404: { description: 'Board not found' }
         }
     })
+
+    //Get All Template
+    boardRegistry.registerPath({
+        method: 'get',
+        path: '/api/boards/template',
+        tags: ['Board'],
+        summary: 'Get all templates',
+        security: [{ bearerAuth: [] }],
+        request: {},
+        responses: {
+            200: {
+                description: 'Templates fetched successfully'
+            }
+        }
+    });
+
+    //Get Template By Id
+    boardRegistry.registerPath({
+        method: 'get',
+        path: '/api/boards/template/{id}',
+        tags: ['Board'],
+        summary: 'Get template by id',
+        security: [{ bearerAuth: [] }],
+        request: {
+            params: z.object({
+                id: z.string().uuid().describe("Template ID")
+            })
+        },
+        responses: {
+            200: {
+                description: 'Template fetched successfully'
+            },
+            404: {
+                description: 'Template not found'
+            }
+        }
+    });
+
 }
