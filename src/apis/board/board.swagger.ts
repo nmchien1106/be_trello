@@ -11,7 +11,10 @@ import {
     revokeShareLinkSchema,
     updateMemberRoleSchema,
     UpdateBoardRequest,
-    BoardMemberResponseSchema
+    BoardMemberResponseSchema,
+    CreateBoardFromTemplateParamsSchema,
+    CreateBoardFromTemplateQuerySchema,
+    CreateBoardFromTemplateBodySchema
 } from './board.schema'
 extendZodWithOpenApi(z)
 
@@ -386,5 +389,47 @@ export const boardsRegisterPath = () => {
             }
         }
     });
+
+   // Create Board From Template
+    boardRegistry.registerPath({
+        method: 'post',
+        path: '/api/boards/template/{id}',
+        tags: ['Board'],
+        summary: 'Create a new board from a template',
+        security: [{ bearerAuth: [] }],
+        request: {
+            params: CreateBoardFromTemplateParamsSchema,
+            query: CreateBoardFromTemplateQuerySchema,
+            body: {
+                content: { 'application/json': { schema: CreateBoardFromTemplateBodySchema } }
+            }
+        },
+        responses: {
+            200: {
+                description: 'Board created from template successfully',
+                content: {
+                    'application/json': {
+                        schema: z.object({
+                            status: z.number(),
+                            message: z.string(),
+                            data: z.object({
+                                id: z.string().uuid(),
+                                title: z.string(),
+                                owner: z.object({ id: z.string().uuid() }),
+                                workspace: z.object({ id: z.string().uuid() }),
+                                createdAt: z.string(),
+                                updatedAt: z.string()
+                            })
+                        })
+                    }
+                }
+            },
+            400: { description: 'Invalid input' },
+            401: { description: 'Unauthorization' },
+            404: { description: 'Template not found' },
+            500: { description: 'Failed to create board from template' }
+        }
+    });
+
 
 }

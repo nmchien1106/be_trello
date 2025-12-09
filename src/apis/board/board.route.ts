@@ -159,4 +159,11 @@ route.get(
     boardController.getTemplateById
 )
 
+route.post(
+    '/template/:id',
+    verifyAccessToken,
+    // authorizePermissionWorkspace(Permissions.UPDATE_WORKSPACE),
+    boardController.createBoardFromTemplate
+)
+
 export default route

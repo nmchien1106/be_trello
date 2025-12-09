@@ -14,6 +14,9 @@ import emailTransporter from '@/config/email.config'
 import { Board } from '@/entities/board.entity'
 import { BoardMembers } from '@/entities/board-member.entity'
 import { Role } from '@/entities/role.entity'
+import {List} from '@/entities/list.entity'
+import { Card } from '@/entities/card.entity'
+import {Workspace} from '@/entities/workspace.entity'
 import userRepository from '../users/user.repository'
 import { BoardService } from './board.service'
 import { CreateBoardDto } from './board.dto'
@@ -23,6 +26,10 @@ import { Auth } from 'typeorm'
 
 
 const roleRepo = AppDataSource.getRepository(Role)
+const listRepo = AppDataSource.getRepository(List)
+const cardRepo = AppDataSource.getRepository(Card)
+const boardRepo = AppDataSource.getRepository(Board)
+const workspaceRepo = AppDataSource.getRepository(Workspace)
 const boardService = new BoardService()
 
 class BoardController {
@@ -473,6 +480,76 @@ class BoardController {
             next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to get template', err));
         }
     }
+
+    createBoardFromTemplate = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            const { title, workspaceId } = req.body;
+            const { id } = req.params;
+            const copyCard = req.query.copyCard === 'true';
+            const userId = req.user?.id;
+
+            const template = await BoardRepository.findTemplateById(id, copyCard);
+            if (!template) return next(errorResponse(Status.NOT_FOUND, 'Template not found'));
+
+            const workspace = await workspaceRepo.findOne({ where: { id: workspaceId } });
+            if (!workspace) return next(errorResponse(Status.NOT_FOUND, 'Workspace not found'));
+
+            const newBoardData = {
+                ...template,
+                title,
+                owner: { id: userId },
+                workspace: { id: workspaceId },
+                isTemplate: false,
+                createdAt: undefined,
+                updatedAt: undefined,
+                id: undefined,
+            };
+            const newBoard = boardRepo.create(newBoardData);
+            const savedBoard = await boardRepo.save(newBoard);
+
+            const savedLists: List[] = [];
+            for (const list of template.lists || []) {
+                const newListData = {
+                    ...list,
+                    board: savedBoard,
+                    id: undefined,
+                    createdAt: undefined,
+                    updatedAt: undefined,
+                };
+                const newList = listRepo.create(newListData);
+                const savedList = await listRepo.save(newList);
+                savedLists.push(savedList);
+
+                if (copyCard && list.cards) {
+                    for (const card of list.cards) {
+                        const newCardData = {
+                            ...card,
+                            list: savedList,
+                            id: undefined,
+                            createdAt: undefined,
+                            updatedAt: undefined,
+                        };
+                        const newCard = cardRepo.create(newCardData);
+                        await cardRepo.save(newCard);
+                    }
+                }
+            }
+            savedBoard.lists = savedLists;
+
+            
+
+            return res.status(Status.OK).json({
+                status: Status.OK,
+                message: 'Board created from template successfully',
+                data: savedBoard,
+            });
+        } catch (err) {
+            console.error('ERROR CREATE BOARD FROM TEMPLATE:', err);
+            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to create board from template', err));
+        }
+    };
+
+
 }
 
 export default new BoardController()

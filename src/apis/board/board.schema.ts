@@ -69,3 +69,19 @@ export const BoardMemberResponseSchema = z.object({
     avatar: z.string().nullable().optional(),
     role: z.number()
 })
+
+
+export const CreateBoardFromTemplateParamsSchema = z.object({
+    id: z.string().uuid().describe("Template ID")
+});
+
+export const CreateBoardFromTemplateQuerySchema = z.object({
+    copyCard: z.string().optional().describe("If 'true', copy cards from template. Default is false")
+});
+
+
+export const CreateBoardFromTemplateBodySchema = z.object({
+    title: z.string().min(1).describe("Title of the new board"),
+    workspaceId: z.string().uuid().describe("Workspace ID where the board will be created")
+});
+

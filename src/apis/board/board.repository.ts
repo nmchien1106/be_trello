@@ -276,11 +276,14 @@ class BoardRepository {
     async getTemplateDetail(boardId: string) {
         return this.repo.findOne({
             where: { id: boardId, isTemplate: true },
-            relations: {
-                lists: {
-                    cards: true
-                }
-            }
+            relations: ['lists', 'lists.cards']
+        });
+    }
+
+    async findTemplateById(templateId: string, copyCard: boolean) {
+        return this.repo.findOne({
+            where: { id: templateId, isTemplate: true },
+            relations: copyCard ? ['lists', 'lists.cards'] : ['lists']
         });
     }
 
