@@ -1,5 +1,4 @@
 import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
-
 import { DateTimeEntity } from './base/DateTimeEntity'
 import { CardMembers } from './card-member.entity'
 import { Comment } from './comment.entity'
@@ -28,7 +27,7 @@ export class Card extends DateTimeEntity {
     @Column({ name: 'dueDate', type: 'date', nullable: true })
     dueDate: Date
 
-    @ManyToOne(() => List, (list) => list.cards)
+    @ManyToOne(() => List, (list) => list.cards, { onDelete: 'CASCADE' })
     list: List
 
     @OneToMany(() => CardMembers, (cardMember) => cardMember.card)

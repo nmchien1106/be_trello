@@ -30,9 +30,22 @@ export enum Permissions {
     UPDATE_BOARD_MEMBER_ROLE = 'board:update_member_role',
     UPDATE_BOARD_SETTINGS = 'board:update_board_settings',
 
+<<<<<<< HEAD
     // list
     CREATE_LIST = 'list:create',
     READ_LIST = 'list:read',
     UPDATE_LIST = 'list:update',
     DELETE_LIST = 'list:delete',
+=======
+    //LIST
+    CREATE_LIST = 'list:create',
+    UPDATE_LIST = 'list:update',
+    DELETE_LIST = 'list:delete',
+
+    //CARD
+    CREATE_CARD = 'card:create',
+    READ_CARD = 'card:read',
+    UPDATE_CARD = 'card:update',
+    DELETE_CARD = 'card:delete'
+>>>>>>> 22b57b1 (list card)
 }

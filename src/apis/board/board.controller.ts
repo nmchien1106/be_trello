@@ -35,9 +35,7 @@ const cardMemberRepo = AppDataSource.getRepository(CardMembers)
 const boardService = new BoardService()
 
 class BoardController {
-    // PATCH /api/boards/:boardId
-    // update a field on board
-    // allow updating only specific fields (title, description, permissionLevel) => solve in middleware
+
     updateBoard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const { boardId } = req.params
@@ -57,7 +55,6 @@ class BoardController {
         }
     }
 
-    // Post /api/boards/:boardId/archive
     archiveBoard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const { boardId } = req.params
@@ -78,7 +75,6 @@ class BoardController {
         }
     }
 
-    // Post /api/boards/:boardId/reopen
     reopenBoard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const { boardId } = req.params
@@ -99,7 +95,6 @@ class BoardController {
         }
     }
 
-    // DELETE /api/boards/:boardId --> Delete perrmanently
     deleteBoardPerrmanently = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const { boardId } = req.params
@@ -113,7 +108,6 @@ class BoardController {
         }
     }
 
-    // POST /api/boards/:boardId/background
     uploadBoardBackground = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const { boardId } = req.params

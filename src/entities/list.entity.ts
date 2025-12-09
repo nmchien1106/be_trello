@@ -24,4 +24,7 @@ export class List extends DateTimeEntity {
 
     @OneToMany(() => Card, (card) => card.list)
     cards: Card[]
+
+    @Column({ type: 'boolean', default: false })
+    public isArchived: boolean
 }

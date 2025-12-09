@@ -1,17 +1,31 @@
-import { z } from "zod";
+import { z } from 'zod'
+import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi'
 
-export const ReorderListsSchema = z.object({
-    beforeId: z.string('beforeId must be a string or null').nullable(),
-    afterId: z.string('afterId must be a string or null').nullable(),
-    boardId: z.string('boardId is required'),
+extendZodWithOpenApi(z)
+
+// ===== CREATE / UPDATE =====
+export const CreateListSchema = z.object({
+    title: z.string().min(1, 'Title is required'),
+    boardId: z.string().uuid('Invalid Board ID')
 })
 
+export const UpdateListSchema = z.object({
+    title: z.string().min(1).optional(),
+    isArchived: z.boolean().optional()
+})
+
+// ===== ADVANCED =====
+export const ReorderListsSchema = z.object({
+    beforeId: z.string().nullable(),
+    afterId: z.string().nullable(),
+    boardId: z.string()
+})
 
 export const MoveListSchema = z.object({
-    boardId: z.string('boardId is required'),
+    boardId: z.string()
 })
 
 export const DuplicateListSchema = z.object({
-    boardId: z.string('boardId is required'),
-    title: z.string().optional(),
+    boardId: z.string(),
+    title: z.string().optional()
 })

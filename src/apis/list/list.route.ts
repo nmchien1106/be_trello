@@ -1,12 +1,28 @@
-import ListRepository from './list.controller'
-import express from 'express'
-import { validateHandle } from '@/middleware/validate-handle'
-import { ReorderListsSchema, MoveListSchema, DuplicateListSchema } from './list.schema'
+import { Router } from 'express'
+import listController from './list.controller'
 import { verifyAccessToken } from '@/utils/jwt'
+import { validateHandle } from '@/middleware/validate-handle'
+import {
+    CreateListSchema,
+    UpdateListSchema,
+    ReorderListsSchema,
+    MoveListSchema,
+    DuplicateListSchema
+} from './list.schema'
 import { authorizeBoardPermission } from '@/middleware/authorization'
 import { Permissions } from '@/enums/permissions.enum'
 
-const router = express.Router()
+const router = Router()
+
+// ===== CRUD LIST =====
+router.post('/', verifyAccessToken, validateHandle(CreateListSchema), listController.createList)
+router.get('/:id', verifyAccessToken, listController.getListById)
+router.patch('/:id', verifyAccessToken, validateHandle(UpdateListSchema), listController.updateList)
+router.patch('/:id/archive', verifyAccessToken, listController.archiveList)
+router.patch('/:id/unarchive', verifyAccessToken, listController.unarchiveList)
+router.delete('/:id', verifyAccessToken, listController.deleteList)
+
+// ===== ADVANCED (giữ từ dev) =====
 
 // Reorder lists
 router.post(
@@ -14,7 +30,7 @@ router.post(
     verifyAccessToken,
     authorizeBoardPermission(Permissions.UPDATE_BOARD),
     validateHandle(ReorderListsSchema),
-    ListRepository.reorderLists
+    listController.reorderLists
 )
 
 // Move list to another board
@@ -23,7 +39,7 @@ router.post(
     verifyAccessToken,
     authorizeBoardPermission(Permissions.UPDATE_BOARD),
     validateHandle(MoveListSchema),
-    ListRepository.moveListToAnotherBoard
+    listController.moveListToAnotherBoard
 )
 
 // Duplicate list
@@ -32,7 +48,7 @@ router.post(
     verifyAccessToken,
     authorizeBoardPermission(Permissions.UPDATE_BOARD),
     validateHandle(DuplicateListSchema),
-    ListRepository.duplicateList
+    listController.duplicateList
 )
 
 export default router
