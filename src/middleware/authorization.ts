@@ -70,7 +70,7 @@ export const authorizePermissionWorkspace = (requiredPermission: string | string
                 return next(errorResponse(Status.NOT_FOUND, 'User not found'))
             }
 
-            const workspaceId = req.params.id
+            const workspaceId = req.params.id || req.body.workspaceId
             const workspaceMemberRepository = AppDataSource.getRepository(WorkspaceMembers)
             const membership = await workspaceMemberRepository.findOne({
                 where: {
@@ -79,6 +79,7 @@ export const authorizePermissionWorkspace = (requiredPermission: string | string
                 },
                 relations: ['role', 'role.permissions']
             })
+
             if (!membership) {
                 return next(errorResponse(Status.NOT_FOUND, 'Membership not found'))
             }
@@ -124,7 +125,7 @@ export const authorizeRoleWorkspace = (requiredRoles: string | string[]) => {
             if (!user) {
                 return next(errorResponse(Status.NOT_FOUND, 'User not found'))
             }
-            const workspaceId = req.params.id
+            const workspaceId = req.params.id || req.body.workspaceId
             const workspaceMemberRepository = AppDataSource.getRepository(WorkspaceMembers)
             const membership = await workspaceMemberRepository.findOne({
                 where: {
@@ -193,7 +194,7 @@ export const authorizeBoardPermission = (requiredPermission: string | string[]) 
             const permissions = role.permissions?.map((p) => p.name) ?? []
             const requiredPermissions = Array.isArray(requiredPermission) ? requiredPermission : [requiredPermission]
 
-            const hasPermission = requiredPermissions.every(p => permissions.includes(p))
+            const hasPermission = requiredPermissions.every((p) => permissions.includes(p))
             if (!hasPermission) {
                 return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
             }

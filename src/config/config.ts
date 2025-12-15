@@ -24,6 +24,7 @@ interface ConfigTypes {
     cloundinaryName: string
     cloudinaryApiKey: string
     cloudinaryApiSecret: string
+    defaultGap: number
 }
 
 export const Config: ConfigTypes = {
@@ -47,5 +48,6 @@ export const Config: ConfigTypes = {
     NODE_ENV: process.env.NODE_ENV as 'development' | 'production' || 'development',
     cloundinaryName: process.env.CLOUDINARY_CLOUD_NAME || '',
     cloudinaryApiKey: process.env.CLOUDINARY_API_KEY || '',
-    cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET || ''
+    cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET || '',
+    defaultGap: parseInt(process.env.DEFAULT_GAP || '16384'),
 }

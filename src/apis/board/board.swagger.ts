@@ -11,7 +11,11 @@ import {
     revokeShareLinkSchema,
     updateMemberRoleSchema,
     UpdateBoardRequest,
-    BoardMemberResponseSchema
+    BoardMemberResponseSchema,
+    CreateBoardFromTemplateParamsSchema,
+    CreateBoardFromTemplateQuerySchema,
+    CreateBoardFromTemplateBodySchema,
+    CreateTemplateSchema
 } from './board.schema'
 extendZodWithOpenApi(z)
 
@@ -263,7 +267,7 @@ export const boardsRegisterPath = () => {
             }
         },
         summary: 'Update board by id',
-        security: [{ bearerAuth: [] }], 
+        security: [{ bearerAuth: [] }],
         tags: ['Board'],
         responses: {
             200: { description: 'Board updated successfully' }
@@ -352,4 +356,153 @@ export const boardsRegisterPath = () => {
         }
     })
 
+    // Get Public Boards
+    boardRegistry.registerPath({
+        method: 'get',
+        path: '/api/boards/public',
+        tags: ['Board'],
+        summary: 'Get public boards',
+        responses: {
+            ...createApiResponse(z.array(BoardResponseSchema), 'Success', Status.OK)
+        }
+    })
+
+    // Get All Boards
+    boardRegistry.registerPath({
+        method: 'get',
+        path: '/api/boards',
+        tags: ['Board'],
+        summary: 'Get all accessible boards',
+        security: [{ bearerAuth: [] }],
+        responses: {
+            ...createApiResponse(z.array(BoardResponseSchema), 'Success', Status.OK)
+        }
+    })
+
+    // Get Board By ID
+    boardRegistry.registerPath({
+        method: 'get',
+        path: '/api/boards/{id}',
+        tags: ['Board'],
+        summary: 'Get board detail',
+        security: [{ bearerAuth: [] }],
+        request: { params: z.object({ id: z.string().uuid() }) },
+        responses: {
+            ...createApiResponse(BoardResponseSchema, 'Success', Status.OK),
+            403: { description: 'Permission denied' },
+            404: { description: 'Not found' }
+        }
+    })
+
+    // Create Board
+    boardRegistry.registerPath({
+        method: 'post',
+        path: '/api/boards',
+        tags: ['Board'],
+        summary: 'Create new board',
+        security: [{ bearerAuth: [] }],
+        request: {
+            body: {
+                content: { 'application/json': { schema: CreateBoardSchema } }
+            }
+        },
+        responses: {
+            ...createApiResponse(BoardResponseSchema, 'Created', Status.CREATED)
+        }
+    })
+
+    //Get member
+    boardRegistry.registerPath({
+        method: 'get',
+        path: '/api/boards/{id}/members',
+        tags: ['Board'],
+        summary: 'Get all members of a board',
+        security: [{ bearerAuth: [] }],
+        request: {
+            params: z.object({
+                id: z.string().uuid()
+            })
+        },
+        responses: {
+            ...createApiResponse(BoardMemberResponseSchema, 'Get board members successfully', Status.OK),
+            403: { description: 'Permission denied' },
+            404: { description: 'Board not found' }
+        }
+    })
+
+    //Get All Template
+    boardRegistry.registerPath({
+        method: 'get',
+        path: '/api/boards/template',
+        tags: ['Board'],
+        summary: 'Get all templates',
+        security: [{ bearerAuth: [] }],
+        request: {},
+        responses: {
+            200: {
+                description: 'Templates fetched successfully'
+            }
+        }
+    })
+
+    // Create Board From Template
+    boardRegistry.registerPath({
+        method: 'post',
+        path: '/api/boards/template/{id}',
+        tags: ['Board'],
+        summary: 'Create a new board from a template',
+        security: [{ bearerAuth: [] }],
+        request: {
+            params: CreateBoardFromTemplateParamsSchema,
+            query: CreateBoardFromTemplateQuerySchema,
+            body: {
+                content: { 'application/json': { schema: CreateBoardFromTemplateBodySchema } }
+            }
+        },
+        responses: {
+            200: {
+                description: 'Board created from template successfully',
+                content: {
+                    'application/json': {
+                        schema: z.object({
+                            status: z.number(),
+                            message: z.string(),
+                            data: z.object({
+                                id: z.string().uuid(),
+                                title: z.string(),
+                                owner: z.object({ id: z.string().uuid() }),
+                                workspace: z.object({ id: z.string().uuid() }),
+                                createdAt: z.string(),
+                                updatedAt: z.string()
+                            })
+                        })
+                    }
+                }
+            },
+            400: { description: 'Invalid input' },
+            401: { description: 'Unauthorization' },
+            404: { description: 'Template not found' },
+            500: { description: 'Failed to create board from template' }
+        }
+    })
+
+    //Create template
+    // Create Board
+    boardRegistry.registerPath({
+        method: 'post',
+        path: '/api/boards/template',
+        tags: ['Board'],
+        summary: 'Create new template',
+        security: [{ bearerAuth: [] }],
+        request: {
+            body: {
+                content: { 'application/json': { schema: CreateTemplateSchema } }
+            }
+        },
+        responses: {
+            ...createApiResponse(BoardResponseSchema, 'Created', Status.CREATED)
+        }
+    })
+
+    
 }

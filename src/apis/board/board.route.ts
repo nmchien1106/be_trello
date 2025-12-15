@@ -12,7 +12,8 @@ import {
     acceptInviteSchema,
     joinViaShareLinkSchema,
     revokeShareLinkSchema,
-    UpdateBoardRequest
+    UpdateBoardRequest,
+    CreateTemplateSchema
 } from './board.schema'
 
 const route = Router()
@@ -22,11 +23,10 @@ boardsRegisterPath()
 // Get Public Boards
 route.get('/public', boardController.getPublicBoards)
 
-route.get('/join', 
-    verifyAccessToken, 
-    validateHandle(acceptInviteSchema), 
-    boardController.joinBoard
-)
+//Get Template
+route.get('/template', verifyAccessToken, boardController.getAllTemplates)
+
+route.get('/join', verifyAccessToken, validateHandle(acceptInviteSchema), boardController.joinBoard)
 
 route.delete(
     '/revoke-link',
@@ -149,5 +149,23 @@ route.get(
     authorizeBoardPermission(Permissions.READ_BOARD),
     boardController.getAllMembers
 )
+
+//Create board from template
+route.post(
+    '/template/:templateId',
+    verifyAccessToken,
+    authorizePermissionWorkspace(Permissions.UPDATE_WORKSPACE),
+    boardController.createBoardFromTemplate
+)
+
+//Create Template
+route.post(
+    '/template',
+    verifyAccessToken,
+    authorizePermissionWorkspace(Permissions.UPDATE_WORKSPACE),
+    validateHandle(CreateTemplateSchema),
+    boardController.createBoardTemplate
+)
+
 
 export default route

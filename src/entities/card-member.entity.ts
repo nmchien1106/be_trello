@@ -3,6 +3,7 @@ import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeo
 import { DateTimeEntity } from './base/DateTimeEntity'
 import { Card } from './card.entity'
 import { User } from './user.entity'
+import { Role } from './role.entity'
 
 @Entity('card_members')
 @Unique(['card', 'user'])
@@ -10,8 +11,8 @@ export class CardMembers extends DateTimeEntity {
     @PrimaryGeneratedColumn('uuid')
     public id: string
 
-    @Column({ type: 'int' })
-    public role: number
+    @ManyToOne(() => Role, (role) => role.cardMembers)
+    public role: Role
 
     @ManyToOne(() => Card, (card) => card.cardMembers)
     card: Card

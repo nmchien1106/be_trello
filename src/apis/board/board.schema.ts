@@ -71,3 +71,32 @@ export const BoardMemberResponseSchema = z.object({
     avatar: z.string().nullable().optional(),
     role: z.number()
 })
+
+export const CreateBoardFromTemplateParamsSchema = z.object({
+    id: z.string().uuid().describe('Template ID')
+})
+
+export const CreateBoardFromTemplateQuerySchema = z.object({
+    copyCard: z.string().optional().describe("If 'true', copy cards from template. Default is false")
+})
+
+export const CreateBoardFromTemplateBodySchema = z.object({
+    title: z.string().min(1).describe('Title of the new board'),
+    workspaceId: z.string().uuid().describe('Workspace ID where the board will be created')
+})
+
+export const CreateTemplateSchema = z
+    .object({
+        title: z.string().min(1).max(255),
+        description: z.string().optional(),
+        backgroundUrl: z.string().optional(),
+        workspaceId: z.string().uuid('Workspace ID is required'),
+    })
+    .openapi({
+        example: {
+            title: 'New Project',
+            description: 'Project description',
+            workspaceId: 'cc7a10e2-df5e-4974-8a5c-df541cdc2a17',
+            backgroundUrl: 'https://example.com/bg.jpg'
+        }
+    })

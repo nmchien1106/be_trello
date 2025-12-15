@@ -5,6 +5,7 @@ import { Permission } from './permission.entity'
 import { User } from './user.entity'
 import { WorkspaceMembers } from './workspace-member.entity'
 import { BoardMembers } from './board-member.entity'
+import { CardMembers } from './card-member.entity'
 @Entity('roles')
 export class Role extends DateTimeEntity {
     @PrimaryGeneratedColumn('uuid')
@@ -19,6 +20,8 @@ export class Role extends DateTimeEntity {
     public workspaceMembers: WorkspaceMembers[]
     @OneToMany(() => BoardMembers, (boardMember) => boardMember.role)
     public boardMembers: BoardMembers[]
+    @OneToMany(() => CardMembers, (cardMember) => cardMember.role)
+    public cardMembers: CardMembers[]
     @ManyToMany(() => Permission, (permission) => permission.roles, {
         cascade: true
     })

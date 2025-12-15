@@ -34,6 +34,6 @@ export class Card extends DateTimeEntity {
     @OneToMany(() => CardMembers, (cardMember) => cardMember.card)
     public cardMembers: CardMembers[]
 
-    @OneToMany(() => Comment, (comment) => comment.user)
+    @OneToMany(() => Comment, (comment) => comment.card)
     public comments: Comment[]
 }

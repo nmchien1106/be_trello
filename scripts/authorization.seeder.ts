@@ -42,7 +42,8 @@ export class seedAuthorization {
             { name: 'board:revoke_share_link', description: 'Revoke share link' },
             { name: 'board:manage', description: 'Full board administrators' },
             { name: 'board:read_members', description: 'Read board members' },
-            { name: 'board:update_member_role', description: 'Update member role' }
+            { name: 'board:update_member_role', description: 'Update member role' },
+            { name: 'board:update_board_settings', description: 'Update board settings'}
         ]
 
         // save permissions
@@ -70,7 +71,9 @@ export class seedAuthorization {
             {
                 name: 'workspace_admin',
                 description: 'Workspace administrator with elevated access',
-                permissions: createdPermissions.filter(perm => perm.name.includes('workspace:') || perm.name === 'board:create')
+                permissions: createdPermissions.filter(
+                    (perm) => perm.name.includes('workspace:') || perm.name === 'board:create' || perm.name === 'board:update_board_settings'
+                )
             },
             {
                 name: 'user',
@@ -80,7 +83,8 @@ export class seedAuthorization {
                         perm.name === 'user:read' ||
                         perm.name === 'user:update' ||
                         perm.name === 'workspace:read' ||
-                        perm.name === 'workspace:create'
+                        perm.name === 'workspace:create' ||
+                        perm.name === 'board:read'
                 )
             },
             {
@@ -116,13 +120,9 @@ export class seedAuthorization {
                 )
             },
             {
-                name: 'board_viewer',
-                description: 'Board viewer with read-only access',
-                permissions: createdPermissions.filter(
-                    (perm) =>
-                        perm.name === 'board:read' ||
-                        perm.name === 'board:read_members'
-                )
+                name: 'card_admin',
+                description: 'Card administrator',
+                permissions: []
             }
         ]
 

@@ -15,9 +15,9 @@ export class List extends DateTimeEntity {
     @Column({ type: 'int', default: 0 })
     position: number
 
-    @ManyToOne(() => Board, (board) => board.id, { onDelete: 'CASCADE' })
+    @ManyToOne(() => Board, (board) => board.lists, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'boardId' })
-    public board: Board
+    public boardId: Board
 
     @OneToMany(() => Card, (card) => card.list)
     cards: Card[]

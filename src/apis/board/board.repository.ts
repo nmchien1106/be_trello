@@ -5,7 +5,7 @@ import { User } from '@/entities/user.entity'
 import { BoardMembers } from '@/entities/board-member.entity'
 import { Workspace } from '@/entities/workspace.entity'
 import { WorkspaceMembers } from '@/entities/workspace-member.entity'
-import { Brackets } from 'typeorm'
+import { Brackets, Repository } from 'typeorm'
 class BoardRepository {
     private repo = AppDataSource.getRepository(Board)
     private roleRepo = AppDataSource.getRepository(Role)
@@ -264,6 +264,26 @@ class BoardRepository {
                 ownerId: userId,
                 permissionLevel: savedBoard.permissionLevel
             }
+        })
+    }
+
+    async findTemplates() {
+        return this.repo.find({
+            where: { isTemplate: true }
+        })
+    }
+
+    async getTemplateDetail(boardId: string) {
+        return this.repo.findOne({
+            where: { id: boardId, isTemplate: true },
+            relations: ['lists', 'lists.cards']
+        })
+    }
+
+    async findTemplateById(templateId: string, copyCard: boolean) {
+        return this.repo.findOne({
+            where: { id: templateId, isTemplate: true },
+            relations: copyCard ? ['lists', 'lists.cards'] : ['lists']
         })
     }
 }
