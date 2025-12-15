@@ -1,119 +1,197 @@
 import { z } from 'zod'
-import { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi'
+import {
+  OpenAPIRegistry,
+  extendZodWithOpenApi
+} from '@asteasolutions/zod-to-openapi'
 
-import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi'
+import { CreateListSchema, UpdateListSchema } from './list.schema'
+import { createApiResponse } from '@/api-docs/openApiResponseBuilder'
+import { Status } from '@/types/response'
+
 extendZodWithOpenApi(z)
 
 export const listRegistry = new OpenAPIRegistry()
 
-export const ListRegisterPaths = () => {
-    // Post /api/lists/:listId/reorder --> change position of a list
-    listRegistry.registerPath({
-        method: 'post',
-        path: '/api/lists/{listId}/reorder',
-        description: 'Change position of a list',
-        summary: 'Reorder a list within a board',
-        tags: ['Lists'],
-        request: {
-            params: z.object({
-                listId: z.string().openapi({ description: 'ID of the list to reorder' })
-            }),
-            body: {
-                description: 'Reorder List Payload',
-                content: {
-                    'application/json': {
-                        schema: z.object({
-                            beforeId: z.string().nullable().openapi({
-                                description:
-                                    'ID of the list that will be before the reordered list. Null if moving to the start.'
-                            }),
-                            afterId: z.string().nullable().openapi({
-                                description:
-                                    'ID of the list that will be after the reordered list. Null if moving to the end.'
-                            }),
-                            boardId: z.string().openapi({ description: 'ID of the board containing the lists.' })
-                        })
-                    }
-                }
-            }
-        },
-
-        security: [
-            {
-                bearerAuth: []
-            }
-        ],
-        responses: {
-            200: { description: 'List reorder successfully!' }
+/* =======================
+   CRUD LIST APIs
+======================= */
+export const listsRegisterPath = () => {
+  // CREATE
+  listRegistry.registerPath({
+    method: 'post',
+    path: '/api/lists',
+    tags: ['List'],
+    summary: 'Create a new list',
+    security: [{ bearerAuth: [] }],
+    request: {
+      body: {
+        content: {
+          'application/json': { schema: CreateListSchema }
         }
-    })
+      }
+    },
+    responses: createApiResponse(
+      z.object({ id: z.string() }),
+      'List created successfully',
+      Status.CREATED
+    )
+  })
 
-    // Post /api/lists/:listId/move --> move list to another board
-    listRegistry.registerPath({
-        method: 'post',
-        path: '/api/lists/{listId}/move',
-        description: 'Move list to another board',
-        summary: 'Move a list to another board',
-        tags: ['Lists'],
-        request: {
-            params: z.object({
-                listId: z.string().openapi({ description: 'ID of the list to move' })
-            }),
-            body: {
-                description: 'Move List Payload',
-                content: {
-                    'application/json': {
-                        schema: z.object({
-                            boardId: z.string().uuid().openapi({ description: 'ID of the target board' })
-                        })
-                    }
-                }
-            }
-        },
-        security: [
-            {
-                bearerAuth: []
-            }
-        ],
-        responses: {
-            200: { description: 'List moved successfully!' }
-        }
-    })
+  // GET BY ID
+  listRegistry.registerPath({
+    method: 'get',
+    path: '/api/lists/{id}',
+    tags: ['List'],
+    summary: 'Get list detail',
+    security: [{ bearerAuth: [] }],
+    request: {
+      params: z.object({ id: z.string().uuid() })
+    },
+    responses: createApiResponse(
+      z.any(),
+      'Get list successfully',
+      Status.OK
+    )
+  })
 
-    // Post /api/lists/:listId/duplicate --> duplicate a list
-    listRegistry.registerPath({
-        method: 'post',
-        path: '/api/lists/{listId}/duplicate',
-        description: 'Duplicate a list',
-        summary: 'Duplicate an existing list',
-        tags: ['Lists'],
-        request: {
-            params: z.object({
-                listId: z.string().openapi({ description: 'ID of the list to duplicate' })
-            }),
-            body: {
-                description: 'Duplicate List Payload',
-                content: {
-                    'application/json': {
-                        schema: z.object({
-                            boardId: z
-                                .string()
-                                .openapi({ description: 'ID of the board where the duplicated list will be created' }),
-                            title: z.string().openapi({ description: 'Title of the duplicated list' })
-                        })
-                    }
-                }
-            }
-        },
-        security: [
-            {
-                bearerAuth: []
-            }
-        ],
-        responses: {
-            200: { description: 'List duplicated successfully!' }
+  // UPDATE
+  listRegistry.registerPath({
+    method: 'patch',
+    path: '/api/lists/{id}',
+    tags: ['List'],
+    summary: 'Update list info',
+    security: [{ bearerAuth: [] }],
+    request: {
+      params: z.object({ id: z.string().uuid() }),
+      body: {
+        content: {
+          'application/json': { schema: UpdateListSchema }
         }
-    })
+      }
+    },
+    responses: createApiResponse(
+      z.any(),
+      'List updated successfully',
+      Status.OK
+    )
+  })
+
+  // ARCHIVE
+  listRegistry.registerPath({
+    method: 'patch',
+    path: '/api/lists/{id}/archive',
+    tags: ['List'],
+    summary: 'Archive a list',
+    security: [{ bearerAuth: [] }],
+    request: { params: z.object({ id: z.string().uuid() }) },
+    responses: createApiResponse(
+      z.any(),
+      'List archived successfully',
+      Status.OK
+    )
+  })
+
+  // UNARCHIVE
+  listRegistry.registerPath({
+    method: 'patch',
+    path: '/api/lists/{id}/unarchive',
+    tags: ['List'],
+    summary: 'Unarchive a list',
+    security: [{ bearerAuth: [] }],
+    request: { params: z.object({ id: z.string().uuid() }) },
+    responses: createApiResponse(
+      z.any(),
+      'List unarchived successfully',
+      Status.OK
+    )
+  })
+
+  // DELETE
+  listRegistry.registerPath({
+    method: 'delete',
+    path: '/api/lists/{id}',
+    tags: ['List'],
+    summary: 'Delete list permanently',
+    security: [{ bearerAuth: [] }],
+    request: { params: z.object({ id: z.string().uuid() }) },
+    responses: createApiResponse(
+      z.any(),
+      'List deleted permanently',
+      Status.OK
+    )
+  })
 }
 
-ListRegisterPaths()
+/* =======================
+   ADVANCED LIST APIs
+======================= */
+export const ListRegisterPaths = () => {
+  // REORDER
+  listRegistry.registerPath({
+    method: 'post',
+    path: '/api/lists/{listId}/reorder',
+    tags: ['Lists'],
+    summary: 'Reorder a list',
+    security: [{ bearerAuth: [] }],
+    request: {
+      params: z.object({ listId: z.string() }),
+      body: {
+        content: {
+          'application/json': {
+            schema: z.object({
+              beforeId: z.string().nullable(),
+              afterId: z.string().nullable(),
+              boardId: z.string()
+            })
+          }
+        }
+      }
+    },
+    responses: { 200: { description: 'List reordered successfully' } }
+  })
+
+  // MOVE
+  listRegistry.registerPath({
+    method: 'post',
+    path: '/api/lists/{listId}/move',
+    tags: ['Lists'],
+    summary: 'Move list to another board',
+    security: [{ bearerAuth: [] }],
+    request: {
+      params: z.object({ listId: z.string() }),
+      body: {
+        content: {
+          'application/json': {
+            schema: z.object({
+              boardId: z.string().uuid()
+            })
+          }
+        }
+      }
+    },
+    responses: { 200: { description: 'List moved successfully' } }
+  })
+
+  // DUPLICATE
+  listRegistry.registerPath({
+    method: 'post',
+    path: '/api/lists/{listId}/duplicate',
+    tags: ['Lists'],
+    summary: 'Duplicate a list',
+    security: [{ bearerAuth: [] }],
+    request: {
+      params: z.object({ listId: z.string() }),
+      body: {
+        content: {
+          'application/json': {
+            schema: z.object({
+              boardId: z.string(),
+              title: z.string().optional()
+            })
+          }
+        }
+      }
+    },
+    responses: { 200: { description: 'List duplicated successfully' } }
+  })
+}
