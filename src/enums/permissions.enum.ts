@@ -30,5 +30,9 @@ export enum Permissions {
     UPDATE_BOARD_MEMBER_ROLE = 'board:update_member_role',
     UPDATE_BOARD_SETTINGS = 'board:update_board_settings'
 
-
+    // list
+    CREATE_LIST = 'list:create',
+    READ_LIST = 'list:read',
+    UPDATE_LIST = 'list:update',
+    DELETE_LIST = 'list:delete',
 }
