@@ -52,6 +52,22 @@ class CardRepository {
       await AppDataSource.getRepository(Card).delete({ list: { id: listId } });
     }
   }
+
+  async findById(id: string) {
+    return await this.repo.findOne({
+        where: { id },
+        relations: ['list', 'list.board']
+    });
+}
+
+  async updateCard(id: string, data: any) {
+    await this.repo.update(id, data);
+    return this.repo.findOneBy({ id });
+}
+
+  async deleteCard(id: string) {
+    await this.repo.delete(id);
+}
 }
 
 export default new CardRepository();

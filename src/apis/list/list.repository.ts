@@ -9,7 +9,18 @@ class ListRepository {
   async findById(id: string) {
     return await this.repo.findOne({
       where: { id },
-      relations: ['board']
+      relations: ['board'],
+      select: {
+        id: true,
+        title: true,
+        position: true,
+        isArchived: true,
+        createdAt: true,
+        updatedAt: true,
+        board: {
+          id: true,
+        },
+      },
     });
   }
 
@@ -24,7 +35,7 @@ class ListRepository {
 
       const lastList = await manager.findOne(List, {
         where: { board: { id: data.boardId } },
-        order: { position: 'DESC' }
+        order: { position: 'DESC' },
       });
 
       const lastPos = lastList && typeof lastList.position === 'number' ? lastList.position : -1;
@@ -33,7 +44,7 @@ class ListRepository {
       const newList = manager.create(List, {
         title: data.title,
         position: newPosition,
-        board: board
+        board: board,
       });
 
       return await manager.save(newList);
@@ -47,11 +58,32 @@ class ListRepository {
 
   async getListDetail(id: string) {
     return await this.repo.findOne({
-        where: { id },
-        relations: ['cards', 'board'], 
-        order: { cards: { position: 'ASC' } }
+      where: { id },
+      relations: ['cards', 'board'],
+      order: { cards: { position: 'ASC' } },
+      select: {
+        id: true,
+        title: true,
+        position: true,
+        isArchived: true,
+        createdAt: true,
+        updatedAt: true,
+        board: {
+          id: true,
+        },
+        cards: {
+            id: true,
+            title: true,
+            position: true,
+            coverUrl: true,
+            priority: true,
+            dueDate: true,
+            description: true,
+            isArchived: true
+        } as any
+      },
     });
-}
+  }
 
   async deleteList(id: string) {
     return await AppDataSource.transaction(async (manager) => {

@@ -7,7 +7,7 @@ import { CreateCardSchema } from './card.schema';
 const route = Router();
 
 route.post('/', verifyAccessToken, validateHandle(CreateCardSchema), cardController.createCard);
-
 route.get('/list/:listId', verifyAccessToken, cardController.getAllCardsInList);
-
+route.patch('/:id', verifyAccessToken, cardController.updateCard);
+route.delete('/:id', verifyAccessToken, cardController.deleteCard);
 export default route;

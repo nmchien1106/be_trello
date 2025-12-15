@@ -5,8 +5,13 @@ import { userRegistry } from '@/apis/users/users.swagger'
 import { workspaceRegister } from '@/apis/workspace/workspace.swagger'
 import { boardRegistry } from '@/apis/board/board.swagger'
 import { roleRegistry } from '@/apis/role/role.swagger'
+import { listRegistry, listsRegisterPath } from '@/apis/list/list.swagger'
+import { cardRegistry, cardsRegisterPath } from '@/apis/card/card.swagger'
+
 export function generateOpenAPIDocument() {
-    const registry = new OpenAPIRegistry([userRegistry, authRegistry, roleRegistry, workspaceRegister, boardRegistry])
+    listsRegisterPath()
+    cardsRegisterPath()
+    const registry = new OpenAPIRegistry([userRegistry, authRegistry, roleRegistry, workspaceRegister, boardRegistry, listRegistry, cardRegistry])
 
     registry.registerComponent('securitySchemes', 'bearerAuth', {
         type: 'http',

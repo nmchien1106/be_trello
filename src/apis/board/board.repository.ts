@@ -270,17 +270,17 @@ class BoardRepository {
     async hasPermission(userId: string, boardId: string, requiredPermission: string): Promise<boolean> {
         const board = await this.repo.findOne({ where: { id: boardId }, relations: ['owner'] });
         if (!board) return false;
-
+        
         if (board.owner?.id === userId) return true;
-
         const member = await this.boardMembersRepository.findOne({
-            where: { board: { id: boardId }, user: { id: userId } },
-            relations: ['role', 'role.permissions']
+          where: { board: { id: boardId }, user: { id: userId } },
+          relations: ['role', 'role.permissions']
         });
-
+      
         if (!member || !member.role) return false;
 
-        return member.role.permissions.some(p => p.name === requiredPermission);
+        const perms = member.role.permissions ?? [];
+        return perms.some((p: any) => p.name === requiredPermission);
+      }
     }
-}
 export default new BoardRepository()
