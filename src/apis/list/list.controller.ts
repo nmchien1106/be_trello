@@ -23,6 +23,7 @@ class ListController {
 
             const beforeList: List | null = beforeId ? await listRepository.findListById(beforeId) : null
             const afterList: List | null = afterId ? await listRepository.findListById(afterId) : null
+            console.log({ beforeList, afterList })
 
             const beforePosition: number | null = beforeList ? beforeList.position : null
             const afterPosition: number | null = afterList ? afterList.position : null
@@ -76,8 +77,13 @@ class ListController {
             const listId = req.params.listId
             const { boardId, title } = req.body
 
-            const newList = await listRepository.duplicateList(boardId)
+            const newList = await listRepository.duplicateList(listId, boardId, title)
+            if (!newList) {
+                return res.status(Status.NOT_FOUND).json(successResponse(Status.NOT_FOUND, 'List not found'))
+            }
+            return res.status(Status.OK).json(successResponse(Status.OK, 'List duplicated successfully', newList))
         } catch (error) {
+            console.log(error)
             next(error)
         }
     }

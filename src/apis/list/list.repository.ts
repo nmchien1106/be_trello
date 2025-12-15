@@ -22,35 +22,24 @@ class ListRepository {
         return list ? list.position : null
     }
 
-    duplicateList = async (sourceListId: string): Promise<List> => {
-        // Create a new list entity with the provided data
+    duplicateList = async (sourceListId: string, boardId: string, title: string): Promise<List> => {
         const sourceList = await this.repository.findOne({
             where: {id: sourceListId},
-            relations: ['cards']
+            relations: ['boardId']
         })
 
         if (!sourceList) {
             throw new Error('Source list not found')
         }
-
+        console.log('Source List:', sourceList)
         const highestPosition = await this.getHighestPositionInBoard(sourceList.boardId.id)
         const newPosition = highestPosition !== null ? highestPosition + 1 : 1
 
         const newList = this.repository.create({
-            title: sourceList.title,
+            title: title || sourceList.title,
             position: newPosition,
-            boardId: { id: sourceList.boardId.id }
+            boardId: { id: boardId}
         })
-
-        const newCards = sourceList.cards.map(card => {
-            return {
-                ...card,
-                id: undefined,
-                list: newList
-            }
-        })
-
-        newList.cards = newCards
 
         return await this.repository.save(newList)
 

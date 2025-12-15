@@ -29,7 +29,6 @@ export class Board extends DateTimeEntity {
     @Column({ type: 'boolean', default: false })
     public isTemplate: boolean
 
-    // TODO : owner relation
     @ManyToOne(() => User, (user) => user.boards, { onDelete: 'SET NULL' })
     @JoinColumn({ name: 'ownerId' })
     public owner: User
@@ -44,6 +43,6 @@ export class Board extends DateTimeEntity {
     @JoinColumn({ name: 'workspaceId' })
     public workspace: Workspace
 
-    @OneToMany(() => List, (list) => list.board)
+    @OneToMany(() => List, (list) => list.boardId)
     lists: List[]
 }
