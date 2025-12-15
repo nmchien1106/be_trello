@@ -23,11 +23,7 @@ boardsRegisterPath()
 route.get('/public', boardController.getPublicBoards)
 
 //Get Template
-route.get(
-    '/template',
-    verifyAccessToken,
-    boardController.getAllTemplates
-)
+route.get('/template', verifyAccessToken, boardController.getAllTemplates)
 
 route.get('/join', verifyAccessToken, validateHandle(acceptInviteSchema), boardController.joinBoard)
 
@@ -151,18 +147,13 @@ route.get(
     boardController.getAllMembers
 )
 
-
 //Get Template By Id
-route.get(
-    '/template/:id',
-    verifyAccessToken,
-    boardController.getTemplateById
-)
+route.get('/template/:id', verifyAccessToken, boardController.getTemplateById)
 
 route.post(
-    '/template/:id',
+    '/template/:templateId',
     verifyAccessToken,
-    // authorizePermissionWorkspace(Permissions.UPDATE_WORKSPACE),
+    authorizePermissionWorkspace(Permissions.UPDATE_WORKSPACE),
     boardController.createBoardFromTemplate
 )
 

@@ -190,7 +190,7 @@ export const boardsRegisterPath = () => {
             }
         },
         summary: 'Update board by id',
-        security: [{ bearerAuth: [] }], // Sửa BearerAuth thành bearerAuth cho đúng chuẩn
+        security: [{ bearerAuth: [] }],
         tags: ['Board'],
         responses: {
             200: { description: 'Board updated successfully' }
@@ -366,7 +366,7 @@ export const boardsRegisterPath = () => {
                 description: 'Templates fetched successfully'
             }
         }
-    });
+    })
 
     //Get Template By Id
     boardRegistry.registerPath({
@@ -377,7 +377,7 @@ export const boardsRegisterPath = () => {
         security: [{ bearerAuth: [] }],
         request: {
             params: z.object({
-                id: z.string().uuid().describe("Template ID")
+                id: z.string().uuid().describe('Template ID')
             })
         },
         responses: {
@@ -388,9 +388,9 @@ export const boardsRegisterPath = () => {
                 description: 'Template not found'
             }
         }
-    });
+    })
 
-   // Create Board From Template
+    // Create Board From Template
     boardRegistry.registerPath({
         method: 'post',
         path: '/api/boards/template/{id}',
@@ -429,7 +429,5 @@ export const boardsRegisterPath = () => {
             404: { description: 'Template not found' },
             500: { description: 'Failed to create board from template' }
         }
-    });
-
-
+    })
 }

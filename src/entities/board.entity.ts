@@ -26,7 +26,7 @@ export class Board extends DateTimeEntity {
     @Column({ type: 'varchar', length: 255, nullable: true })
     public backgroundPath: string
 
-    @Column({ type: 'boolean', default: false})
+    @Column({ type: 'boolean', default: false })
     public isTemplate: boolean
 
     // TODO : owner relation
