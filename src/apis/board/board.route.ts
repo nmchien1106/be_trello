@@ -149,10 +149,6 @@ route.get(
     boardController.getAllMembers
 )
 
-//Get Template By Id
-route.get('/template/:id', verifyAccessToken, boardController.getTemplateById)
-
-
 //Create board from template
 route.post(
     '/template/:templateId',
@@ -161,12 +157,6 @@ route.post(
     boardController.createBoardFromTemplate
 )
 
-//Update board setting
-route.patch(
-    '/:id/settings',
-    verifyAccessToken,
-    authorizeBoardPermission(Permissions.UPDATE_BOARD_SETTINGS),
-    boardController.updateBoardSettings
-)
+
 
 export default route

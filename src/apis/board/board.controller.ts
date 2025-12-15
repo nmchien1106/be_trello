@@ -482,26 +482,6 @@ class BoardController {
         }
     }
 
-    getTemplateById = async (req: AuthRequest, res: Response, next: NextFunction) => {
-        try {
-            const { id } = req.params
-
-            const template = await BoardRepository.getTemplateDetail(id)
-
-            if (!template) {
-                return next(errorResponse(Status.NOT_FOUND, 'Template not found'))
-            }
-
-            return res.status(Status.OK).json({
-                status: Status.OK,
-                message: 'Template fetched successfully',
-                data: template
-            })
-        } catch (err) {
-            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to get template', err))
-        }
-    }
-
     createBoardFromTemplate = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const { title, workspaceId } = req.body
@@ -604,7 +584,7 @@ class BoardController {
                 status: Status.OK,
                 message: 'Board created from template successfully',
                 data: {
-                     id: savedBoard!.id,
+                    id: savedBoard!.id,
                     title: savedBoard!.title,
                     description: savedBoard!.description,
                     permissionLevel: savedBoard!.permissionLevel,
@@ -616,20 +596,6 @@ class BoardController {
                     workspaceId,
                     createdAt: savedBoard!.createdAt,
                     updatedAt: savedBoard!.updatedAt,
-                    lists: savedLists.map((list) => ({
-                        id: list.id,
-                        title: list.title,
-                        position: list.position,
-                        cards: (cardsByListId.get(list.id) || []).map(card => ({
-                            id: card.id,
-                            title: card.title,
-                            description: card.description,
-                            position: card.position,
-                            priority: card.priority,
-                            dueDate: card.dueDate
-                        }))
-                        }))
-
                 }
             })
         } catch (err) {
@@ -638,33 +604,7 @@ class BoardController {
         }
     }
 
-    updateBoardSettings = async(req: Request, res: Response, next: NextFunction) => {
-        try{
-            const {id} = req.params
-            const { permissionLevel } = req.body
-            const userId = req.user!.id
 
-            const board = await BoardRepository.getBoardById(id)
-            if(!board){
-                return next(errorResponse(Status.NOT_FOUND, 'Board not found'))
-            }
-
-            if(!['private', 'workspace', 'public'].includes(permissionLevel)){
-                return next(errorResponse(400, 'Invalid permissionLevel'))
-            }
-            board.permissionLevel = permissionLevel
-            await boardRepo.save(board)
-            return res.status(200).json({
-                message: 'Board settings updated successfully',
-                data:{
-                    id: board.id,
-                    permissionLevel: board.permissionLevel
-                }
-            })
-        }catch(err){
-            next(err)
-        }
-    }
 }
 
 export default new BoardController()

@@ -14,8 +14,7 @@ import {
     BoardMemberResponseSchema,
     CreateBoardFromTemplateParamsSchema,
     CreateBoardFromTemplateQuerySchema,
-    CreateBoardFromTemplateBodySchema,
-    UpdateBoardSettingsSchema
+    CreateBoardFromTemplateBodySchema
 } from './board.schema'
 extendZodWithOpenApi(z)
 
@@ -445,28 +444,6 @@ export const boardsRegisterPath = () => {
         }
     })
 
-    //Get Template By Id
-    boardRegistry.registerPath({
-        method: 'get',
-        path: '/api/boards/template/{id}',
-        tags: ['Board'],
-        summary: 'Get template by id',
-        security: [{ bearerAuth: [] }],
-        request: {
-            params: z.object({
-                id: z.string().uuid().describe('Template ID')
-            })
-        },
-        responses: {
-            200: {
-                description: 'Template fetched successfully'
-            },
-            404: {
-                description: 'Template not found'
-            }
-        }
-    })
-
     // Create Board From Template
     boardRegistry.registerPath({
         method: 'post',
@@ -505,55 +482,6 @@ export const boardsRegisterPath = () => {
             401: { description: 'Unauthorization' },
             404: { description: 'Template not found' },
             500: { description: 'Failed to create board from template' }
-        }
-    })
-
-    // Update Board Settings
-    boardRegistry.registerPath({
-        method: 'patch',
-        path: '/api/boards/{id}/settings',
-        tags: ['Board'],
-        summary: 'Update board settings',
-        description: 'Update board visibility (permissionLevel). Only board owner or workspace admin can update.',
-        security: [{ bearerAuth: [] }],
-        request: {
-            params: z.object({
-                boardId: z.string().uuid().openapi({
-                    example: 'bb7a10e2-df5e-4974-8a5c-df541cdc2a17'
-                })
-            }),
-            body: {
-                content: {
-                    'application/json': {
-                        schema: UpdateBoardSettingsSchema
-                    }
-                }
-            }
-        },
-        responses: {
-            200: {
-                description: 'Board settings updated successfully',
-                content: {
-                    'application/json': {
-                        schema: z.object({
-                            message: z.string().openapi({
-                                example: 'Board settings updated successfully'
-                            }),
-                            data: z.object({
-                                id: z.string().uuid().openapi({
-                                    example: 'bb7a10e2-df5e-4974-8a5c-df541cdc2a17'
-                                }),
-                                permissionLevel: z.enum(['private', 'workspace', 'public']).openapi({
-                                    example: 'public'
-                                })
-                            })
-                        })
-                    }
-                }
-            },
-            400: { description: 'Invalid permissionLevel' },
-            403: { description: 'Permission denied' },
-            404: { description: 'Board not found' }
         }
     })
 

@@ -86,7 +86,3 @@ export const CreateBoardFromTemplateBodySchema = z.object({
 })
 
 
-export const UpdateBoardSettingsSchema = z.object({
-    permissionLevel: z.enum(['private', 'workspace', 'public']).openapi({example: 'public'})
-})
-
