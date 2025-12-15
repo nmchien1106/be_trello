@@ -85,4 +85,18 @@ export const CreateBoardFromTemplateBodySchema = z.object({
     workspaceId: z.string().uuid().describe('Workspace ID where the board will be created')
 })
 
-
+export const CreateTemplateSchema = z
+    .object({
+        title: z.string().min(1).max(255),
+        description: z.string().optional(),
+        backgroundUrl: z.string().optional(),
+        workspaceId: z.string().uuid('Workspace ID is required'),
+    })
+    .openapi({
+        example: {
+            title: 'New Project',
+            description: 'Project description',
+            workspaceId: 'cc7a10e2-df5e-4974-8a5c-df541cdc2a17',
+            backgroundUrl: 'https://example.com/bg.jpg'
+        }
+    })

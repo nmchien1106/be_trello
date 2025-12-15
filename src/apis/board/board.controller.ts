@@ -482,6 +482,35 @@ class BoardController {
         }
     }
 
+    createBoardTemplate = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            if (!req.user || !req.user.id) {
+                return next(errorResponse(Status.UNAUTHORIZED, 'User information not found'))
+            }
+
+            const userId = req.user.id
+            const data = req.body
+
+            const board = await boardRepo.save(
+                boardRepo.create({
+                    title: data.title,
+                    description: data.description,
+                    permissionLevel: 'public',
+                    backgroundPath: data.backgroundPath,
+                    backgroundPublicId: data.backgroundPublicId,
+                    owner: { id: userId },
+                    isTemplate: true
+                })
+            )
+
+            return res.status(Status.CREATED).json(
+                successResponse(Status.CREATED, 'Board template created successfully', board)
+            )
+        } catch (err) {
+            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to create board template', err))
+        }
+    }
+
     createBoardFromTemplate = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const { title, workspaceId } = req.body

@@ -14,7 +14,8 @@ import {
     BoardMemberResponseSchema,
     CreateBoardFromTemplateParamsSchema,
     CreateBoardFromTemplateQuerySchema,
-    CreateBoardFromTemplateBodySchema
+    CreateBoardFromTemplateBodySchema,
+    CreateTemplateSchema
 } from './board.schema'
 extendZodWithOpenApi(z)
 
@@ -482,6 +483,24 @@ export const boardsRegisterPath = () => {
             401: { description: 'Unauthorization' },
             404: { description: 'Template not found' },
             500: { description: 'Failed to create board from template' }
+        }
+    })
+
+    //Create template
+    // Create Board
+    boardRegistry.registerPath({
+        method: 'post',
+        path: '/api/boards/template',
+        tags: ['Board'],
+        summary: 'Create new template',
+        security: [{ bearerAuth: [] }],
+        request: {
+            body: {
+                content: { 'application/json': { schema: CreateTemplateSchema } }
+            }
+        },
+        responses: {
+            ...createApiResponse(BoardResponseSchema, 'Created', Status.CREATED)
         }
     })
 

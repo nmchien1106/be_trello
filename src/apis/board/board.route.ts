@@ -12,7 +12,8 @@ import {
     acceptInviteSchema,
     joinViaShareLinkSchema,
     revokeShareLinkSchema,
-    UpdateBoardRequest
+    UpdateBoardRequest,
+    CreateTemplateSchema
 } from './board.schema'
 
 const route = Router()
@@ -157,6 +158,14 @@ route.post(
     boardController.createBoardFromTemplate
 )
 
+//Create Template
+route.post(
+    '/template',
+    verifyAccessToken,
+    authorizePermissionWorkspace(Permissions.UPDATE_WORKSPACE),
+    validateHandle(CreateTemplateSchema),
+    boardController.createBoardTemplate
+)
 
 
 export default route
