@@ -617,6 +617,34 @@ class BoardController {
             next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to create board from template', err))
         }
     }
+
+    updateBoardSettings = async(req: Request, res: Response, next: NextFunction) => {
+        try{
+            const {id} = req.params
+            const { permissionLevel } = req.body
+            const userId = req.user!.id
+
+            const board = await BoardRepository.getBoardById(id)
+            if(!board){
+                return next(errorResponse(Status.NOT_FOUND, 'Board not found'))
+            }
+
+            if(!['private', 'workspace', 'public'].includes(permissionLevel)){
+                return next(errorResponse(400, 'Invalid permissionLevel'))
+            }
+            board.permissionLevel = permissionLevel
+            await boardRepo.save(board)
+            return res.status(200).json({
+                message: 'Board settings updated successfully',
+                data:{
+                    id: board.id,
+                    permissionLevel: board.permissionLevel
+                }
+            })
+        }catch(err){
+            next(err)
+        }
+    }
 }
 
 export default new BoardController()

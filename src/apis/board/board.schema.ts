@@ -82,3 +82,9 @@ export const CreateBoardFromTemplateBodySchema = z.object({
     title: z.string().min(1).describe('Title of the new board'),
     workspaceId: z.string().uuid().describe('Workspace ID where the board will be created')
 })
+
+
+export const UpdateBoardSettingsSchema = z.object({
+    permissionLevel: z.enum(['private', 'workspace', 'public']).openapi({example: 'public'})
+})
+

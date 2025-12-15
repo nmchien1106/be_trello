@@ -42,7 +42,8 @@ export class seedAuthorization {
             { name: 'board:revoke_share_link', description: 'Revoke share link' },
             { name: 'board:manage', description: 'Full board administrators' },
             { name: 'board:read_members', description: 'Read board members' },
-            { name: 'board:update_member_role', description: 'Update member role' }
+            { name: 'board:update_member_role', description: 'Update member role' },
+            { name: 'board:update_board_settings', description: 'Update board settings'}
         ]
 
         // save permissions
@@ -71,7 +72,7 @@ export class seedAuthorization {
                 name: 'workspace_admin',
                 description: 'Workspace administrator with elevated access',
                 permissions: createdPermissions.filter(
-                    (perm) => perm.name.includes('workspace:') || perm.name === 'board:create'
+                    (perm) => perm.name.includes('workspace:') || perm.name === 'board:create' || perm.name === 'board:update_board_settings'
                 )
             },
             {
