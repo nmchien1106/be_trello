@@ -61,7 +61,7 @@ class AuthController {
                 return next(errorResponse(Status.BAD_REQUEST, 'Invalid email'))
             }
 
-            const isPasswordValid = await bcrypt.compare(password, user.password)
+            const isPasswordValid = bcrypt.compare(password, user.password)
             if (!isPasswordValid) {
                 return next(errorResponse(Status.BAD_REQUEST, 'Email or password is incorrect!'))
             }
