@@ -177,7 +177,7 @@ class BoardRepository {
     async getPublicBoards() {
         return this.repo.find({
             where: { permissionLevel: 'public', isArchived: false },
-            select: ['id', 'title', 'description', 'backgroundPublicId', 'createdAt']
+            select: ['id', 'title', 'description','permissionLevel', 'backgroundPublicId', 'createdAt']
         })
     }
 

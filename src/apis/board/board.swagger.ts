@@ -22,6 +22,82 @@ extendZodWithOpenApi(z)
 export const boardRegistry = new OpenAPIRegistry()
 
 export const boardsRegisterPath = () => {
+
+    // Create Board
+    boardRegistry.registerPath({
+        method: 'post',
+        path: '/api/boards',
+        tags: ['Board'],
+        summary: 'Create new board',
+        security: [{ bearerAuth: [] }],
+        request: {
+            body: {
+                content: { 'application/json': { schema: CreateBoardSchema } }
+            }
+        },
+        responses: {
+            ...createApiResponse(BoardResponseSchema, 'Created', Status.CREATED)
+        }
+    })
+
+    // Get Public Boards
+    boardRegistry.registerPath({
+        method: 'get',
+        path: '/api/boards/public',
+        tags: ['Board'],
+        summary: 'Get public boards',
+        responses: {
+            ...createApiResponse(z.array(BoardResponseSchema), 'Success', Status.OK)
+        }
+    })
+
+    // Get All Boards
+    boardRegistry.registerPath({
+        method: 'get',
+        path: '/api/boards',
+        tags: ['Board'],
+        summary: 'Get all accessible boards',
+        security: [{ bearerAuth: [] }],
+        responses: {
+            ...createApiResponse(z.array(BoardResponseSchema), 'Success', Status.OK)
+        }
+    })
+
+    // Get Board By ID
+    boardRegistry.registerPath({
+        method: 'get',
+        path: '/api/boards/{id}',
+        tags: ['Board'],
+        summary: 'Get board detail',
+        security: [{ bearerAuth: [] }],
+        request: { params: z.object({ id: z.string().uuid() }) },
+        responses: {
+            ...createApiResponse(BoardResponseSchema, 'Success', Status.OK),
+            403: { description: 'Permission denied' },
+            404: { description: 'Not found' }
+        }
+    })
+
+
+    //Get member
+    boardRegistry.registerPath({
+        method: 'get',
+        path: '/api/boards/{id}/members',
+        tags: ['Board'],
+        summary: 'Get all members of a board',
+        security: [{ bearerAuth: [] }],
+        request: {
+            params: z.object({
+                id: z.string().uuid()
+            })
+        },
+        responses: {
+            ...createApiResponse(BoardMemberResponseSchema, 'Get board members successfully', Status.OK),
+            403: { description: 'Permission denied' },
+            404: { description: 'Board not found' }
+        }
+    })
+
     // Invite user by email
     boardRegistry.registerPath({
         method: 'post',

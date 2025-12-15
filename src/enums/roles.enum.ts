@@ -8,5 +8,6 @@ export enum Roles {
     LIST_ADMIN = 'list_admin',
     LIST_MEMBER = 'list_member',
     CARD_ADMIN = 'card_admin',
-    CARD_MEMBER = 'card_member'
+    CARD_MEMBER = 'card_member',
+    BOARD_VIEWER = 'board_viewer'
 }

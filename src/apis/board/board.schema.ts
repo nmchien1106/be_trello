@@ -22,8 +22,10 @@ export const CreateBoardSchema = z
     })
 
 export const inviteByEmailSchema = z.object({
-    email: z.string().email('Invalid email address').optional()
+    email: z.string().email('Invalid email address'),
+    role: z.enum(['board_member', 'board_viewer'])
 })
+
 
 export const acceptInviteSchema = z.object({
     token: z.string()
