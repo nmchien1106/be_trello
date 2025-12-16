@@ -24,7 +24,7 @@ class ListRepository {
     });
   }
 
-  async createList(data: { title: string; boardId: string }) {
+  async createList(data: { title: string; boardId: string }, userId: string) {
     return await AppDataSource.transaction(async (manager) => {
       const board = await manager.findOne(Board, { where: { id: data.boardId } });
       if (!board) {
@@ -32,21 +32,23 @@ class ListRepository {
         e.status = 404;
         throw e;
       }
-
+  
       const lastList = await manager.findOne(List, {
         where: { board: { id: data.boardId } },
         order: { position: 'DESC' },
+        lock: { mode: 'pessimistic_write' }
       });
-
+  
       const lastPos = lastList && typeof lastList.position === 'number' ? lastList.position : -1;
       const newPosition = lastPos + 1;
-
+  
       const newList = manager.create(List, {
         title: data.title,
         position: newPosition,
         board: board,
+        createdBy: userId ? ({ id: userId } as any) : undefined
       });
-
+  
       return await manager.save(newList);
     });
   }
