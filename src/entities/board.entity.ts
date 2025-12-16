@@ -43,6 +43,6 @@ export class Board extends DateTimeEntity {
     @JoinColumn({ name: 'workspaceId' })
     public workspace: Workspace
 
-    @OneToMany(() => List, (list) => list.boardId)
+    @OneToMany(() => List, (list) => list.board)
     lists: List[]
 }

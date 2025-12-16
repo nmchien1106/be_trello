@@ -7,13 +7,13 @@ import { Status } from '@/types/response'
 import { successResponse } from '@/utils/response'
 import { List } from '@/entities/list.entity'
 import BoardRepository from './../board/board.repository'
-
+import { Config } from '@/config/config'
+import { checkBoardMember } from '@/middleware/authorization'
 
 class ListController {
     // POST /lists/:listId/reorder
     reorderLists = async (req: Request, res: Response, next: NextFunction) => {
         try {
-
             const list = await listRepository.findListById(req.params.listId)
             if (!list) {
                 return res.status(Status.NOT_FOUND).json(successResponse(Status.NOT_FOUND, 'List not found'))
@@ -23,12 +23,11 @@ class ListController {
 
             const beforeList: List | null = beforeId ? await listRepository.findListById(beforeId) : null
             const afterList: List | null = afterId ? await listRepository.findListById(afterId) : null
-            console.log({ beforeList, afterList })
 
             const beforePosition: number | null = beforeList ? beforeList.position : null
             const afterPosition: number | null = afterList ? afterList.position : null
 
-            if (beforePosition > afterPosition) {
+            if (beforePosition !== null && afterPosition !== null && beforePosition > afterPosition) {
                 return res.status(Status.BAD_REQUEST).json(successResponse(Status.BAD_REQUEST, 'Invalid positions'))
             }
 
@@ -58,14 +57,24 @@ class ListController {
             if (!targetBoard) {
                 return res.status(Status.NOT_FOUND).json(successResponse(Status.NOT_FOUND, 'Target board not found'))
             }
-            if (list.boardId === boardId) {
-                return res.status(Status.BAD_REQUEST).json(successResponse(Status.BAD_REQUEST, 'List is already in the target board'))
+
+            const hasRole = await checkBoardMember(['board_admin', 'board_member'], boardId, req.user?.id as string)
+            const hashRoleSource = await checkBoardMember(['board_admin', 'board_member'], list.boardId, req.user?.id as string)
+            if (!hasRole || !hashRoleSource) {
+                return res.status(Status.FORBIDDEN).json(successResponse(Status.FORBIDDEN, 'Permission denied'))
             }
 
-            await listRepository.updateList(listId, { boardId: boardId })
+            if (list.boardId === boardId) {
+                return res.status(Status.BAD_REQUEST)
+                    .json(successResponse(Status.BAD_REQUEST, 'List is already in the target board'))
+            }
+
+            const highestPosition = await listRepository.getHighestPositionInBoard(boardId)
+            const position = highestPosition !== null ? highestPosition + Config.defaultGap : Config.defaultGap
+
+            await listRepository.updateList(listId, { boardId, position  })
 
             return res.status(Status.OK).json(successResponse(Status.OK, 'List moved successfully'))
-
         } catch (error) {
             next(error)
         }
@@ -77,13 +86,23 @@ class ListController {
             const listId = req.params.listId
             const { boardId, title } = req.body
 
-            const newList = await listRepository.duplicateList(listId, boardId, title)
-            if (!newList) {
+            const sourceList = await listRepository.findListById(listId)
+
+            if (!sourceList) {
                 return res.status(Status.NOT_FOUND).json(successResponse(Status.NOT_FOUND, 'List not found'))
             }
+
+            if (sourceList.boardId !== boardId) {
+                return res
+                    .status(Status.BAD_REQUEST)
+                    .json(successResponse(Status.BAD_REQUEST, 'Failed to duplicate list to the target board'))
+            }
+
+            const newList = await listRepository.duplicateList(listId, boardId, title)
+            console.log(newList.board)
+
             return res.status(Status.OK).json(successResponse(Status.OK, 'List duplicated successfully', newList))
         } catch (error) {
-            console.log(error)
             next(error)
         }
     }
