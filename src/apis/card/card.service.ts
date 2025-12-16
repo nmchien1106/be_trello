@@ -1,9 +1,12 @@
+import AppDataSource from '@/config/typeorm.config';
 import CardRepository from './card.repository';
 import ListRepository from '../list/list.repository';
 import BoardRepository from '../board/board.repository';
 import { CreateCardDto } from './card.dto';
 import { Status } from '@/types/response';
 import { Permissions } from '@/enums/permissions.enum';
+import { Card } from '@/entities/card.entity';
+import { List } from '@/entities/list.entity';
 
 export class CardService {
   async createCard(data: CreateCardDto, userId: string) {
@@ -16,8 +19,51 @@ export class CardService {
     if (!hasPerm) throw { status: Status.FORBIDDEN, message: 'You do not have permission to create card' };
 
     try {
-      const card = await CardRepository.createCard(data as any);
-      return { status: Status.CREATED, message: 'Card created successfully', data: card };
+      return await AppDataSource.transaction(async (manager) => {
+        const lastCard = await manager.findOne(Card, {
+          where: { list: { id: data.listId } },
+          order: { position: 'DESC' },
+          lock: { mode: 'pessimistic_write' } 
+        });
+
+        const newPosition = lastCard ? lastCard.position + 1 : 1;
+
+        const newCard = manager.create(Card, {
+            title: data.title,
+            list: { id: data.listId } as any,
+            position: newPosition,
+            description: data.description || null,
+            coverUrl: data.coverUrl || null,
+            priority: data.priority || 'medium',
+            dueDate: data.dueDate ? new Date(data.dueDate) : null,
+            createdBy: { id: userId } as any
+          });
+
+        const savedCard = await manager.save(newCard);
+
+        return {
+            status: Status.CREATED,
+            message: 'Card created successfully',
+            data: {
+              id: savedCard.id,
+              title: savedCard.title,
+              description: savedCard.description,
+              position: savedCard.position,
+              coverUrl: savedCard.coverUrl,
+              priority: savedCard.priority,
+              dueDate: savedCard.dueDate,
+              createdAt: savedCard.createdAt,
+              updatedAt: savedCard.updatedAt,
+              isArchived: savedCard.isArchived,
+              list: {
+                id: data.listId
+              },
+              owner: {
+                id: userId
+              }
+            }
+          };            
+      });
     } catch (error: any) {
       throw { status: error.status || Status.BAD_REQUEST, message: error.message || 'Create card failed' };
     }
@@ -49,7 +95,7 @@ export class CardService {
         message: 'Card updated successfully',
         data: updated
     };
-}
+  }
 
   async deleteCard(cardId: string, userId: string) {
     const card = await CardRepository.findById(cardId);
@@ -63,8 +109,7 @@ export class CardService {
         status: Status.OK,
         message: 'Card deleted permanently'
     };
+  }
 }
-}
-
 
 export default new CardService();

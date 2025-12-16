@@ -38,6 +38,7 @@ class ListRepository {
       const board = await manager.findOne(Board, {
         where: { id: data.boardId }
       })
+
       if (!board) {
         const e: any = new Error('Board not found')
         e.status = 404

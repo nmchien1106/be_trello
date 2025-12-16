@@ -1,8 +1,9 @@
-import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
 import { DateTimeEntity } from './base/DateTimeEntity'
 import { CardMembers } from './card-member.entity'
 import { Comment } from './comment.entity'
 import { List } from './list.entity'
+import { User } from './user.entity'
 
 @Entity('cards')
 export class Card extends DateTimeEntity {
@@ -29,6 +30,10 @@ export class Card extends DateTimeEntity {
 
     @ManyToOne(() => List, (list) => list.cards, { onDelete: 'CASCADE' })
     list: List
+
+    @ManyToOne(() => User, { nullable: true })
+    @JoinColumn({ name: 'created_by' })
+    public createdBy?: User
 
     @OneToMany(() => CardMembers, (cardMember) => cardMember.card)
     public cardMembers: CardMembers[]

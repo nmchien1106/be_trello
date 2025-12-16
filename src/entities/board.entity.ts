@@ -23,6 +23,9 @@ export class Board extends DateTimeEntity {
     @Column({ type: 'boolean', default: false })
     public isArchived: boolean
 
+    @Column({ type: 'boolean', default: false })
+    public isClosed: boolean
+    
     @Column({ type: 'varchar', length: 255, nullable: true })
     public backgroundPath: string
 

@@ -3,6 +3,7 @@ import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColum
 import { DateTimeEntity } from './base/DateTimeEntity'
 import { Board } from './board.entity'
 import { Card } from './card.entity'
+import { User } from './user.entity'
 
 @Entity('lists')
 export class List extends DateTimeEntity {
@@ -21,6 +22,10 @@ export class List extends DateTimeEntity {
     @ManyToOne(() => Board, (board) => board.lists, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'boardId' })
     board: Board
+
+    @ManyToOne(() => User, { nullable: true })
+    @JoinColumn({ name: 'created_by' })
+    public createdBy?: User
 
     @OneToMany(() => Card, (card) => card.list)
     cards: Card[]

@@ -22,7 +22,6 @@ export class ListService {
     return list;
   }
 
-
   async createList(data: CreateListDto, userId: string) {
     this.validateUser(userId);
 
@@ -53,7 +52,20 @@ export class ListService {
         return {
           status: Status.CREATED,
           message: 'List created successfully',
-          data: savedList
+          data: {
+            id: savedList.id,
+            title: savedList.title,
+            position: savedList.position,
+            isArchived: savedList.isArchived,
+            createdAt: savedList.createdAt,
+            updatedAt: savedList.updatedAt,
+            board: {
+              id: savedList.board.id
+            },
+            owner: {
+              id: userId
+            }
+          }
         };
       });
     } catch (error: any) {
