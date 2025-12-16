@@ -29,7 +29,6 @@ class ListRepository {
             throw new Error('Source list not found')
         }
 
-
         let pos = Config.defaultGap
         const highestListPosition = await this.getHighestPositionInBoard(boardId)
         if (highestListPosition !== null) {
@@ -39,7 +38,7 @@ class ListRepository {
         const newList = this.repository.create({
             title: title || sourceList.title,
             position: pos,
-            boardId : sourceList.boardId
+            boardId: boardId
         })
         return await this.repository.save(newList)
     }

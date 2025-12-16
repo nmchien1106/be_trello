@@ -183,6 +183,10 @@ export const authorizeBoardPermission = (requiredPermission: string | string[]) 
                 where: { id: boardId }
             })
 
+            if (!board) {
+                return next(errorResponse(Status.NOT_FOUND, 'Board not found'))
+            }
+
             const membership = await boardMemberRepository.findOne({
                 where: {
                     board: { id: boardId },
@@ -224,14 +228,12 @@ export const checkBoardMember = async (requiredRoles: string | string[], boardId
         relations: ['role']
     })
         .then((membership) => {
-            console.log(membership)
             if (!membership) {
                 return false
             }
             const roles = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles]
 
             const hasRole = roles.some((role) => {
-                console.log('Checking role:', role, 'against membership role:', membership.role.name)
                 return membership.role.name === role
             })
             return hasRole

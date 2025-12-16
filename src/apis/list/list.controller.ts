@@ -59,20 +59,25 @@ class ListController {
             }
 
             const hasRole = await checkBoardMember(['board_admin', 'board_member'], boardId, req.user?.id as string)
-            const hashRoleSource = await checkBoardMember(['board_admin', 'board_member'], list.boardId, req.user?.id as string)
-            if (!hasRole || !hashRoleSource) {
+            const hasRoleSource = await checkBoardMember(
+                ['board_admin', 'board_member'],
+                list.boardId,
+                req.user?.id as string
+            )
+            if (!hasRole || !hasRoleSource) {
                 return res.status(Status.FORBIDDEN).json(successResponse(Status.FORBIDDEN, 'Permission denied'))
             }
 
             if (list.boardId === boardId) {
-                return res.status(Status.BAD_REQUEST)
+                return res
+                    .status(Status.BAD_REQUEST)
                     .json(successResponse(Status.BAD_REQUEST, 'List is already in the target board'))
             }
 
             const highestPosition = await listRepository.getHighestPositionInBoard(boardId)
             const position = highestPosition !== null ? highestPosition + Config.defaultGap : Config.defaultGap
 
-            await listRepository.updateList(listId, { boardId, position  })
+            await listRepository.updateList(listId, { boardId, position })
 
             return res.status(Status.OK).json(successResponse(Status.OK, 'List moved successfully'))
         } catch (error) {
@@ -99,7 +104,6 @@ class ListController {
             }
 
             const newList = await listRepository.duplicateList(listId, boardId, title)
-            console.log(newList.board)
 
             return res.status(Status.OK).json(successResponse(Status.OK, 'List duplicated successfully', newList))
         } catch (error) {

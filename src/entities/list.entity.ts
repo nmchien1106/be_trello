@@ -18,7 +18,7 @@ export class List extends DateTimeEntity {
     @Column({ type: 'uuid' })
     boardId: string
 
-    @ManyToOne(() => Board, (board) => board.lists)
+    @ManyToOne(() => Board, (board) => board.lists, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'boardId' })
     board: Board
 
