@@ -165,4 +165,11 @@ route.post(
     boardController.createBoardTemplate
 )
 
+route.get(
+    '/:boardId/lists',
+    // verifyAccessToken,
+    // authorizeBoardPermission(Permissions.READ_BOARD),
+    boardController.getAllListOnBoard
+)
+
 export default route

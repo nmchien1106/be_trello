@@ -6,7 +6,7 @@ import { BoardMembers } from '@/entities/board-member.entity'
 import { Workspace } from '@/entities/workspace.entity'
 import { WorkspaceMembers } from '@/entities/workspace-member.entity'
 import { Brackets, Repository } from 'typeorm'
-import { Permissions } from '@/enums/permissions.enum';
+import { Permissions } from '@/enums/permissions.enum'
 
 class BoardRepository {
     private repo = AppDataSource.getRepository(Board)
@@ -179,7 +179,7 @@ class BoardRepository {
     async getPublicBoards() {
         return this.repo.find({
             where: { permissionLevel: 'public', isArchived: false },
-            select: ['id', 'title', 'description','permissionLevel', 'backgroundPublicId', 'createdAt']
+            select: ['id', 'title', 'description', 'permissionLevel', 'backgroundPublicId', 'createdAt']
         })
     }
 
@@ -291,19 +291,28 @@ class BoardRepository {
 
     // Permission helper (kept from new branch)
     async hasPermission(userId: string, boardId: string, requiredPermission: string): Promise<boolean> {
-        const board = await this.repo.findOne({ where: { id: boardId }, relations: ['owner'] });
-        if (!board) return false;
-        
-        if (board.owner?.id === userId) return true;
-        const member = await this.boardMembersRepository.findOne({
-          where: { board: { id: boardId }, user: { id: userId } },
-          relations: ['role', 'role.permissions']
-        });
-      
-        if (!member || !member.role) return false;
+        const board = await this.repo.findOne({ where: { id: boardId }, relations: ['owner'] })
+        if (!board) return false
 
-        const perms = member.role.permissions ?? [];
-        return perms.some((p: any) => p.name === requiredPermission);
-      }
+        if (board.owner?.id === userId) return true
+        const member = await this.boardMembersRepository.findOne({
+            where: { board: { id: boardId }, user: { id: userId } },
+            relations: ['role', 'role.permissions']
+        })
+
+        if (!member || !member.role) return false
+
+        const perms = member.role.permissions ?? []
+        return perms.some((p: any) => p.name === requiredPermission)
     }
+
+    async getAllListsOnBoard(boardId: string) {
+        const board = await this.repo.findOne({
+            where: { id: boardId },
+            relations: ['lists', 'lists.cards']
+        })
+        return board?.lists || []
+    }
+}
+
 export default new BoardRepository()

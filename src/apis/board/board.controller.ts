@@ -24,6 +24,7 @@ import { WorkspaceMembers } from '@/entities/workspace-member.entity'
 import { CardMembers } from '@/entities/card-member.entity'
 import { Permissions } from '@/enums/permissions.enum'
 import { Auth } from 'typeorm'
+import boardRepository from './board.repository'
 
 const roleRepo = AppDataSource.getRepository(Role)
 const listRepo = AppDataSource.getRepository(List)
@@ -180,7 +181,7 @@ class BoardController {
 
         redisClient.setEx(
             `invite:${token}`,
-            7 * 24 * 60 * 60, 
+            7 * 24 * 60 * 60,
             JSON.stringify({ boardId, email, role })
         )
 
@@ -529,7 +530,7 @@ class BoardController {
 
             let savedBoard: Board
             let savedLists: List[] = []
-            let savedCards: Card[] = []   
+            let savedCards: Card[] = []
 
             await AppDataSource.transaction(async (manager) => {
                 savedBoard = await manager.save(
@@ -627,6 +628,16 @@ class BoardController {
         }
     }
 
+    getAllListOnBoard = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            const { boardId } = req.params
+            const lists = await boardRepository.getAllListsOnBoard(boardId)
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Lists fetched successfully', lists))
+        }
+        catch(err){
+            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to get lists on board', err))
+        }
+    }
 
 }
 

@@ -504,5 +504,23 @@ export const boardsRegisterPath = () => {
         }
     })
 
-    
+    boardRegistry.registerPath({
+        method: 'get',
+        path: '/api/boards/{boardId}/lists',
+        tags: ['Board'],
+        summary: 'Get all lists on a board',
+        security: [{ bearerAuth: [] }],
+        request: {
+            params: z.object({
+                boardId: z.string().uuid()
+            })
+        },
+        responses: {
+            ...createApiResponse(z.array(z.any()), 'Lists fetched successfully', Status.OK),
+            403: { description: 'Permission denied' },
+            404: { description: 'Board not found' }
+        }
+    })
+
+
 }
