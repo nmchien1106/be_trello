@@ -29,7 +29,6 @@ export class Board extends DateTimeEntity {
     @Column({ type: 'boolean', default: false })
     public isTemplate: boolean
 
-    // TODO : owner relation
     @ManyToOne(() => User, (user) => user.boards, { onDelete: 'SET NULL' })
     @JoinColumn({ name: 'ownerId' })
     public owner: User

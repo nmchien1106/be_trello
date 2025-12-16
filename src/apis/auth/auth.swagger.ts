@@ -16,6 +16,8 @@ import { z } from 'zod'
 import { Status, ApiResponseSchema } from '@/types/response'
 
 export const AuthRegisterPath = () => {
+
+    // Post /api/auth/login --> Login user
     authRegistry.registerPath({
         method: 'post',
         path: '/api/auth/login',

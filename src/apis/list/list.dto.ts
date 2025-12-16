@@ -1,9 +1,9 @@
 export class ListDto {
-    id: string,
-    title: string,
+    id: string
+    title: string
     position: number
     boardId: string
-    createdAt: Date,
+    createdAt: Date
     updatedAt: Date
 
     constructor(id: string, title: string, position: number, boardId: string, createdAt: Date, updatedAt: Date) {
@@ -17,7 +17,7 @@ export class ListDto {
 }
 
 export class ListDTOwithRelations {
-    id: string,
+    id: string
     title: string
 
     constructor(id: string, title: string) {

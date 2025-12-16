@@ -174,8 +174,19 @@ export const authorizeBoardPermission = (requiredPermission: string | string[]) 
             if (!user) {
                 return next(errorResponse(Status.NOT_FOUND, 'User not found'))
             }
-            const boardId = req.params.id
+            const boardId = req.params.id || req.body.boardId || req.query.boardId
+
             const boardMemberRepository = AppDataSource.getRepository(BoardMembers)
+            const boardRepository = AppDataSource.getRepository(Board)
+
+            const board = await boardRepository.findOne({
+                where: { id: boardId }
+            })
+
+            if (!board) {
+                return next(errorResponse(Status.NOT_FOUND, 'Board not found'))
+            }
+
             const membership = await boardMemberRepository.findOne({
                 where: {
                     board: { id: boardId },
@@ -183,6 +194,7 @@ export const authorizeBoardPermission = (requiredPermission: string | string[]) 
                 },
                 relations: ['role', 'role.permissions']
             })
+
             if (!membership) {
                 return next(errorResponse(Status.NOT_FOUND, 'Membership not found'))
             }
@@ -203,4 +215,30 @@ export const authorizeBoardPermission = (requiredPermission: string | string[]) 
             return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
         }
     }
+}
+
+export const checkBoardMember = async (requiredRoles: string | string[], boardId: string, userId: string) => {
+    const BoardMemberRepository = AppDataSource.getRepository(BoardMembers)
+
+    return BoardMemberRepository.findOne({
+        where: {
+            board: { id: boardId },
+            user: { id: userId }
+        },
+        relations: ['role']
+    })
+        .then((membership) => {
+            if (!membership) {
+                return false
+            }
+            const roles = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles]
+
+            const hasRole = roles.some((role) => {
+                return membership.role.name === role
+            })
+            return hasRole
+        })
+        .catch(() => {
+            return false
+        })
 }

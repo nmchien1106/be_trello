@@ -1,5 +1,6 @@
-import { List } from "@/entities/list.entity";
-import DataSource from "@/config/typeorm.config"
+import { List } from '@/entities/list.entity'
+import DataSource from '@/config/typeorm.config'
+import { Config } from '@/config/config'
 
 class ListRepository {
     private repository = DataSource.getRepository(List)
@@ -15,47 +16,32 @@ class ListRepository {
     }
 
     getHighestPositionInBoard = async (boardId: string): Promise<number | null> => {
-        const list =  await this.repository.findOne({
-            where: { boardId: { id: boardId } },
+        const list = await this.repository.findOne({
+            where: { boardId },
             order: { position: 'DESC' }
         })
         return list ? list.position : null
     }
 
-    duplicateList = async (sourceListId: string): Promise<List> => {
-        // Create a new list entity with the provided data
-        const sourceList = await this.repository.findOne({
-            where: {id: sourceListId},
-            relations: ['cards']
-        })
-
+    duplicateList = async (sourceListId: string, boardId: string, title: string): Promise<List> => {
+        const sourceList = await this.findListById(sourceListId)
         if (!sourceList) {
             throw new Error('Source list not found')
         }
 
-        const highestPosition = await this.getHighestPositionInBoard(sourceList.boardId.id)
-        const newPosition = highestPosition !== null ? highestPosition + 1 : 1
+        let pos = Config.defaultGap
+        const highestListPosition = await this.getHighestPositionInBoard(boardId)
+        if (highestListPosition !== null) {
+            pos = highestListPosition + Config.defaultGap
+        }
 
         const newList = this.repository.create({
-            title: sourceList.title,
-            position: newPosition,
-            boardId: { id: sourceList.boardId.id }
+            title: title || sourceList.title,
+            position: pos,
+            boardId: boardId
         })
-
-        const newCards = sourceList.cards.map(card => {
-            return {
-                ...card,
-                id: undefined,
-                list: newList
-            }
-        })
-
-        newList.cards = newCards
-
         return await this.repository.save(newList)
-
     }
 }
-
 
 export default new ListRepository()
