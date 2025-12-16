@@ -44,9 +44,7 @@ route.post(
     boardController.createBoard
 )
 
-route.get('/', 
-    verifyAccessToken, 
-    boardController.getAllBoards)
+route.get('/', verifyAccessToken, boardController.getAllBoards)
 
 // Invite via email
 route.post(
@@ -166,6 +164,5 @@ route.post(
     validateHandle(CreateTemplateSchema),
     boardController.createBoardTemplate
 )
-
 
 export default route

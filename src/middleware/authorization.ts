@@ -72,6 +72,7 @@ export const authorizePermissionWorkspace = (requiredPermission: string | string
 
             const workspaceId = req.params.id || req.body.workspaceId
             const workspaceMemberRepository = AppDataSource.getRepository(WorkspaceMembers)
+
             const membership = await workspaceMemberRepository.findOne({
                 where: {
                     workspace: { id: workspaceId },
