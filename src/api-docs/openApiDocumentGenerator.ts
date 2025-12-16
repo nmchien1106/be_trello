@@ -22,9 +22,19 @@ export function generateOpenAPIDocument() {
     cardRegistry
   ])
 
+  registry.registerComponent('securitySchemes', 'bearerAuth', {
+    type: 'http',
+    scheme: 'bearer',
+    bearerFormat: 'JWT'
+  })
+
   const generator = new OpenApiGeneratorV3(registry.definitions)
+
   return generator.generateDocument({
     openapi: '3.0.0',
-    info: { title: 'Swagger API', version: '1.0.0' }
+    info: {
+      title: 'Swagger API',
+      version: '1.0.0'
+    }
   })
 }
