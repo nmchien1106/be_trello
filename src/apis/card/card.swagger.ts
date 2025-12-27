@@ -41,4 +41,44 @@ export const cardsRegisterPath = () => {
             ...createApiResponse(z.array(z.any()), 'Get cards successfully', Status.OK)
         }
     })
+
+    cardRegistry.registerPath({
+        method: 'patch',
+        path: '/api/cards/{id}',
+        tags: ['Card'],
+        summary: 'Update a card',
+        security: [{ bearerAuth: [] }],
+        request: {
+            params: z.object({ id: z.string().uuid() }),
+            body: {
+                content: {
+                    'application/json': {
+                        schema: z.object({
+                            title: z.string().optional(),
+                            description: z.string().optional(),
+                            dueDate: z.string().optional(),
+                            isArchived: z.boolean().optional()
+                        })
+                    }
+                }
+            }
+        },
+        responses: {
+            ...createApiResponse(z.object({}), 'Card updated successfully', Status.OK)
+        }
+    })
+
+    cardRegistry.registerPath({
+        method: 'delete',
+        path: '/api/cards/{id}',
+        tags: ['Card'],
+        summary: 'Delete a card',
+        security: [{ bearerAuth: [] }],
+        request: {
+            params: z.object({ id: z.string().uuid() })
+        },
+        responses: {
+            ...createApiResponse(z.object({}), 'Card deleted successfully', Status.OK)
+        }
+    })
 }

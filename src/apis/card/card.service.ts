@@ -1,115 +1,65 @@
-import AppDataSource from '@/config/typeorm.config';
-import CardRepository from './card.repository';
-import ListRepository from '../list/list.repository';
-import BoardRepository from '../board/board.repository';
-import { CreateCardDto } from './card.dto';
-import { Status } from '@/types/response';
-import { Permissions } from '@/enums/permissions.enum';
-import { Card } from '@/entities/card.entity';
-import { List } from '@/entities/list.entity';
+import AppDataSource from '@/config/typeorm.config'
+import CardRepository from './card.repository'
+import ListRepository from '../list/list.repository'
+import BoardRepository from '../board/board.repository'
+import { CreateCardDto } from './card.dto'
+import { Status } from '@/types/response'
+import { Permissions } from '@/enums/permissions.enum'
+import { Card } from '@/entities/card.entity'
+import { List } from '@/entities/list.entity'
+import { Config } from '@/config/config'
 
 export class CardService {
-  async createCard(data: CreateCardDto, userId: string) {
-    if (!userId) throw { status: Status.UNAUTHORIZED, message: 'User info missing' };
+    async createCard(data: CreateCardDto, userId: string) {
+        if (!userId) throw { status: Status.UNAUTHORIZED, message: 'User info missing' }
 
-    const list = await ListRepository.findById(data.listId);
-    if (!list) throw { status: Status.NOT_FOUND, message: 'List not found' };
+        const list = await ListRepository.findById(data.listId)
+        if (!list) throw { status: Status.NOT_FOUND, message: 'List not found' }
 
-    const hasPerm = await BoardRepository.hasPermission(userId, list.board.id, Permissions.CREATE_CARD);
-    if (!hasPerm) throw { status: Status.FORBIDDEN, message: 'You do not have permission to create card' };
+        try {
+            return await AppDataSource.transaction(async (manager) => {
+                const lastCard = await manager.findOne(Card, {
+                    where: { list: { id: data.listId } },
+                    order: { position: 'DESC' },
+                    lock: { mode: 'pessimistic_write' }
+                })
 
-    try {
-      return await AppDataSource.transaction(async (manager) => {
-        const lastCard = await manager.findOne(Card, {
-          where: { list: { id: data.listId } },
-          order: { position: 'DESC' },
-          lock: { mode: 'pessimistic_write' } 
-        });
+                const newPosition = lastCard ? lastCard.position + Config.defaultGap : Config.defaultGap
 
-        const newPosition = lastCard ? lastCard.position + 1 : 1;
+                const newCard = manager.create(Card, {
+                    title: data.title,
+                    list: { id: data.listId } as any,
+                    position: newPosition,
+                    description: data.description || null,
+                    coverUrl: data.coverUrl || null,
+                    priority: data.priority || 'medium',
+                    dueDate: data.dueDate ? new Date(data.dueDate) : null
+                })
 
-        const newCard = manager.create(Card, {
-            title: data.title,
-            list: { id: data.listId } as any,
-            position: newPosition,
-            description: data.description || null,
-            coverUrl: data.coverUrl || null,
-            priority: data.priority || 'medium',
-            dueDate: data.dueDate ? new Date(data.dueDate) : null,
-            createdBy: { id: userId } as any
-          });
+                const savedCard = await manager.save(newCard)
 
-        const savedCard = await manager.save(newCard);
-
-        return {
-            status: Status.CREATED,
-            message: 'Card created successfully',
-            data: {
-              id: savedCard.id,
-              title: savedCard.title,
-              description: savedCard.description,
-              position: savedCard.position,
-              coverUrl: savedCard.coverUrl,
-              priority: savedCard.priority,
-              dueDate: savedCard.dueDate,
-              createdAt: savedCard.createdAt,
-              updatedAt: savedCard.updatedAt,
-              isArchived: savedCard.isArchived,
-              list: {
-                id: data.listId
-              },
-              owner: {
-                id: userId
-              }
-            }
-          };            
-      });
-    } catch (error: any) {
-      throw { status: error.status || Status.BAD_REQUEST, message: error.message || 'Create card failed' };
+                return savedCard
+            })
+        } catch (error: any) {
+            throw { status: error.status || Status.BAD_REQUEST, message: error.message || 'Create card failed' }
+        }
     }
-  }
 
-  async getCardsByList(listId: string, userId: string) {
-    if (!userId) throw { status: Status.UNAUTHORIZED, message: 'User info missing' };
+    async updateCard(cardId: string, data: any, userId: string) {
+        const card = await CardRepository.findById(cardId)
+        if (!card) throw { status: Status.NOT_FOUND, message: 'Card not found' }
 
-    const list = await ListRepository.findById(listId);
-    if (!list) throw { status: Status.NOT_FOUND, message: 'List not found' };
+        const updated = await CardRepository.updateCard(cardId, data)
+        return updated
+    }
 
-    const hasPerm = await BoardRepository.hasPermission(userId, list.board.id, Permissions.READ_BOARD);
-    if (!hasPerm) throw { status: Status.FORBIDDEN, message: 'Permission denied' };
+    async deleteCard(cardId: string, userId: string) {
+        const card = await CardRepository.findById(cardId)
+        if (!card) throw { status: Status.NOT_FOUND, message: 'Card not found' }
 
-    const cards = await CardRepository.getCardsByListId(listId);
-    return { status: Status.OK, message: 'Get cards successfully', data: cards };
-  }
-
-  async updateCard(cardId: string, data: any, userId: string) {
-    const card = await CardRepository.findById(cardId);
-    if (!card) throw { status: Status.NOT_FOUND, message: 'Card not found' };
-
-    const hasPerm = await BoardRepository.hasPermission(userId, card.list.board.id, Permissions.UPDATE_CARD);
-    if (!hasPerm) throw { status: Status.FORBIDDEN, message: 'Permission denied' };
-
-    const updated = await CardRepository.updateCard(cardId, data);
-    return {
-        status: Status.OK,
-        message: 'Card updated successfully',
-        data: updated
-    };
-  }
-
-  async deleteCard(cardId: string, userId: string) {
-    const card = await CardRepository.findById(cardId);
-    if (!card) throw { status: Status.NOT_FOUND, message: 'Card not found' };
-
-    const hasPerm = await BoardRepository.hasPermission(userId, card.list.board.id, Permissions.DELETE_CARD);
-    if (!hasPerm) throw { status: Status.FORBIDDEN, message: 'Only Admin can delete card' };
-
-    await CardRepository.deleteCard(cardId);
-    return {
-        status: Status.OK,
-        message: 'Card deleted permanently'
-    };
-  }
+        await CardRepository.deleteCard(cardId)
+        return;
+    }
 }
 
-export default new CardService();
+export default new CardService()

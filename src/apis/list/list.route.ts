@@ -21,8 +21,7 @@ router.patch('/:id', verifyAccessToken, validateHandle(UpdateListSchema), listCo
 router.patch('/:id/archive', verifyAccessToken, listController.archiveList)
 router.patch('/:id/unarchive', verifyAccessToken, listController.unarchiveList)
 router.delete('/:id', verifyAccessToken, listController.deleteList)
-
-// ===== ADVANCED (giữ từ dev) =====
+router.get('/:id/cards', verifyAccessToken, listController.getAllCardsInList)
 
 // Reorder lists
 router.post(

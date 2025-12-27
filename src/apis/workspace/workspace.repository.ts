@@ -1,5 +1,5 @@
+import { WorkspaceMembers } from '@/entities/workspace-member.entity';
 import { Workspace } from '../../entities/workspace.entity'
-import { WorkspaceMembers } from '../../entities/workspace-member.entity'
 import { User } from '@/entities/user.entity'
 import { Role } from '@/entities/role.entity'
 import AppDataSource from '@/config/typeorm.config'
@@ -11,11 +11,19 @@ export class WorkspaceRepository {
     private roleRepo = AppDataSource.getRepository(Role)
 
     async findAll(): Promise<Workspace[]> {
-        return this.workspaceRepo.find()
+        return this.workspaceRepo.find({ relations: ['workspaceMembers', 'workspaceMembers.user'] })
+    }
+
+    async findAllByUserId(userId: string): Promise<Workspace[]> {
+        const memberships = await this.workspaceMemberRepo.find({
+            where: { user: { id: userId }, status: 'accepted' },
+            relations: ['workspace']
+        })
+        return memberships.map(membership => membership.workspace)
     }
 
     async findById(id: string): Promise<Workspace | null> {
-        return this.workspaceRepo.findOne({ where: { id } })
+        return this.workspaceRepo.findOne({ where: { id }, relations : ["workspaceMembers"] })
     }
 
     async findWithMembersById(id: string): Promise<Workspace | null> {

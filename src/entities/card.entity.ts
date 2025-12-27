@@ -28,12 +28,12 @@ export class Card extends DateTimeEntity {
     @Column({ name: 'dueDate', type: 'date', nullable: true })
     dueDate: Date
 
+    @Column({ type: 'boolean', default: false })
+    isArchived: boolean
+
     @ManyToOne(() => List, (list) => list.cards, { onDelete: 'CASCADE' })
     list: List
 
-    @ManyToOne(() => User, { nullable: true })
-    @JoinColumn({ name: 'created_by' })
-    public createdBy?: User
 
     @OneToMany(() => CardMembers, (cardMember) => cardMember.card)
     public cardMembers: CardMembers[]

@@ -9,6 +9,8 @@ import { Status } from '@/types/response'
 import { AuthenticatedRequest, AuthRequest } from '@/types/auth-request'
 import { BoardMembers } from '@/entities/board-member.entity'
 import { Board } from '@/entities/board.entity'
+import { Card } from '@/entities/card.entity'
+import { List } from '@/entities/list.entity'
 
 export const loadUserPermission = async (userId: string) => {
     try {
@@ -178,15 +180,6 @@ export const authorizeBoardPermission = (requiredPermission: string | string[]) 
             const boardId = req.params.id || req.body.boardId || req.query.boardId
 
             const boardMemberRepository = AppDataSource.getRepository(BoardMembers)
-            const boardRepository = AppDataSource.getRepository(Board)
-
-            const board = await boardRepository.findOne({
-                where: { id: boardId }
-            })
-
-            if (!board) {
-                return next(errorResponse(Status.NOT_FOUND, 'Board not found'))
-            }
 
             const membership = await boardMemberRepository.findOne({
                 where: {
@@ -217,6 +210,106 @@ export const authorizeBoardPermission = (requiredPermission: string | string[]) 
         }
     }
 }
+
+export const authorizeListPermission = (requiredPermission: string | string[]) => {
+    return async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            const user = req.user
+
+            const listId = req.params.id || req.body.listId || req.query.listId
+
+            const listRepository = AppDataSource.getRepository(List)
+            const list = await listRepository.findOne({
+                where: { id: listId },
+                relations: ['board']
+            })
+
+            if (!list) {
+                return next(errorResponse(Status.NOT_FOUND, 'List not found'))
+            }
+
+            const boardId = list.board.id
+
+            const boardMemberRepository = AppDataSource.getRepository(BoardMembers)
+            const membership = await boardMemberRepository.findOne({
+                where: {
+                    board: { id: boardId },
+                    user: { id: user?.id }
+                },
+                relations: ['role', 'role.permissions']
+            })
+
+            if (!membership) {
+                return next(errorResponse(Status.NOT_FOUND, 'You are not a member of this board'))
+            }
+
+            const role = membership.role
+            if (!role) {
+                return next(errorResponse(Status.NOT_FOUND, 'Role not found'))
+            }
+
+            const permissions = role.permissions?.map((p) => p.name) ?? []
+            const requiredPermissions = Array.isArray(requiredPermission) ? requiredPermission : [requiredPermission]
+            const hasPermission = requiredPermissions.every((p) => permissions.includes(p))
+            if (!hasPermission) {
+                return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
+            }
+            next()
+        } catch (err) {
+            return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
+        }
+    }
+}
+
+export const authorizeCardPermission = (requiredPermission: string | string[]) => {
+    return async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            const user = req.user
+            const cardId = req.params.id || req.body.cardId || req.query.cardId
+
+            const cardRepository = AppDataSource.getRepository(Card)
+            const card = await cardRepository.findOne({
+                where: { id: cardId },
+                relations: ['list', 'list.board']
+            })
+            if (!card) {
+                return next(errorResponse(Status.NOT_FOUND, 'Card not found'))
+            }
+            const boardId = card.list.board.id
+
+            const boardMemberRepository = AppDataSource.getRepository(BoardMembers)
+            const membership = await boardMemberRepository.findOne({
+                where: {
+                    board: { id: boardId },
+                    user: { id: user?.id }
+                },
+                relations: ['role', 'role.permissions']
+            })
+
+            if (!membership) {
+                return next(errorResponse(Status.NOT_FOUND, 'You are not a member of this board'))
+            }
+
+            const role = membership.role
+            if (!role) {
+                return next(errorResponse(Status.NOT_FOUND, 'Role not found'))
+            }
+            const permissions = role.permissions?.map((p) => p.name) ?? []
+            const requiredPermissions = Array.isArray(requiredPermission) ? requiredPermission : [requiredPermission]
+            const hasPermission = requiredPermissions.every((p) => permissions.includes(p))
+            if (!hasPermission) {
+                return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
+            }
+            next()
+        }
+        catch (err) {
+            return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
+        }
+    }
+}
+
+
+
 
 export const checkBoardMember = async (requiredRoles: string | string[], boardId: string, userId: string) => {
     const BoardMemberRepository = AppDataSource.getRepository(BoardMembers)

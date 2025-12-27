@@ -7,22 +7,23 @@ import { AuthRequest } from '@/types/auth-request'
 import { Roles } from '@/enums/roles.enum'
 import { User } from '@/entities/user.entity'
 import UserRepository from '../users/user.repository'
-import { workerData } from 'worker_threads'
 
 const repo = new WorkspaceRepository()
 
 class WorkspaceController {
-    getAllWorkspaces = async (req: AuthRequest, res: Response, next: NextFunction) => {
+
+    getAllUserWorkspaces = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const user = req.user
             if (!user) {
                 return next(errorResponse(Status.UNAUTHORIZED, 'Authentication required'))
             }
 
-            const data = await repo.findAll()
+            const data = await repo.findAllByUserId(user.id)
 
-            return res.status(Status.OK).json(successResponse(Status.OK, 'Get all workspaces', data))
-        } catch (err) {
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Get all user workspaces', data))
+        }
+        catch (err) {
             next(err)
         }
     }

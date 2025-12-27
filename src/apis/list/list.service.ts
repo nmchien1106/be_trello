@@ -108,6 +108,7 @@ export class ListService {
             message: 'List deleted permanently'
         }
     }
+
 }
 
 export default new ListService()

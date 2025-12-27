@@ -125,6 +125,34 @@ class ListRepository {
 
         return await this.repo.save(newList)
     }
+
+    getAllCardsInList = async (listId: string, userId: string) => {
+        const list = await this.repo.findOne({
+            where: { id: listId },
+            relations: ['cards'],
+            select: {
+                id: true,
+                cards: {
+                    id: true,
+                    title: true,
+                    position: true,
+                    coverUrl: true,
+                    priority: true,
+                    dueDate: true,
+                    description: true,
+                    isArchived: true,
+                    createdAt: true,
+                    updatedAt: true
+                }
+            }
+        })
+
+        if (!list) {
+            throw { status: 404, message: 'List not found' }
+        }
+
+        return list.cards
+    }
 }
 
 export default new ListRepository()

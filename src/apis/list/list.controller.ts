@@ -75,8 +75,6 @@ class ListController {
         }
     }
 
-    // ===== EXTRA FEATURES (GIỮ) =====
-
     reorderLists = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const list = await listRepository.findListById(req.params.listId)
@@ -122,6 +120,16 @@ class ListController {
             return res.status(Status.OK).json(successResponse(Status.OK, 'List duplicated successfully', newList))
         } catch (err) {
             next(err)
+        }
+    }
+
+    getAllCardsInList = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+            const result = await listRepository.getAllCardsInList(req.params.id, req.user.id)
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Cards retrieved successfully', result))
+        } catch (err: any) {
+            next(errorResponse(err.status || Status.INTERNAL_SERVER_ERROR, err.message || 'Server error'))
         }
     }
 }
