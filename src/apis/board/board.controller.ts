@@ -510,7 +510,7 @@ class BoardController {
         try {
             const { title, workspaceId } = req.body
             const { templateId } = req.params
-            const copyCard = req.query.copyCard === 'true'
+            const copyCard = req.query.copyCard === '1'
             const userId = req.user!.id
 
             const template = await BoardRepository.findTemplateById(templateId, copyCard)
@@ -550,7 +550,8 @@ class BoardController {
                     manager.create(List, {
                         title: list.title,
                         position: list.position,
-                        board: savedBoard
+                        board: savedBoard,
+                        createdBy: { id: userId }
                     })
                 )
                 savedLists = await manager.save(listsToCreate)
@@ -575,15 +576,6 @@ class BoardController {
                     )
 
                     savedCards = await manager.save(cardsToCreate)
-
-                    const cardMembers = savedCards.map(card =>
-                        manager.create(CardMembers, {
-                            card,
-                            user: { id: userId },
-                            role: cardAdminRole
-                        })
-                    )
-                    await manager.save(cardMembers)
                 }
 
                 await manager.save(
@@ -594,16 +586,7 @@ class BoardController {
                     })
                 )
             })
-            const cardsByListId = new Map<string, Card[]>()
-
-            savedCards.forEach(card => {
-                const listId = card.list.id
-                if (!cardsByListId.has(listId)) {
-                    cardsByListId.set(listId, [])
-                }
-                cardsByListId.get(listId)!.push(card)
-            })
-
+    
             return res.status(Status.OK).json({
                 status: Status.OK,
                 message: 'Board created from template successfully',
