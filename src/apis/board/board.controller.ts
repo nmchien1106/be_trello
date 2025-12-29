@@ -479,29 +479,91 @@ class BoardController {
 
     createBoardTemplate = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
-            if (!req.user || !req.user.id) {
-                return next(errorResponse(Status.UNAUTHORIZED, 'User information not found'))
+            if (!req.user?.id) {
+                return next(errorResponse(Status.UNAUTHORIZED, 'User not authenticated'))
             }
 
             const userId = req.user.id
-            const data = req.body
+            const { boardId } = req.params
 
-            const board = await boardRepo.save(
-                boardRepo.create({
-                    title: data.title,
-                    description: data.description,
-                    permissionLevel: 'public',
-                    backgroundPath: data.backgroundPath,
-                    backgroundPublicId: data.backgroundPublicId,
-                    owner: { id: userId },
-                    isTemplate: true
+            const board = await boardRepo.findOne({
+                where: { id: boardId, isArchived: false },
+                relations: {
+                    lists: {
+                        cards: true
+                    }
+                }
+            })
+
+            if (!board) {
+                return next(errorResponse(Status.NOT_FOUND, 'Board not found'))
+            }
+
+            let templateBoard!: Board
+            let savedLists: List[] = []
+
+            await AppDataSource.transaction(async (manager) => {
+                templateBoard = await manager.save(
+                    manager.create(Board, {
+                        title: board.title,
+                        description: board.description,
+                        permissionLevel: board.permissionLevel,
+                        backgroundPath: board.backgroundPath,
+                        backgroundPublicId: board.backgroundPublicId,
+                        owner: { id: userId },
+                        isTemplate: true
+                    })
+                )
+
+                const listsToCreate = board.lists.map(list =>
+                    manager.create(List, {
+                        title: list.title,
+                        position: list.position,
+                        board: templateBoard,
+                        createdBy: { id: userId }
+                    })
+                )
+
+                savedLists = await manager.save(listsToCreate)
+
+                // Map old list IDs to newly created lists
+                const listMap = new Map<string, List>()
+                board.lists.forEach((oldList, index) => {
+                    listMap.set(oldList.id, savedLists[index])
                 })
-            )
+
+                const cardsToCreate = board.lists.flatMap(list =>
+                    list.cards?.map(card =>
+                        manager.create(Card, {
+                            title: card.title,
+                            description: card.description,
+                            position: card.position,
+                            priority: card.priority,
+                            dueDate: card.dueDate,
+                            list: listMap.get(list.id)!,
+                            createdBy: { id: userId }
+                        })
+                    ) ?? []
+                )
+
+                if (cardsToCreate.length > 0) {
+                    await manager.save(cardsToCreate)
+                }
+            })
 
             return res.status(Status.CREATED).json(
-                successResponse(Status.CREATED, 'Board template created successfully', board)
+                successResponse(
+                    Status.CREATED,
+                    'Board template created from board successfully',
+                    {
+                        id: templateBoard.id,
+                        title: templateBoard.title,
+                        isTemplate: true
+                    }
+                )
             )
         } catch (err) {
+            console.error(err)
             next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to create board template', err))
         }
     }
@@ -519,12 +581,11 @@ class BoardController {
             const workspace = await workspaceRepo.findOne({ where: { id: workspaceId } })
             if (!workspace) return next(errorResponse(Status.NOT_FOUND, 'Workspace not found'))
 
-            const [boardAdminRole, cardAdminRole] = await Promise.all([
+            const [boardAdminRole] = await Promise.all([
                 roleRepo.findOne({ where: { name: 'board_admin' } }),
-                roleRepo.findOne({ where: { name: 'card_admin' } })
             ])
 
-            if (!boardAdminRole || !cardAdminRole) {
+            if (!boardAdminRole) {
                 return next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Role not found'))
             }
 
