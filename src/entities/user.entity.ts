@@ -7,6 +7,7 @@ import { Comment } from './comment.entity'
 import { Notification } from './notification.entity'
 import { WorkspaceMembers } from './workspace-member.entity'
 import { Role } from './role.entity'
+import { Board } from './board.entity'
 
 @Entity('users')
 export class User extends DateTimeEntity {
@@ -45,6 +46,9 @@ export class User extends DateTimeEntity {
 
     @OneToMany(() => Comment, (comment) => comment.user)
     public comments: Comment[]
+
+    @OneToMany(() => Board, (board) => board.owner)
+    public boards: Board[]
 
     @OneToMany(() => Notification, (notification) => notification.user)
     public notifications: Notification[]

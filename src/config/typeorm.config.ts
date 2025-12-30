@@ -11,7 +11,11 @@ import { Notification } from '../entities/notification.entity'
 import { List } from '../entities/list.entity'
 import { Role } from '../entities/role.entity'
 import { Permission } from '../entities/permission.entity'
+import { Attachment } from '../entities/attachment.entity'
 import { Config } from './config'
+import { BoardMembers } from '../entities/board-member.entity'
+import { Checklist } from '../entities/checklist.entity'
+import { ChecklistItem } from '../entities/checklist-item.entity'
 
 config()
 
@@ -33,9 +37,14 @@ export default new DataSource({
         Notification,
         List,
         Role,
-        Permission
+        Permission,
+        BoardMembers,
+        Checklist,
+        ChecklistItem,
+        Attachment
     ],
     migrationsTableName: 'migrations',
+    ssl: false,
     migrations: [],
-    synchronize: Config.NODE_ENV !== 'production',
+    synchronize: Config.NODE_ENV !== 'production'
 })

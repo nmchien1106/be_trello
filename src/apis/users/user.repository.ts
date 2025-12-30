@@ -24,6 +24,7 @@ class UserRepository {
             ...data,
             role: [defaultRole]
         })
+        user.isActive = true
         return this.repo.save(user)
     }
 

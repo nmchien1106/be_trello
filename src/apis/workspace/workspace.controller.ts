@@ -11,17 +11,19 @@ import UserRepository from '../users/user.repository'
 const repo = new WorkspaceRepository()
 
 class WorkspaceController {
-    getAllWorkspaces = async (req: AuthRequest, res: Response, next: NextFunction) => {
+
+    getAllUserWorkspaces = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const user = req.user
             if (!user) {
                 return next(errorResponse(Status.UNAUTHORIZED, 'Authentication required'))
             }
 
-            const data = await repo.findAll()
+            const data = await repo.findAllByUserId(user.id)
 
-            return res.status(Status.OK).json(successResponse(Status.OK, 'Get all workspaces', data))
-        } catch (err) {
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Get all user workspaces', data))
+        }
+        catch (err) {
             next(err)
         }
     }
@@ -32,7 +34,6 @@ class WorkspaceController {
             if (!user) {
                 return next(errorResponse(Status.UNAUTHORIZED, 'Authentication required'))
             }
-            // list workspace info and user with roles
             const workspace = await repo.findWithMembersById(req.params.id)
 
             if (!workspace) {
@@ -61,7 +62,7 @@ class WorkspaceController {
                 return next(errorResponse(Status.UNAUTHORIZED, 'Authentication required'))
             }
             const createdWorkspace = await repo.createWorkspace(req.body, user.id)
-            await repo.addMemberToWorkspace(user.id, createdWorkspace.id, Roles.WORKSPACE_ADMIN)
+            await repo.addMemberToWorkspace(user.id, createdWorkspace.id, Roles.WORKSPACE_ADMIN, 'accepted')
             return res
                 .status(Status.CREATED)
                 .json(successResponse(Status.CREATED, 'Created workspace', createdWorkspace))
@@ -91,6 +92,7 @@ class WorkspaceController {
             next(err)
         }
     }
+
 
     archiveWorkspace = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {

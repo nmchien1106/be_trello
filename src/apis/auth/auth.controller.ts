@@ -61,7 +61,7 @@ class AuthController {
                 return next(errorResponse(Status.BAD_REQUEST, 'Invalid email'))
             }
 
-            const isPasswordValid = await bcrypt.compare(password, user.password)
+            const isPasswordValid = bcrypt.compare(password, user.password)
             if (!isPasswordValid) {
                 return next(errorResponse(Status.BAD_REQUEST, 'Email or password is incorrect!'))
             }
@@ -79,13 +79,6 @@ class AuthController {
                 secure: false
             })
 
-            // res.status(200).json(successResponse(Status.OK, 'Login successfully!', { accessToken }))
-
-            // res.cookie('refresh', refreshToken, {
-            //     maxAge: Config.cookieMaxAge,
-            //     httpOnly: true,
-            //     secure: false,
-            // })
 
             res.status(200).json(
                 successResponse(Status.OK, 'Login successfully!', {
@@ -171,7 +164,7 @@ class AuthController {
             const user_id = req.user?.id
             const user = await useRepo.findOne({
                 where: { id: user_id },
-                relations: ['role', 'workspaceMembers.workspace', 'workspaceMembers.role'],
+                relations: ['role'],
                 select: {
                     id: true,
                     email: true,
@@ -180,34 +173,19 @@ class AuthController {
                     avatarUrl: true,
                     isActive: true,
                     createdAt: true,
-                    updatedAt: true,
-                    workspaceMembers: {
-                        id: true,
-                        workspace: {
-                            id: true,
-                            title: true,
-                            description: true
-                        },
-                        role: { name: true }
-                    }
+                    updatedAt: true
                 }
             })
 
-            const { workspaceMembers, ...userData } = user!
+            const { ...userData } = user!
 
             if (!user) {
                 return next(errorResponse(Status.NOT_FOUND, 'User not found'))
             }
+
             return res.json(
                 successResponse(Status.OK, 'User fetched successfully', {
-                    ...userData,
-                    workspace: user.workspaceMembers.map((wm) => ({
-                        id: wm.workspace.id,
-                        title: wm.workspace.title,
-                        description: wm.workspace.description,
-                        role: wm.role.name,
-                        workspace_url: `/api/workspaces/${wm.workspace.id}`
-                    }))
+                    ...userData
                 })
             )
         } catch (err) {
@@ -302,7 +280,7 @@ class AuthController {
                 text: `Your verification link is ${verifyEmail}. This link is valid for 5 minutes.`
             }
             await emailTransporter.sendMail(mailOptions)
-            return res.json(successResponse(Status.OK, 'Verification email sent successfully'))
+            // return res.json(successResponse(Status.OK, 'Verification email sent successfully'))
         } catch (err) {
             return next(err)
         }

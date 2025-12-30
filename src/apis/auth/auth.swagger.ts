@@ -1,4 +1,3 @@
-
 import { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi'
 import { PostLogin, PostRegister, PostForgotPassword, PostResetPassword } from './auth.schema'
 import { createApiResponse } from '@/api-docs/openApiResponseBuilder'
@@ -14,10 +13,11 @@ import {
     sendEmailSchema
 } from './auth.schema'
 import { z } from 'zod'
-import { Status, ApiResponseSchema,  } from '@/types/response'
-
+import { Status, ApiResponseSchema } from '@/types/response'
 
 export const AuthRegisterPath = () => {
+
+    // Post /api/auth/login --> Login user
     authRegistry.registerPath({
         method: 'post',
         path: '/api/auth/login',

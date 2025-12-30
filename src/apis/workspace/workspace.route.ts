@@ -11,9 +11,15 @@ const router = Router()
 
 registerPath()
 
+
+// Get all user workspaces
 router
     .route('/')
-    .get(verifyAccessToken, authorizePermission(Permissions.READ_WORKSPACE), WorkspaceController.getAllWorkspaces)
+    .get(verifyAccessToken, authorizePermission(Permissions.READ_WORKSPACE), WorkspaceController.getAllUserWorkspaces)
+
+// Create Workspace
+router
+    .route('/')
     .post(
         verifyAccessToken,
         authorizePermission(Permissions.CREATE_WORKSPACE),
@@ -21,23 +27,12 @@ router
         WorkspaceController.createWorkspace
     )
 
+// Workspace Invitations
+router.route('/invitations').get(verifyAccessToken, WorkspaceController.getAllInvitations)
 
 router
-    .route('/invitations')
-    .get(
-        verifyAccessToken,
-        WorkspaceController.getAllInvitations
-    )
-
-router 
     .route('/invitations/:workspaceId')
-    .post(
-        verifyAccessToken,
-        validateHandle(InvitationResponseSchema),
-        WorkspaceController.respondToInvitation
-    )
-
-
+    .post(verifyAccessToken, validateHandle(InvitationResponseSchema), WorkspaceController.respondToInvitation)
 
 router
     .route('/:id')
@@ -66,7 +61,8 @@ router
         WorkspaceController.archiveWorkspace
     )
 
-router.route('/:workspaceId/unarchive')
+router
+    .route('/:workspaceId/unarchive')
     .post(
         verifyAccessToken,
         authorizePermissionWorkspace(Permissions.MANAGE_WORKSPACE_PERMISSIONS),
