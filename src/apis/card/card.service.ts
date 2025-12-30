@@ -175,46 +175,33 @@ export class CardService {
         return await CardRepository.updateCard(cardId, { backgroundUrl: card.backgroundUrl, backgroundPublicId: card.backgroundPublicId });
     }
 
-    async uploadAttachmentFromFile(cardId: string, file: Express.Multer.File, user: User) {
-        const card = await CardRepository.findById(cardId)
-
-        if (!card) {
-            throw new Error('Card not found')
-        }
-        console.log('File object:', file);
-        const cloudFile = file as any;
-        const attachment = attachmentRepo.create({
-            fileName: file.originalname,
-            fileUrl: cloudFile.path,
-            publicId: cloudFile.filename,
-            card,
-            uploadedBy: user
-        })
-
-        return await attachmentRepo.save(attachment)
-    async generatePresignedUrl(fileName: string, fileType: string, fileSize: number): Promise<{ uploadUrl: string, publicId: string, uploadPreset: string }> {
+    async generatePresignedUrl(fileName: string, fileType: string, fileSize: number): Promise<{signature: string, apiKey: string, cloudName: string, timestamp: number, folder: string}> {
         const size = Number(fileSize);
-        if (isNaN(size)) {
-            throw { status: 400, message: 'fileSize must be a number' };
-        }
-        if(fileSize > MAX_FILE_SIZE) {
-            throw { status: 400, message: 'File size exceeds the maximum limit' };
-        }
-        if(!ALLOWED_TYPES.includes(fileType)) {
-            throw { status: 400, message: 'File type is not allowed' };
-        }
+        if (isNaN(size)) throw { status: 400, message: 'fileSize must be a number' };
+        if (size > MAX_FILE_SIZE) throw { status: 400, message: 'File size exceeds the maximum limit' };
+        if (!ALLOWED_TYPES.includes(fileType)) throw { status: 400, message: 'File type is not allowed' };
 
-        const timestamp = Date.now();
-        const publicId = `cards/${timestamp}_${fileName}`;
+        const timestamp = Math.floor(new Date().getTime() / 1000); // in seconds
+        const folder = 'cards';
 
-        const uploadUrl = `https://api.cloudinary.com/v1_1/${Config.cloundinaryName}/auto/upload`;
+         const paramsToSign = {
+            timestamp,
+            folder,
+            tags: "card-attachment", // Optionally, tags to add to the image, comma separated
+        };
 
-        const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET || 'cards_unsigned';
+        // Call the Cloudinary SDK to sign the parameters
+        const signature = cloudinary.utils.api_sign_request(
+            paramsToSign,
+            Config.cloudinaryApiSecret,
+        );
 
         return {
-            uploadUrl,
-            publicId,
-            uploadPreset
+            signature,
+            cloudName: Config.cloundinaryName,
+            apiKey: Config.cloudinaryApiKey,
+            timestamp,
+            folder
         };
     }
 
