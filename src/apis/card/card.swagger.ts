@@ -81,4 +81,23 @@ export const cardsRegisterPath = () => {
             ...createApiResponse(z.object({}), 'Card deleted successfully', Status.OK)
         }
     })
+
+    cardRegistry.registerPath({
+        method: 'post',
+        path: '/api/cards/{id}/members',
+        tags: ['Card'],
+        summary: 'Add member to card',
+        security: [{ bearerAuth: [] }],
+        request: {
+            params: z.object({ id: z.string().uuid() }),
+            body: {
+                content: {
+                    'application/json': { schema: z.object({ memberId: z.string().uuid() }) }
+                }
+            }
+        },
+        responses: {
+            ...createApiResponse(z.object({}), 'Member added to card successfully', Status.CREATED)
+        }
+    })
 }

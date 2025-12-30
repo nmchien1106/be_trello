@@ -20,8 +20,6 @@ export class Role extends DateTimeEntity {
     public workspaceMembers: WorkspaceMembers[]
     @OneToMany(() => BoardMembers, (boardMember) => boardMember.role)
     public boardMembers: BoardMembers[]
-    @OneToMany(() => CardMembers, (cardMember) => cardMember.role)
-    public cardMembers: CardMembers[]
     @ManyToMany(() => Permission, (permission) => permission.roles, {
         cascade: true
     })

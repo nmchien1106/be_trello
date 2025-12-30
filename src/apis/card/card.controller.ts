@@ -4,7 +4,7 @@ import { successResponse, errorResponse } from '@/utils/response'
 import cardService from './card.service'
 import { Status } from '@/types/response'
 import cardRepository from './card.repository'
-
+import boardRepository from '../board/board.repository'
 class CardController {
     createCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
@@ -48,6 +48,35 @@ class CardController {
             next(errorResponse(err.status || 500, err.message))
         }
     }
+
+    addMemberToCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            const cardId = req.params.id
+            const memberId = req.body.memberId
+
+            const boardId: string = await cardRepository.getBoardIdFromCard(cardId)
+            console.log('boardId', boardId)
+            const isMemberOfBoard = await boardRepository.findMemberByUserId(boardId, memberId)
+
+            if (!isMemberOfBoard) {
+                return res.status(Status.BAD_REQUEST).json(errorResponse(Status.BAD_REQUEST, 'User is not a member of the board'))
+            }
+
+            const result = await cardRepository.findMemberById(cardId, memberId)
+
+            if (result) {
+                return res.status(Status.CONFLICT).json(errorResponse(Status.CONFLICT, 'Member already added to card'))
+            }
+
+            const newMember = await cardRepository.addMemberToCard(cardId, memberId)
+
+            return res.status(Status.CREATED).json(successResponse(Status.CREATED, 'Member added to card successfully', newMember))
+        } catch (err: any) {
+            next(err)
+        }
+
+    }
+
 }
 
 export default new CardController()

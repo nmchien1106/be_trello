@@ -51,14 +51,14 @@ class BoardRepository {
         return board.boardMembers
     }
 
-    async findMemberByUserId(boardId: string, userId: string): Promise<BoardMembers | null> {
+    async findMemberByUserId(boardId: string , userId: string): Promise<BoardMembers | null> {
         const boardMemberRepo = AppDataSource.getRepository(BoardMembers)
         const member = await boardMemberRepo.findOne({
             where: {
                 board: { id: boardId },
                 user: { id: userId }
             },
-            relations: ['role', 'user', 'board']
+            relations: ['user', 'board']
         })
         return member || null
     }
@@ -313,6 +313,7 @@ class BoardRepository {
         })
         return board?.lists || []
     }
+
 }
 
 export default new BoardRepository()
