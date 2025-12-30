@@ -8,6 +8,7 @@ import BoardRoute from '@/apis/board/board.route'
 import RoleRoute from '@/apis/role/role.route'
 import ListRoute from '@/apis/list/list.route'
 import CardRoute from '@/apis/card/card.route'
+import ChecklistRoute from '@/apis/checklist/checklist.route'
 
 const route = Router()
 
@@ -19,5 +20,6 @@ route.use('/health', HealthCheck)
 route.use('/boards', BoardRoute)
 route.use('/lists', ListRoute)
 route.use('/cards', CardRoute)
+route.use('/checklists', ChecklistRoute)
 
 export default route

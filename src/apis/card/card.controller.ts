@@ -48,6 +48,56 @@ class CardController {
             next(errorResponse(err.status || 500, err.message))
         }
     }
+
+    archiveCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+            const result = await cardService.toggleArchiveCard(req.user.id, req.params.id, true)
+            return res.status(result.status).json(successResponse(result.status, result.message, result.data))
+        } catch (err: any) {
+            next(errorResponse(err.status || 500, err.message))
+        }
+    }
+
+    unarchiveCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+            const result = await cardService.toggleArchiveCard(req.user.id, req.params.id, false)
+            return res.status(result.status).json(successResponse(result.status, result.message, result.data))
+        } catch (err: any) {
+            next(errorResponse(err.status || 500, err.message))
+        }
+    }
+
+    reorderCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+            const result = await cardService.reorderCard(req.user.id, req.params.id, req.body)
+            return res.status(result.status).json(successResponse(result.status, result.message, result.data))
+        } catch (err: any) {
+            next(errorResponse(err.status || 500, err.message))
+        }
+    }
+
+    duplicateCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+            const result = await cardService.duplicateCard(req.user.id, req.params.id, req.body)
+            return res.status(result.status).json(successResponse(result.status, result.message, result.data))
+        } catch (err: any) {
+            next(errorResponse(err.status || 500, err.message))
+        }
+    }
+
+    moveCardToBoard = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+            const result = await cardService.moveCardToBoard(req.user.id, req.params.id, req.body)
+            return res.status(result.status).json(successResponse(result.status, result.message, result.data))
+        } catch (err: any) {
+            next(errorResponse(err.status || 500, err.message))
+        }
+    }
 }
 
 export default new CardController()

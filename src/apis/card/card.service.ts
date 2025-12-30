@@ -8,6 +8,7 @@ import { Permissions } from '@/enums/permissions.enum'
 import { Card } from '@/entities/card.entity'
 import { List } from '@/entities/list.entity'
 import { Config } from '@/config/config'
+import { calculatePosition } from '@/utils/calcPosition'
 
 export class CardService {
     async createCard(data: CreateCardDto, userId: string) {
@@ -59,6 +60,102 @@ export class CardService {
 
         await CardRepository.deleteCard(cardId)
         return;
+    }
+
+    private async checkPermission(userId: string, boardId: string, permission: string) {
+        const hasPerm = await BoardRepository.hasPermission(userId, boardId, permission)
+        if (!hasPerm) throw { status: Status.FORBIDDEN, message: 'Permission denied' }
+    }
+
+    async toggleArchiveCard(userId: string, cardId: string, isArchived: boolean) {
+        const card = await CardRepository.findCardWithBoard(cardId)
+        if (!card) throw { status: Status.NOT_FOUND, message: 'Card not found' }
+
+        await this.checkPermission(userId, card.list.board.id, Permissions.UPDATE_CARD)
+
+        let updateData: any = { isArchived }
+
+        if (isArchived === false) {
+            const maxPos = await CardRepository.getHighestPositionInList(card.list.id)
+            updateData.position = (maxPos !== null ? maxPos : 0) + Config.defaultGap
+        }
+
+        const updated = await CardRepository.updateCard(cardId, updateData)
+        return {
+            status: Status.OK,
+            message: isArchived ? 'Card archived' : 'Card unarchived',
+            data: updated
+        }
+    }
+
+    async reorderCard(userId: string, cardId: string, data: { beforeId: string | null, afterId: string | null, targetListId: string }) {
+        const card = await CardRepository.findCardWithBoard(cardId)
+        if (!card) throw { status: Status.NOT_FOUND, message: 'Card not found' }
+
+        await this.checkPermission(userId, card.list.board.id, Permissions.UPDATE_BOARD)
+
+        const targetList = await ListRepository.findById(data.targetListId)
+        if (!targetList) throw { status: Status.NOT_FOUND, message: 'Target list not found' }
+        
+        if (targetList.board.id !== card.list.board.id) {
+             throw { status: Status.BAD_REQUEST, message: 'Target list must be in the same board. Use move API instead.' }
+        }
+
+        const beforeCard = data.beforeId ? await CardRepository.getCardById(data.beforeId) : null
+        const afterCard = data.afterId ? await CardRepository.getCardById(data.afterId) : null
+
+        const newPosition = await calculatePosition(
+            beforeCard?.position ?? null, 
+            afterCard?.position ?? null, 
+            data.targetListId
+        )
+
+        const updated = await CardRepository.updateCard(cardId, {
+            list: { id: data.targetListId },
+            position: newPosition
+        })
+
+        return { status: Status.OK, message: 'Card reordered successfully', data: updated }
+    }
+
+    async moveCardToBoard(userId: string, cardId: string, data: { targetListId: string, targetBoardId: string }) {
+        const card = await CardRepository.findCardWithBoard(cardId)
+        if (!card) throw { status: Status.NOT_FOUND, message: 'Card not found' }
+
+        await this.checkPermission(userId, card.list.board.id, Permissions.UPDATE_CARD)
+        await this.checkPermission(userId, data.targetBoardId, Permissions.CREATE_CARD)
+
+        const targetList = await ListRepository.findById(data.targetListId)
+        if (!targetList || targetList.board.id !== data.targetBoardId) {
+            throw { status: Status.BAD_REQUEST, message: 'Target list invalid or does not belong to target board' }
+        }
+
+        const maxPos = await CardRepository.getHighestPositionInList(data.targetListId)
+        const newPosition = (maxPos !== null ? maxPos : 0) + Config.defaultGap
+
+        const updated = await CardRepository.updateCard(cardId, {
+            list: { id: data.targetListId },
+            position: newPosition
+        })
+
+        return { status: Status.OK, message: 'Card moved successfully', data: updated }
+    }
+
+    async duplicateCard(userId: string, cardId: string, data: { targetListId?: string, title?: string }) {
+        const sourceCard = await CardRepository.findCardForDuplicate(cardId)
+        if (!sourceCard) throw { status: Status.NOT_FOUND, message: 'Source card not found' }
+
+        await this.checkPermission(userId, sourceCard.list.board.id, Permissions.READ_BOARD)
+
+        const listId = data.targetListId || sourceCard.list.id
+        
+        const targetList = await ListRepository.findById(listId)
+        if (!targetList) throw { status: Status.NOT_FOUND, message: 'Target list not found' }
+        await this.checkPermission(userId, targetList.board.id, Permissions.CREATE_CARD)
+
+        const newCard = await CardRepository.duplicateCard(sourceCard, listId, data.title)
+
+        return { status: Status.CREATED, message: 'Card duplicated successfully', data: newCard }
     }
 }
 
