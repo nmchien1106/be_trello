@@ -24,11 +24,18 @@ export const CreateCardSchema = z.object({
     priority: z.enum(['low', 'medium', 'high']).optional().default('medium')
 })
 
-export const CreateAttachmentSchema = z.object({
-    params: z.object({
-        cardId: z.string().uuid('Invalid card ID')
-    })
+export const CreateAttachmentParamsSchema = z.object({
+    id: z.string().uuid('Invalid card ID')
 })
+
+
+export const CreateAttachmentBodySchema = z.object({
+    fileUrl: z.string().url(),
+    fileName: z.string(),
+    publicId: z.string().optional()
+})
+
+
 export const AttachmentSchema = z.object({
     id: z.string().uuid(),
     fileName: z.string(),

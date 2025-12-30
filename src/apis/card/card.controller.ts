@@ -214,28 +214,30 @@ class CardController {
     }
 
     createAttachment = async (req: AuthRequest, res: Response, next: NextFunction) => {
-        try{
-            const { id } = req.params
-            const { fileUrl } = req.body
-            const fileName = req.body.fileName
-            if(!fileUrl){
-                return next(errorResponse(Status.BAD_REQUEST, 'No URL provided'))
+        try {
+            const { id } = req.params;
+            const { fileUrl, fileName, publicId } = req.body;
+
+            if (!fileUrl || !fileName) {
+            return next(errorResponse(Status.BAD_REQUEST, 'Missing required fields'));
             }
-            const attachment = await cardService.uploadAttachmentFromUrl(id, fileUrl, fileName, req.user!)
+
+            const attachment = await cardService.uploadAttachmentFromUrl(id, fileUrl, fileName, req.user!, publicId);
+
             return res.status(Status.OK).json({
-                status: Status.OK,
-                message: 'Attachment uploaded successfully',
-                data: {
-                    id: attachment.id,
-                    fileName: attachment.fileName,
-                    fileUrl: attachment.fileUrl,
-                    cardId: attachment.card.id,
-                    uploadedBy: attachment.uploadedBy.id,
-                    createdAt: attachment.createdAt
-                }
-            })
-        }catch(err){
-            next(errorResponse(Status.INTERNAL_SERVER_ERROR,'Failed to upload attachment',err))
+            status: Status.OK,
+            message: 'Attachment uploaded successfully',
+            data: {
+                id: attachment.id,
+                fileName: attachment.fileName,
+                fileUrl: attachment.fileUrl,
+                cardId: attachment.card.id,
+                uploadedBy: attachment.uploadedBy.id,
+                createdAt: attachment.createdAt
+            }
+            });
+        } catch (err) {
+            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to upload attachment', err));
         }
     }
 

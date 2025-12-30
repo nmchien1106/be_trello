@@ -205,7 +205,7 @@ export class CardService {
         };
     }
 
-    async uploadAttachmentFromUrl(cardId: string, fileUrl: string, fileName: string, user: User) {
+    async uploadAttachmentFromUrl(cardId: string, fileUrl: string, fileName: string, user: User, publicId: string) {
         const card = await CardRepository.findById(cardId);
         if (!card) throw new Error('Card not found');
 
@@ -213,7 +213,8 @@ export class CardService {
             fileName: fileName,
             fileUrl: fileUrl,
             card,
-            uploadedBy: user
+            uploadedBy: user,
+            publicId: publicId
         });
 
         return await attachmentRepo.save(attachment);
