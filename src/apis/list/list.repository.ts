@@ -7,7 +7,6 @@ import { Config } from '@/config/config'
 class ListRepository {
     private repo = AppDataSource.getRepository(List)
 
-    // legacy helper
     async findListById(id: string): Promise<List | null> {
         return await this.repo.findOne({ where: { id } })
     }

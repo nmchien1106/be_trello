@@ -1,4 +1,3 @@
-// DTO dùng để trả dữ liệu
 export class ListDto {
   id: string
   title: string

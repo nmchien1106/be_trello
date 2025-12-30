@@ -14,7 +14,6 @@ import { Permissions } from '@/enums/permissions.enum'
 
 const router = Router()
 
-// ===== CRUD LIST =====
 router.post('/', verifyAccessToken, validateHandle(CreateListSchema), listController.createList)
 router.get('/:id', verifyAccessToken, listController.getListById)
 router.patch('/:id', verifyAccessToken, validateHandle(UpdateListSchema), listController.updateList)
