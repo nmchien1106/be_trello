@@ -13,6 +13,8 @@ import { Role } from '../entities/role.entity'
 import { Permission } from '../entities/permission.entity'
 import { Config } from './config'
 import { BoardMembers } from '../entities/board-member.entity'
+import { Checklist } from '../entities/checklist.entity'
+import { ChecklistItem } from '../entities/checklist-item.entity'
 
 config()
 
@@ -35,7 +37,9 @@ export default new DataSource({
         List,
         Role,
         Permission,
-        BoardMembers
+        BoardMembers,
+        Checklist,
+        ChecklistItem
     ],
     migrationsTableName: 'migrations',
     ssl: false,

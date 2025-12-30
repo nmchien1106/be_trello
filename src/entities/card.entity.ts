@@ -4,6 +4,7 @@ import { CardMembers } from './card-member.entity'
 import { Comment } from './comment.entity'
 import { List } from './list.entity'
 import { User } from './user.entity'
+import { Checklist } from './checklist.entity'
 
 @Entity('cards')
 export class Card extends DateTimeEntity {
@@ -39,4 +40,7 @@ export class Card extends DateTimeEntity {
 
     @OneToMany(() => Comment, (comment) => comment.card)
     public comments: Comment[]
+
+    @OneToMany(() => Checklist, (checklist) => checklist.card)
+    public checklists: Checklist[]
 }
