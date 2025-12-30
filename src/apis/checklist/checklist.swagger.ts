@@ -10,6 +10,7 @@ extendZodWithOpenApi(z)
 export const checklistRegistry = new OpenAPIRegistry()
 
 export const checklistRegisterPath = () => {
+    // Create a new checklist
     checklistRegistry.registerPath({
         method: 'post',
         path: '/api/checklists',
@@ -22,6 +23,7 @@ export const checklistRegisterPath = () => {
         responses: { ...createApiResponse(z.object({ id: z.string() }), 'Created', Status.CREATED) }
     })
 
+    // Update a checklist
     checklistRegistry.registerPath({
         method: 'get',
         path: '/api/checklists/card/{cardId}',
@@ -32,6 +34,7 @@ export const checklistRegisterPath = () => {
         responses: { ...createApiResponse(z.array(z.any()), 'Success', Status.OK) }
     })
 
+    // Update a checklist
     checklistRegistry.registerPath({
         method: 'post',
         path: '/api/checklists/items',
@@ -43,7 +46,19 @@ export const checklistRegisterPath = () => {
         },
         responses: { ...createApiResponse(z.object({ id: z.string() }), 'Created', Status.CREATED) }
     })
-    
+
+    // Delete a checklist
+    checklistRegistry.registerPath({
+        method: 'delete',
+        path: '/api/checklists/{id}',
+        tags: ['Checklist'],
+        summary: 'Delete a checklist',
+        security: [{ bearerAuth: [] }],
+        request: { params: z.object({ id: z.string().uuid() }) },
+        responses: { ...createApiResponse(z.any(), 'Deleted', Status.OK) }
+    })
+
+    // Update item (check/uncheck/rename)
     checklistRegistry.registerPath({
         method: 'patch',
         path: '/api/checklists/items/{id}',
@@ -55,5 +70,16 @@ export const checklistRegisterPath = () => {
             body: { content: { 'application/json': { schema: UpdateChecklistItemSchema } } }
         },
         responses: { ...createApiResponse(z.any(), 'Updated', Status.OK) }
+    })
+
+    // Delete item from checklist
+    checklistRegistry.registerPath({
+        method: 'delete',
+        path: '/api/checklists/items/{id}',
+        tags: ['Checklist'],
+        summary: 'Delete item from checklist',
+        security: [{ bearerAuth: [] }],
+        request: { params: z.object({ id: z.string().uuid() }) },
+        responses: { ...createApiResponse(z.any(), 'Deleted', Status.OK) }
     })
 }

@@ -6,11 +6,13 @@ import { boardRegistry } from '@/apis/board/board.swagger'
 import { roleRegistry } from '@/apis/role/role.swagger'
 import { listRegistry, listsRegisterPath, ListRegisterPaths } from '@/apis/list/list.swagger'
 import { cardRegistry, cardsRegisterPath } from '@/apis/card/card.swagger'
+import { checklistRegistry, checklistRegisterPath } from '@/apis/checklist/checklist.swagger'
 
 export function generateOpenAPIDocument() {
   listsRegisterPath()
   ListRegisterPaths()
   cardsRegisterPath()
+  checklistRegisterPath()
 
   const registry = new OpenAPIRegistry([
     userRegistry,
@@ -19,7 +21,8 @@ export function generateOpenAPIDocument() {
     workspaceRegister,
     boardRegistry,
     listRegistry,
-    cardRegistry
+    cardRegistry,
+    checklistRegistry
   ])
 
   registry.registerComponent('securitySchemes', 'bearerAuth', {

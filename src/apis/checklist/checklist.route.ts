@@ -8,21 +8,42 @@ import {
     CreateChecklistItemSchema,
     UpdateChecklistItemSchema
 } from './checklist.schema'
+import { authorizeCardPermission } from '@/middleware/authorization'
+import { Permissions } from '@/enums/permissions.enum'
 
 const router = Router()
 
-router.post('/', verifyAccessToken, validateHandle(CreateChecklistSchema), checklistController.createChecklist)
+// Create a new checklist
+router.post(
+    '/',
+    verifyAccessToken,
+    authorizeCardPermission(Permissions.UPDATE_CARD),
+    validateHandle(CreateChecklistSchema),
+    checklistController.createChecklist
+)
 
+// Get all checklists on a card
 router.get('/card/:cardId', verifyAccessToken, checklistController.getChecklistsOnCard)
 
+// Update a checklist
 router.patch('/:id', verifyAccessToken, validateHandle(UpdateChecklistSchema), checklistController.updateChecklist)
 
+// Delete a checklist
 router.delete('/:id', verifyAccessToken, checklistController.deleteChecklist)
 
+// Add item to checklist
 router.post('/items', verifyAccessToken, validateHandle(CreateChecklistItemSchema), checklistController.createItem)
 
-router.patch('/items/:id', verifyAccessToken, validateHandle(UpdateChecklistItemSchema), checklistController.updateItem)
+// Update item (check/uncheck/rename)
+router.patch(
+    '/items/:itemId',
+    verifyAccessToken,
+    validateHandle(UpdateChecklistItemSchema),
+    checklistController.updateItem
+)
 
-router.delete('/items/:id', verifyAccessToken, checklistController.deleteItem)
+// Delete item from checklist
+router.delete('/items/:itemId', verifyAccessToken, checklistController.deleteItem)
+
 
 export default router
