@@ -224,6 +224,20 @@ class CardController {
             next(errorResponse(Status.INTERNAL_SERVER_ERROR,'Failed to upload attachment',err))
         }
     }
+
+    getAttachmentsByCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            const { cardId } = req.params;
+            const attachments = await cardService.getAttachmentsByCard(cardId);
+            return res.status(Status.OK).json({
+                status: Status.OK,
+                message: 'Get attachments successfully',
+                data: attachments
+            });
+        } catch (err) {
+            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to get attachments', err));
+        }
+    };
 }
 
 export default new CardController()

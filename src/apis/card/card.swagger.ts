@@ -89,7 +89,7 @@ export const cardsRegisterPath = () => {
 
     cardRegistry.registerPath({
         method: 'post',
-        path: '/api/cards/{cardId}/attachments',
+        path: '/api/cards/{id}/attachments',
         tags: ['Card'],
         summary: 'Create attachment on a card',
         security: [{ bearerAuth: [] }],
@@ -121,7 +121,7 @@ export const cardsRegisterPath = () => {
 
     cardRegistry.registerPath({
         method: 'post',
-        path: '/api/cards/{cardId}/attachments-url',
+        path: '/api/cards/{id}/attachments-url',
         tags: ['Card'],
         summary: 'Create attachment on a card from URL',
         security: [{ bearerAuth: [] }],
@@ -265,5 +265,17 @@ export const cardsRegisterPath = () => {
         security: [{ bearerAuth: [] }],
         request: { params: z.object({ id: z.string().uuid() }) },
         responses: { ...createApiResponse(z.any(), 'Card unarchived', Status.OK) }
+    })
+
+    cardRegistry.registerPath({
+        method: 'get',
+        path: '/api/cards/{id}/attachments',
+        tags: ['Card'],
+        summary: 'Get attachments on card',
+        security: [{ bearerAuth: []}],
+        request: {
+            params: z.object({ id: z.string().uuid()})
+        },
+        responses: createApiResponse(z.array(AttachmentSchema), 'Get attachments successfully', Status.OK)
     })
 }

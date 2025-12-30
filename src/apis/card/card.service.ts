@@ -197,6 +197,16 @@ export class CardService {
         return await attachmentRepo.save(attachment);
     }
 
+
+    async getAttachmentsByCard(cardId: string){
+        const card = await CardRepository.findById(cardId);
+        if(!card) throw new Error('Card not found');
+        const attachments = await attachmentRepo.find({
+            where: { card: { id: cardId }}
+        })
+        return attachments;
+    }
+
 }
 
 export default new CardService()

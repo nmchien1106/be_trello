@@ -52,6 +52,7 @@ export class seedAuthorization {
             // card permissions
             { name : 'card:read', description: 'Read card' },
             { name: 'card:create', description: 'Create card' },
+            { name: 'card:read', description: 'Read card'},
             { name: 'card:update', description: 'Update card (move, archive, edit)' },
             { name: 'card:delete', description: 'Delete card permanently' },
             { name: 'card:add_member', description: 'Add member to card' },
@@ -145,7 +146,8 @@ export class seedAuthorization {
                         perm.name === 'card:create' ||
                         perm.name === 'card:update' ||
                         perm.name === 'card:add_member' ||
-                        perm.name === 'card:remove_member'
+                        perm.name === 'card:remove_member' ||
+                        perm.name === 'card:read'
                 )
             }
         ]

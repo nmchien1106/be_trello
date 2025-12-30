@@ -114,4 +114,11 @@ route.post('/:id/attachments-url',
     verifyAccessToken,
     authorizeCardPermission(Permissions.UPDATE_CARD),
     cardController.createAttachmentByUrl);
+
+//Get attachments on card
+route.get('/:id/attachments',
+    verifyAccessToken,
+    authorizeCardPermission(Permissions.READ_CARD),
+    cardController.getAttachmentsByCard
+)
 export default route;
