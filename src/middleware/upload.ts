@@ -78,3 +78,29 @@ export const AttachmentUpload = multer({
         cb(null, true)
     }
 })
+
+const CardBackgroundStorage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: async (req, file) => {
+        const { id } = req.params;
+        const timestamp = Date.now();
+        return {
+            folder: 'card-backgrounds',
+            public_id: `card_${id}_background_${timestamp}`,
+            allowed_formats: ['jpg', 'jpeg', 'png'],
+            transformation: [{ width: 1500, height: 500, crop: 'limit' }]
+        };
+    }
+});
+
+export const CardBackgroundUpload = multer({
+    storage: CardBackgroundStorage,
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        if (['image/jpeg', 'image/png'].includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only .jpg and .png format allowed!'));
+        }
+    }
+});

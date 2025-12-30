@@ -10,9 +10,9 @@ import {
     AddMemberToCard
 } from './card.schema'
 import { Permissions } from './../../enums/permissions.enum';
-import { authorizeCardPermission } from '@/middleware/authorization';
+import { authorizeCardPermission, authorizeAttachmentPermission } from '@/middleware/authorization';
 import multer from 'multer'
-import { AttachmentUpload } from '@/middleware/upload';
+import { AttachmentUpload, CardBackgroundUpload } from '@/middleware/upload';
 
 
 const route = Router()
@@ -120,5 +120,22 @@ route.get('/:id/attachments',
     verifyAccessToken,
     authorizeCardPermission(Permissions.READ_CARD),
     cardController.getAttachmentsByCard
+)
+
+//Delete attachment on card
+route.delete(
+    '/attachments/:id',
+    verifyAccessToken,
+    authorizeAttachmentPermission(Permissions.UPDATE_CARD),
+    cardController.deleteAttachment
+);
+
+// Upload or update card background
+route.post(
+    '/:id/background',
+    verifyAccessToken,
+    authorizeCardPermission(Permissions.UPDATE_CARD),
+    CardBackgroundUpload.single('file'),
+    cardController.uploadCardBackground
 )
 export default route;

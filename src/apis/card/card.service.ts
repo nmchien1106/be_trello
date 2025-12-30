@@ -164,6 +164,15 @@ export class CardService {
         return { status: Status.CREATED, message: 'Card duplicated successfully', data: newCard }
     }
 
+    async uploadCardBackground(cardId: string, file: Express.Multer.File){
+        const card = await CardRepository.findById(cardId);
+        if(!card) throw new Error('Card not found');
+        const cloudFile = file as any;
+        card.backgroundUrl = cloudFile.path;
+        card.backgroundPublicId = cloudFile.filename;
+        return await CardRepository.updateCard(cardId, { backgroundUrl: card.backgroundUrl, backgroundPublicId: card.backgroundPublicId });
+    }
+
     async uploadAttachmentFromFile(cardId: string, file: Express.Multer.File, user: User) {
         const card = await CardRepository.findById(cardId)
 

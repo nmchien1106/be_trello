@@ -6,6 +6,8 @@ import { Status } from '@/types/response'
 import cardRepository from './card.repository'
 import boardRepository from '../board/board.repository'
 import { UserDTOForRelation, UserDTO } from '../users/user.dto'
+import { da } from 'zod/v4/locales'
+
 class CardController {
     createCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
@@ -173,6 +175,25 @@ class CardController {
         }
     }
 
+    uploadCardBackground = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try{
+            const { id } = req.params;
+            if(!req.file){
+                return next(errorResponse(Status.BAD_REQUEST, 'No file uploaded'));
+            }
+
+            const updatedCard = await cardService.uploadCardBackground(id, req.file)
+            return res.status(Status.OK).json({
+                status: Status.OK,
+                message: 'Card background updated successfully',
+                data: updatedCard
+
+            })
+        }catch(err){
+            next(errorResponse(Status.INTERNAL_SERVER_ERROR,'Failed to upload card background',err))
+        }
+    }
+
     createAttachmentByFile = async (req: AuthRequest, res: Response, next: NextFunction) => {
          try {
             const { id } = req.params
@@ -238,6 +259,22 @@ class CardController {
             next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to get attachments', err));
         }
     };
+
+    deleteAttachment = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            const { id } = req.params;
+            if (!req.user?.id) throw { status: Status.UNAUTHORIZED, message: 'User info required' };
+
+            await cardService.deleteAttachment(id);
+
+            return res.status(Status.OK).json({
+                status: Status.OK,
+                message: 'Attachment deleted successfully'
+            });
+        } catch (err) {
+            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to get attachments', err));
+        }
+    }
 }
 
 export default new CardController()

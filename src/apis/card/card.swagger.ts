@@ -89,6 +89,40 @@ export const cardsRegisterPath = () => {
 
     cardRegistry.registerPath({
         method: 'post',
+        path: '/api/cards/{id}/background',
+        tags: ['Card'],
+        summary: 'Upload background for card',
+        security: [{ bearerAuth: [] }],
+        request: {
+            params: z.object({ id: z.string().uuid() }),
+            body: {
+                content: {
+                    'multipart/form-data': {
+                        schema: {
+                            type: 'object',
+                            properties: {
+                                file: { type: 'string', format: 'binary' }
+                            },
+                            required: ['file']
+                        }
+                    }
+                }
+            }
+        },
+        responses: createApiResponse(
+            z.object({
+                id: z.string().uuid(),
+                backgroundPath: z.string(),
+                backgroundPublicId: z.string()
+            }),
+            'Card background uploaded successfully',
+            Status.OK
+        )
+    });
+
+
+    cardRegistry.registerPath({
+        method: 'post',
         path: '/api/cards/{id}/attachments',
         tags: ['Card'],
         summary: 'Create attachment on a card',
@@ -278,4 +312,20 @@ export const cardsRegisterPath = () => {
         },
         responses: createApiResponse(z.array(AttachmentSchema), 'Get attachments successfully', Status.OK)
     })
+
+    cardRegistry.registerPath({
+        method: 'delete',
+        path: '/api/cards/attachments/{id}',
+        tags: ['Card'],
+        summary: 'Delete an attachment',
+        security: [{ bearerAuth: [] }],
+        request: {
+            params: z.object({ id: z.string().uuid('Invalid attachment ID') })
+        },
+        responses: {
+            200: { description: 'Attachment deleted successfully'},
+            404: { description: 'Attachment not found' },
+        }
+    });
+
 }

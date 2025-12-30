@@ -22,7 +22,10 @@ export class Card extends DateTimeEntity {
     position: number
 
     @Column({ type: 'varchar', length: 255, nullable: true })
-    coverUrl: string
+    backgroundUrl: string
+
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    backgroundPublicId: string
 
     @Column({ type: 'enum', enum: ['low', 'medium', 'high'], default: 'medium' })
     priority: string
