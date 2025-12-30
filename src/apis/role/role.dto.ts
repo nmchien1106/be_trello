@@ -4,9 +4,8 @@ import { PermissionDTO } from './../permission/permission.dto';
 export class RoleDTOForRelation {
     id: number
     name: string
-    constructor(id: number, name: string) {
-        this.id = id
-        this.name = name
+    constructor(partial: Partial<RoleDTOForRelation>) {
+        Object.assign(this, partial)
     }
 }
 

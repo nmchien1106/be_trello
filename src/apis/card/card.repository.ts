@@ -1,9 +1,11 @@
 import { Card } from '@/entities/card.entity'
 import { List } from '@/entities/list.entity'
 import AppDataSource from '@/config/typeorm.config'
+import { CardMembers } from '@/entities/card-member.entity'
 
 class CardRepository {
     private repo = AppDataSource.getRepository(Card)
+    private cardMemberRepo = AppDataSource.getRepository(CardMembers)
 
     async createCard(data: {
         title: string
@@ -51,21 +53,20 @@ class CardRepository {
             relations: ['list'],
             select: {
                 list: {
-                    id: true,
+                    id: true
                 }
             }
         })
     }
 
-    async getCardsByListId(listId: string) {
+    getCardsByListId = async (listId: string) => {
         return await this.repo.find({
             where: { list: { id: listId } },
             order: { position: 'ASC' }
         })
     }
 
-
-    async deleteCardsByListId(listId: string, manager?: any) {
+    deleteCardsByListId = async (listId: string, manager?: any) => {
         if (manager) {
             await manager.delete(Card, { list: { id: listId } })
         } else {
@@ -73,20 +74,56 @@ class CardRepository {
         }
     }
 
-    async findById(id: string) {
+    findById = async (id: string) => {
         return await this.repo.findOne({
             where: { id },
             relations: ['list', 'list.board']
         })
     }
 
-    async updateCard(id: string, data: any) {
+    updateCard = async (id: string, data: any) => {
         await this.repo.update(id, data)
         return this.repo.findOneBy({ id })
     }
 
-    async deleteCard(id: string) {
+    deleteCard = async (id: string) => {
         await this.repo.delete(id)
+    }
+
+    findMemberById = async (cardId: string, memberId: string): Promise<CardMembers | null> => {
+        return await this.cardMemberRepo.findOne({
+            where: { card: { id: cardId }, user: { id: memberId } }
+        })
+    }
+
+    addMemberToCard = async (cardId: string, memberId: string): Promise<CardMembers> => {
+        const cardMember = this.cardMemberRepo.create({
+            card: { id: cardId },
+            user: { id: memberId }
+        })
+        return await this.cardMemberRepo.save(cardMember)
+    }
+
+    getBoardIdFromCard = async (cardId: string): Promise<string> => {
+        const card = await this.repo.findOne({
+            where: { id: cardId },
+            relations: ['list', 'list.board']
+        })
+        return card?.list.board.id as string
+    }
+
+    getMembersOfCard = async (cardId: string): Promise<CardMembers[]> => {
+        return await this.cardMemberRepo.find({
+            where: { card: { id: cardId } },
+            relations: ['user']
+        })
+    }
+
+    removeMemberFromCard = async (cardId: string, memberId: string): Promise<void> => {
+        await this.cardMemberRepo.delete({
+            card: { id: cardId },
+            user: { id: memberId }
+        })
     }
 }
 

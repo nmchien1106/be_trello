@@ -81,4 +81,66 @@ export const cardsRegisterPath = () => {
             ...createApiResponse(z.object({}), 'Card deleted successfully', Status.OK)
         }
     })
+
+    cardRegistry.registerPath({
+        method: 'post',
+        path: '/api/cards/{id}/members',
+        tags: ['Card'],
+        summary: 'Add member to card',
+        security: [{ bearerAuth: [] }],
+        request: {
+            params: z.object({ id: z.string().uuid() }),
+            body: {
+                content: {
+                    'application/json': { schema: z.object({ memberId: z.string().uuid() }) }
+                }
+            }
+        },
+        responses: {
+            ...createApiResponse(
+                z.object({
+                    id: z.string(),
+                    card: z.object({ id: z.string() }),
+                    user: z.object({ id: z.string(), name: z.string(), email: z.string() })
+                }),
+                'Member added to card successfully',
+                Status.CREATED
+            )
+        }
+    })
+
+    cardRegistry.registerPath({
+        method: 'get',
+        path: '/api/cards/{id}/members',
+        tags: ['Card'],
+        summary: 'Get members of a card',
+        security: [{ bearerAuth: [] }],
+        request: {
+            params: z.object({ id: z.string().uuid() })
+        },
+        responses: {
+            ...createApiResponse(z.array(z.object()), 'Card members retrieved successfully', Status.OK)
+        }
+    })
+
+    // Remove member from card
+    cardRegistry.registerPath({
+        method: 'delete',
+        path: '/api/cards/{id}/members',
+        tags: ['Card'],
+        summary: 'Remove member from card',
+        security: [{ bearerAuth: [] }],
+        request: {
+            params: z.object({ id: z.string().uuid() }),
+            body: {
+                content: {
+                    'application/json': { schema: z.object({ memberId: z.string().uuid() }) }
+                }
+            }
+        },
+        responses: {
+            200: { description: 'Member removed from card successfully' }
+        }
+    })
+
 }

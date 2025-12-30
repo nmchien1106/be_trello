@@ -34,7 +34,6 @@ export class Card extends DateTimeEntity {
     @ManyToOne(() => List, (list) => list.cards, { onDelete: 'CASCADE' })
     list: List
 
-
     @OneToMany(() => CardMembers, (cardMember) => cardMember.card)
     public cardMembers: CardMembers[]
 

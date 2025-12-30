@@ -59,7 +59,7 @@ route.post(
 route.post(
     '/:boardId/invite/link',
     verifyAccessToken,
-    authorizeBoardPermission(Permissions.ADD_MEMBER_TO_BOARD),
+    // authorizeBoardPermission(Permissions.ADD_MEMBER_TO_BOARD),
     boardController.createShareLink
 )
 

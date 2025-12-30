@@ -40,5 +40,7 @@ export enum Permissions {
     CREATE_CARD = 'card:create',
     READ_CARD = 'card:read',
     UPDATE_CARD = 'card:update',
-    DELETE_CARD = 'card:delete'
+    DELETE_CARD = 'card:delete',
+    ADD_MEMBER_TO_CARD = 'card:add_member',
+    REMOVE_MEMBER_FROM_CARD = 'card:remove_member',
 }

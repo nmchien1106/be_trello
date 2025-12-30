@@ -296,7 +296,7 @@ export const authorizeCardPermission = (requiredPermission: string | string[]) =
             }
             const permissions = role.permissions?.map((p) => p.name) ?? []
             const requiredPermissions = Array.isArray(requiredPermission) ? requiredPermission : [requiredPermission]
-            const hasPermission = requiredPermissions.every((p) => permissions.includes(p))
+            const hasPermission = requiredPermissions.some((p) => permissions.includes(p))
             if (!hasPermission) {
                 return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
             }
@@ -307,9 +307,6 @@ export const authorizeCardPermission = (requiredPermission: string | string[]) =
         }
     }
 }
-
-
-
 
 export const checkBoardMember = async (requiredRoles: string | string[], boardId: string, userId: string) => {
     const BoardMemberRepository = AppDataSource.getRepository(BoardMembers)

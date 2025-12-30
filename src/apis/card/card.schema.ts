@@ -23,3 +23,8 @@ export const CreateCardSchema = z.object({
         ),
     priority: z.enum(['low', 'medium', 'high']).optional().default('medium')
 })
+
+
+export const AddMemberToCard = z.object({
+    memberId: z.string().uuid('Invalid Member ID')
+})
