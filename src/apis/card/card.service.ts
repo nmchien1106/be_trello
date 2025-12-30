@@ -14,6 +14,8 @@ import { User } from '@/entities/user.entity'
 import { Attachment } from '@/entities/attachment.entity'
 import  cloudinary  from '@/config/cloundinary'
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'application/pdf'];
 
 const attachmentRepo = AppDataSource.getRepository(Attachment)
 export class CardService {
@@ -190,6 +192,30 @@ export class CardService {
         })
 
         return await attachmentRepo.save(attachment)
+    async generatePresignedUrl(fileName: string, fileType: string, fileSize: number): Promise<{ uploadUrl: string, publicId: string, uploadPreset: string }> {
+        const size = Number(fileSize);
+        if (isNaN(size)) {
+            throw { status: 400, message: 'fileSize must be a number' };
+        }
+        if(fileSize > MAX_FILE_SIZE) {
+            throw { status: 400, message: 'File size exceeds the maximum limit' };
+        }
+        if(!ALLOWED_TYPES.includes(fileType)) {
+            throw { status: 400, message: 'File type is not allowed' };
+        }
+
+        const timestamp = Date.now();
+        const publicId = `cards/${timestamp}_${fileName}`;
+
+        const uploadUrl = `https://api.cloudinary.com/v1_1/${Config.cloundinaryName}/auto/upload`;
+
+        const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET || 'cards_unsigned';
+
+        return {
+            uploadUrl,
+            publicId,
+            uploadPreset
+        };
     }
 
     async uploadAttachmentFromUrl(cardId: string, fileUrl: string, fileName: string, user: User) {

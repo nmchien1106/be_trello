@@ -194,33 +194,26 @@ class CardController {
         }
     }
 
-    createAttachmentByFile = async (req: AuthRequest, res: Response, next: NextFunction) => {
-         try {
-            const { id } = req.params
+    getPresignedUrl = async(req: AuthRequest, res: Response, next: NextFunction) => {
+        try{
+            const { fileName, fileType, fileSize } = req.body;
 
-            if (!req.file) {
-                return next(errorResponse(Status.BAD_REQUEST, 'No file uploaded'))
+            if(!fileName || !fileType || !fileSize){
+                return next(errorResponse(Status.BAD_REQUEST, 'Missing required fields'));
             }
-            const attachment = await cardService.uploadAttachmentFromFile(id, req.file, req.user!);
+
+            const presignedUrl = await cardService.generatePresignedUrl(fileName, fileType, fileSize);
             return res.status(Status.OK).json({
                 status: Status.OK,
-                message: 'Attachment uploaded successfully',
-                data: {
-                    id: attachment.id,
-                    fileName: attachment.fileName,
-                    fileUrl: attachment.fileUrl,
-                    public_id: attachment.publicId,
-                    cardId: attachment.card.id,
-                    uploadedBy: attachment.uploadedBy.id,
-                    createdAt: attachment.createdAt
-                }
+                message: 'Presigned URL generated successfully',
+                data: presignedUrl
             })
-        } catch (err) {
-            next(errorResponse(Status.INTERNAL_SERVER_ERROR,'Failed to upload attachment',err))
+        }catch(err){
+            next(errorResponse(Status.INTERNAL_SERVER_ERROR,'Failed to generate presigned URL',err))
         }
     }
 
-    createAttachmentByUrl = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    createAttachment = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try{
             const { id } = req.params
             const { fileUrl } = req.body

@@ -120,7 +120,33 @@ export const cardsRegisterPath = () => {
         )
     });
 
-
+    cardRegistry.registerPath({
+        method: 'post',
+        path: '/api/cards/{id}/presigned-url',
+        tags: ['Card'],
+        summary: 'Generate presigned URL for attachment upload',
+        security: [{ bearerAuth: [] }],
+        request: {
+            params: z.object({ id: z.string().uuid() }),
+            body: {
+                content: {
+                    'application/json': {
+                        schema: z.object({
+                            fileName: z.string(),
+                            fileType: z.string(),
+                            fileSize: z.number()
+                        })
+                    }
+                }
+            }
+        },
+        responses: createApiResponse(
+            z.object({ uploadUrl: z.string(), publicId: z.string(), uploadPreset: z.string() }),
+            'Presigned URL generated successfully',
+            Status.OK
+        )
+    })
+    
     cardRegistry.registerPath({
         method: 'post',
         path: '/api/cards/{id}/attachments',
@@ -153,27 +179,7 @@ export const cardsRegisterPath = () => {
         }
     })
 
-    cardRegistry.registerPath({
-        method: 'post',
-        path: '/api/cards/{id}/attachments-url',
-        tags: ['Card'],
-        summary: 'Create attachment on a card from URL',
-        security: [{ bearerAuth: [] }],
-        request: {
-            params: z.object({ cardId: z.string().uuid() }),
-            body: {
-                content: {
-                    'application/json': {
-                        schema: z.object({
-                            fileUrl: z.string().url(),
-                            fileName: z.string()
-                        })
-                    }
-                }
-            }
-        },
-        responses: createApiResponse(AttachmentSchema, 'Attachment uploaded successfully', Status.OK)
-    });
+    
 
     cardRegistry.registerPath({
         method: 'post',

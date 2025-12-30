@@ -103,17 +103,25 @@ route.patch(
 )
 
 
+
+route.post('/:id/presigned-url',
+    verifyAccessToken,
+    authorizeCardPermission(Permissions.UPDATE_CARD),
+    cardController.getPresignedUrl)
+
+
+route.post('/:id/presigned-url',
+    verifyAccessToken,
+    authorizeCardPermission(Permissions.UPDATE_CARD),
+    cardController.getPresignedUrl)
+
 //Create attachment on card
 route.post('/:id/attachments',
     verifyAccessToken,
     authorizeCardPermission(Permissions.UPDATE_CARD),
-    AttachmentUpload.single('file'),
-    cardController.createAttachmentByFile);
+    validateHandle(CreateAttachmentSchema),
+    cardController.createAttachment);
 
-route.post('/:id/attachments-url',
-    verifyAccessToken,
-    authorizeCardPermission(Permissions.UPDATE_CARD),
-    cardController.createAttachmentByUrl);
 
 //Get attachments on card
 route.get('/:id/attachments',
