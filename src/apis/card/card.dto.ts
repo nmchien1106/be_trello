@@ -6,4 +6,13 @@ export class CreateCardDto {
     dueDate?: string | null;
     priority?: 'low' | 'medium' | 'high';
   }
-  
+
+  export class CardDTOForRelation {
+    id!: string;
+    title : string;
+
+    constructor(id: string, title: string) {
+      this.id = id;
+      this.title = title;
+    }
+  }

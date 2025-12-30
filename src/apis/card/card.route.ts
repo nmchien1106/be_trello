@@ -39,4 +39,21 @@ route.post(
     validateHandle(AddMemberToCard),
     cardController.addMemberToCard
 )
+
+// Get members of a card
+route.get(
+    '/:id/members',
+    verifyAccessToken,
+    authorizeCardPermission(Permissions.READ_CARD),
+    cardController.getMembersOfCard
+)
+
+// Remove member from card
+route.delete(
+    '/:id/members',
+    verifyAccessToken,
+    authorizeCardPermission(Permissions.REMOVE_MEMBER_FROM_CARD),
+    cardController.removeMemberOfCard
+)
+
 export default route

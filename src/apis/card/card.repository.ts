@@ -92,24 +92,38 @@ class CardRepository {
 
     findMemberById = async (cardId: string, memberId: string): Promise<CardMembers | null> => {
         return await this.cardMemberRepo.findOne({
-            where: { id: cardId, user: { id: memberId } }
+            where: { card: { id: cardId }, user: { id: memberId } }
         })
     }
 
     addMemberToCard = async (cardId: string, memberId: string): Promise<CardMembers> => {
         const cardMember = this.cardMemberRepo.create({
             card: { id: cardId },
-            user: { id: memberId },
+            user: { id: memberId }
         })
         return await this.cardMemberRepo.save(cardMember)
     }
 
-    getBoardIdFromCard = async (cardId: string): Promise<string > => {
+    getBoardIdFromCard = async (cardId: string): Promise<string> => {
         const card = await this.repo.findOne({
             where: { id: cardId },
-            relations: ['list', 'list.board'],
+            relations: ['list', 'list.board']
         })
         return card?.list.board.id as string
+    }
+
+    getMembersOfCard = async (cardId: string): Promise<CardMembers[]> => {
+        return await this.cardMemberRepo.find({
+            where: { card: { id: cardId } },
+            relations: ['user']
+        })
+    }
+
+    removeMemberFromCard = async (cardId: string, memberId: string): Promise<void> => {
+        await this.cardMemberRepo.delete({
+            card: { id: cardId },
+            user: { id: memberId }
+        })
     }
 }
 
