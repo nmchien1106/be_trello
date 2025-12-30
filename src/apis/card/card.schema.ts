@@ -24,6 +24,21 @@ export const CreateCardSchema = z.object({
     priority: z.enum(['low', 'medium', 'high']).optional().default('medium')
 })
 
+export const CreateAttachmentSchema = z.object({
+    params: z.object({
+        cardId: z.string().uuid('Invalid card ID')
+    })
+})
+export const AttachmentSchema = z.object({
+    id: z.string().uuid(),
+    fileName: z.string(),
+    fileUrl: z.string().url(),
+    createdAt: z.string().datetime(),
+    uploadedBy: z.object({
+        id: z.string().uuid(),
+        email: z.string().email().optional()
+    })
+})
 export const ReorderCardSchema = z.object({
     beforeId: z.string().nullable().describe('ID của card đứng trước (nếu có)'),
     afterId: z.string().nullable().describe('ID của card đứng sau (nếu có)'),
@@ -38,9 +53,4 @@ export const MoveCardToBoardSchema = z.object({
 export const DuplicateCardSchema = z.object({
     targetListId: z.string().uuid().optional().describe('ID của List đích (mặc định list hiện tại)'),
     title: z.string().min(1).optional().describe('Tên thẻ mới (nếu muốn đổi)')
-})
-
-
-export const AddMemberToCard = z.object({
-    memberId: z.string().uuid('Invalid Member ID')
 })

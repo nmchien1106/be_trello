@@ -2,7 +2,7 @@ import { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi'
 import { z } from 'zod'
 import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi'
 import {
-    CreateCardSchema,
+    CreateCardSchema,  AttachmentSchema, CreateAttachmentSchema,
     ReorderCardSchema,
     DuplicateCardSchema,
     MoveCardToBoardSchema
@@ -86,6 +86,60 @@ export const cardsRegisterPath = () => {
             ...createApiResponse(z.object({}), 'Card deleted successfully', Status.OK)
         }
     })
+
+    cardRegistry.registerPath({
+        method: 'post',
+        path: '/api/cards/{cardId}/attachments',
+        tags: ['Card'],
+        summary: 'Create attachment on a card',
+        security: [{ bearerAuth: [] }],
+
+        request: {
+            params: CreateAttachmentSchema.shape.params,
+            body: {
+                content: {
+                'multipart/form-data': {
+                    schema: {
+                    type: 'object',
+                    properties: {
+                        file: {
+                        type: 'string',
+                        format: 'binary'
+                        }
+                    },
+                    required: ['file']
+                    }
+                }
+            }
+        }
+    },
+
+        responses: {
+            ...createApiResponse(AttachmentSchema, 'Attachment uploaded successfully', Status.OK)
+        }
+    })
+
+    cardRegistry.registerPath({
+        method: 'post',
+        path: '/api/cards/{cardId}/attachments-url',
+        tags: ['Card'],
+        summary: 'Create attachment on a card from URL',
+        security: [{ bearerAuth: [] }],
+        request: {
+            params: z.object({ cardId: z.string().uuid() }),
+            body: {
+                content: {
+                    'application/json': {
+                        schema: z.object({
+                            fileUrl: z.string().url(),
+                            fileName: z.string()
+                        })
+                    }
+                }
+            }
+        },
+        responses: createApiResponse(AttachmentSchema, 'Attachment uploaded successfully', Status.OK)
+    });
 
     cardRegistry.registerPath({
         method: 'post',

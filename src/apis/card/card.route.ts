@@ -3,14 +3,17 @@ import cardController from './card.controller'
 import { verifyAccessToken } from '@/utils/jwt'
 import { validateHandle } from '@/middleware/validate-handle'
 import {
-    CreateCardSchema,
+    CreateCardSchema, CreateAttachmentSchema,
     ReorderCardSchema,
     DuplicateCardSchema,
     MoveCardToBoardSchema,
     AddMemberToCard
 } from './card.schema'
-import { authorizeCardPermission } from '@/middleware/authorization'
-import { Permissions } from '@/enums/permissions.enum'
+import { Permissions } from './../../enums/permissions.enum';
+import { authorizeCardPermission } from '@/middleware/authorization';
+import multer from 'multer'
+import { AttachmentUpload } from '@/middleware/upload';
+
 
 const route = Router()
 // Create a new card
@@ -99,4 +102,16 @@ route.patch(
     cardController.unarchiveCard
 )
 
-export default route
+
+//Create attachment on card
+route.post('/:id/attachments',
+    verifyAccessToken,
+    authorizeCardPermission(Permissions.UPDATE_CARD),
+    AttachmentUpload.single('file'),
+    cardController.createAttachmentByFile);
+
+route.post('/:id/attachments-url',
+    verifyAccessToken,
+    authorizeCardPermission(Permissions.UPDATE_CARD),
+    cardController.createAttachmentByUrl);
+export default route;

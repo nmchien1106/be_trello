@@ -5,6 +5,7 @@ import { Comment } from './comment.entity'
 import { List } from './list.entity'
 import { User } from './user.entity'
 import { Checklist } from './checklist.entity'
+import { Attachment } from './attachment.entity'
 
 @Entity('cards')
 export class Card extends DateTimeEntity {
@@ -43,4 +44,7 @@ export class Card extends DateTimeEntity {
 
     @OneToMany(() => Checklist, (checklist) => checklist.card)
     public checklists: Checklist[]
+
+    @OneToMany(() => Attachment, (attachment) => attachment.card)
+    attachments: Attachment[]
 }

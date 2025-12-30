@@ -172,6 +172,58 @@ class CardController {
             next(errorResponse(err.status || 500, err.message))
         }
     }
+
+    createAttachmentByFile = async (req: AuthRequest, res: Response, next: NextFunction) => {
+         try {
+            const { id } = req.params
+
+            if (!req.file) {
+                return next(errorResponse(Status.BAD_REQUEST, 'No file uploaded'))
+            }
+            const attachment = await cardService.uploadAttachmentFromFile(id, req.file, req.user!);
+            return res.status(Status.OK).json({
+                status: Status.OK,
+                message: 'Attachment uploaded successfully',
+                data: {
+                    id: attachment.id,
+                    fileName: attachment.fileName,
+                    fileUrl: attachment.fileUrl,
+                    public_id: attachment.publicId,
+                    cardId: attachment.card.id,
+                    uploadedBy: attachment.uploadedBy.id,
+                    createdAt: attachment.createdAt
+                }
+            })
+        } catch (err) {
+            next(errorResponse(Status.INTERNAL_SERVER_ERROR,'Failed to upload attachment',err))
+        }
+    }
+
+    createAttachmentByUrl = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try{
+            const { id } = req.params
+            const { fileUrl } = req.body
+            const fileName = req.body.fileName
+            if(!fileUrl){
+                return next(errorResponse(Status.BAD_REQUEST, 'No URL provided'))
+            }
+            const attachment = await cardService.uploadAttachmentFromUrl(id, fileUrl, fileName, req.user!)
+            return res.status(Status.OK).json({
+                status: Status.OK,
+                message: 'Attachment uploaded successfully',
+                data: {
+                    id: attachment.id,
+                    fileName: attachment.fileName,
+                    fileUrl: attachment.fileUrl,
+                    cardId: attachment.card.id,
+                    uploadedBy: attachment.uploadedBy.id,
+                    createdAt: attachment.createdAt
+                }
+            })
+        }catch(err){
+            next(errorResponse(Status.INTERNAL_SERVER_ERROR,'Failed to upload attachment',err))
+        }
+    }
 }
 
 export default new CardController()

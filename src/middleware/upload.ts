@@ -57,3 +57,24 @@ export const BoardUpload = multer({
     }
 })
 
+const AttachmentStorage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: async (req, file) => {
+        const { id } = req.params
+        const timestamp = Date.now()
+
+        return {
+            folder: 'attachments',
+            public_id: `card_${id}_${timestamp}`,
+            resource_type: 'auto',
+        }
+    }
+})
+
+export const AttachmentUpload = multer({
+    storage: AttachmentStorage,
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        cb(null, true)
+    }
+})

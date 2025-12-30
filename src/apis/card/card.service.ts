@@ -8,8 +8,14 @@ import { Permissions } from '@/enums/permissions.enum'
 import { Card } from '@/entities/card.entity'
 import { List } from '@/entities/list.entity'
 import { Config } from '@/config/config'
-import { calculatePosition } from '@/utils/calcPosition'
+import { calcPosition } from '@/utils/calcPosition'
+import { Express } from 'express'
+import { User } from '@/entities/user.entity'
+import { Attachment } from '@/entities/attachment.entity'
+import  cloudinary  from '@/config/cloundinary'
 
+
+const attachmentRepo = AppDataSource.getRepository(Attachment)
 export class CardService {
     async createCard(data: CreateCardDto, userId: string) {
         if (!userId) throw { status: Status.UNAUTHORIZED, message: 'User info missing' }
@@ -96,7 +102,7 @@ export class CardService {
 
         const targetList = await ListRepository.findById(data.targetListId)
         if (!targetList) throw { status: Status.NOT_FOUND, message: 'Target list not found' }
-        
+
         if (targetList.board.id !== card.list.board.id) {
              throw { status: Status.BAD_REQUEST, message: 'Target list must be in the same board. Use move API instead.' }
         }
@@ -104,9 +110,9 @@ export class CardService {
         const beforeCard = data.beforeId ? await CardRepository.getCardById(data.beforeId) : null
         const afterCard = data.afterId ? await CardRepository.getCardById(data.afterId) : null
 
-        const newPosition = await calculatePosition(
-            beforeCard?.position ?? null, 
-            afterCard?.position ?? null, 
+        const newPosition = await calcPosition(
+            beforeCard?.position ?? null,
+            afterCard?.position ?? null,
             data.targetListId
         )
 
@@ -148,7 +154,7 @@ export class CardService {
         await this.checkPermission(userId, sourceCard.list.board.id, Permissions.READ_BOARD)
 
         const listId = data.targetListId || sourceCard.list.id
-        
+
         const targetList = await ListRepository.findById(listId)
         if (!targetList) throw { status: Status.NOT_FOUND, message: 'Target list not found' }
         await this.checkPermission(userId, targetList.board.id, Permissions.CREATE_CARD)
@@ -157,6 +163,40 @@ export class CardService {
 
         return { status: Status.CREATED, message: 'Card duplicated successfully', data: newCard }
     }
+
+    async uploadAttachmentFromFile(cardId: string, file: Express.Multer.File, user: User) {
+        const card = await CardRepository.findById(cardId)
+
+        if (!card) {
+            throw new Error('Card not found')
+        }
+        console.log('File object:', file);
+        const cloudFile = file as any;
+        const attachment = attachmentRepo.create({
+            fileName: file.originalname,
+            fileUrl: cloudFile.path,
+            publicId: cloudFile.filename,
+            card,
+            uploadedBy: user
+        })
+
+        return await attachmentRepo.save(attachment)
+    }
+
+    async uploadAttachmentFromUrl(cardId: string, fileUrl: string, fileName: string, user: User) {
+        const card = await CardRepository.findById(cardId);
+        if (!card) throw new Error('Card not found');
+
+        const attachment = attachmentRepo.create({
+            fileName: fileName,
+            fileUrl: fileUrl,
+            card,
+            uploadedBy: user
+        });
+
+        return await attachmentRepo.save(attachment);
+    }
+
 }
 
 export default new CardService()

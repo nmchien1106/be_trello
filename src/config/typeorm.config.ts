@@ -11,6 +11,7 @@ import { Notification } from '../entities/notification.entity'
 import { List } from '../entities/list.entity'
 import { Role } from '../entities/role.entity'
 import { Permission } from '../entities/permission.entity'
+import { Attachment } from '../entities/attachment.entity'
 import { Config } from './config'
 import { BoardMembers } from '../entities/board-member.entity'
 import { Checklist } from '../entities/checklist.entity'
@@ -39,7 +40,8 @@ export default new DataSource({
         Permission,
         BoardMembers,
         Checklist,
-        ChecklistItem
+        ChecklistItem,
+        Attachment
     ],
     migrationsTableName: 'migrations',
     ssl: false,
