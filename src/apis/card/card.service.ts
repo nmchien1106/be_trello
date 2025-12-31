@@ -187,10 +187,9 @@ export class CardService {
          const paramsToSign = {
             timestamp,
             folder,
-            tags: "card-attachment", // Optionally, tags to add to the image, comma separated
+            tags: "card-attachment",
         };
 
-        // Call the Cloudinary SDK to sign the parameters
         const signature = cloudinary.utils.api_sign_request(
             paramsToSign,
             Config.cloudinaryApiSecret,

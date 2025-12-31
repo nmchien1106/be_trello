@@ -157,7 +157,7 @@ export const cardsRegisterPath = () => {
             params: z.object({ id: z.string().uuid() }),
             body: {
                 content: {
-                    'application/json': { schema: CreateAttachmentBodySchema }
+                    'application/json': { schema: CreateAttachmentSchema }
                 }
             }
         },
