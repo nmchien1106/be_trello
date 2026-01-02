@@ -158,10 +158,10 @@ route.post(
 
 //Create Template
 route.post(
-    '/template',
+    '/:boardId/template',
     verifyAccessToken,
-    authorizePermissionWorkspace(Permissions.UPDATE_WORKSPACE),
-    validateHandle(CreateTemplateSchema),
+    // authorizePermissionWorkspace(Permissions.UPDATE_WORKSPACE),
+    // validateHandle(CreateTemplateSchema),
     boardController.createBoardTemplate
 )
 
