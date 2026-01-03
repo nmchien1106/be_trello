@@ -94,6 +94,27 @@ class LabelService {
             updateAt: savedLabel.updatedAt
         }
     }
+
+    async getAllLabelsOnCard(cardId: string) {
+        const card = await cardRepo.findOne({ where: { id: cardId }})
+
+        if (!card) {
+          throw new Error('Card not found')
+        }
+
+        const cardLabels = await cardLabelRepo.find({
+          where: { card: { id: cardId }},
+          relations: { label: true },
+        })
+
+        return cardLabels.map(cl => ({
+          id: cl.label.id,
+          name: cl.label.name,
+          color: cl.label.color,
+          createdAt: cl.label.createdAt,
+          updatedAt: cl.label.updatedAt
+        }))
+    }
 }
 
 export default new LabelService()

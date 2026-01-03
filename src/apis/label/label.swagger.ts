@@ -1,6 +1,6 @@
 import { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi'
 import { z } from 'zod'
-import { CreateLabelParamSchema, CreateLabelBodySchema, CreateLabelResponseSchema, UpdateLabelBodySchema } from './label.schema'
+import { CreateLabelParamSchema, CreateLabelBodySchema, CreateLabelResponseSchema, UpdateLabelBodySchema, GetLabelsOnCardResponseSchema } from './label.schema'
 import { createApiResponse } from '@/api-docs/openApiResponseBuilder'
 import { Status } from '@/types/response'
 
@@ -48,6 +48,27 @@ export const labelsRegisterPath = () => {
         },
         responses: {
             ...createApiResponse(CreateLabelResponseSchema, 'Label updated successfully', Status.OK)
+        }
+    })
+
+    labelRegistry.registerPath({
+        method: 'get',
+        path: '/api/labels/cards/{cardId}',
+        tags: ['Label'],
+        summary: 'Get all labels on card',
+        description: 'Get all labels attached to a specific card',
+        security: [{ bearerAuth: [] }],
+        request: {
+            params: z.object({
+                cardId: z.string().uuid()
+            })
+        },
+        responses: {
+            ...createApiResponse(
+                GetLabelsOnCardResponseSchema,
+                'Get all labels on card successfully',
+                Status.OK
+            )
         }
     })
 }

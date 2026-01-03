@@ -267,7 +267,7 @@ export const authorizeCardPermission = (requiredPermission: string | string[]) =
     return async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const user = req.user
-            const cardId = req.params.id || req.body.cardId || req.query.cardId || req.params.cardId
+            const cardId = req.params.id || req.params.cardId || req.body.cardId || req.query.cardId 
 
             const cardRepository = AppDataSource.getRepository(Card)
             const card = await cardRepository.findOne({
@@ -288,6 +288,7 @@ export const authorizeCardPermission = (requiredPermission: string | string[]) =
                 relations: ['role', 'role.permissions']
             })
 
+            
             if (!membership) {
                 return next(errorResponse(Status.NOT_FOUND, 'You are not a member of this board'))
             }
@@ -300,6 +301,7 @@ export const authorizeCardPermission = (requiredPermission: string | string[]) =
             const permissions = role.permissions?.map((p) => p.name) ?? []
             const requiredPermissions = Array.isArray(requiredPermission) ? requiredPermission : [requiredPermission]
             const hasPermission = requiredPermissions.some((p) => permissions.includes(p))
+        
             if (!hasPermission) {
                 return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
             }

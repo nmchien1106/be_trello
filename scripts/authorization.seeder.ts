@@ -141,8 +141,7 @@ export class seedAuthorization {
                         perm.name === 'card:create' ||
                         perm.name === 'card:update' ||
                         perm.name === 'card:add_member' ||
-                        perm.name === 'card:remove_member' ||
-                        perm.name === 'card:read'
+                        perm.name === 'card:remove_member'
                 )
             }
         ]

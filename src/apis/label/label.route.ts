@@ -25,4 +25,12 @@ router.patch(
     LabelController.updateLabel
 )
 
+//Get all label on card
+router.get(
+  '/cards/:cardId',
+  verifyAccessToken,
+  authorizeCardPermission(Permissions.READ_CARD),
+  LabelController.getAllLabelsOnCard
+)
+
 export default router

@@ -39,6 +39,22 @@ class LabelController {
             next(err)
         }
     }
+
+    getAllLabelsOnCard = async (req: Request, res: Response, next: NextFunction) => {
+        try{
+            if (!req.user?.id){
+                return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+            }
+
+            const { cardId } = req.params
+
+            const result = await LabelService.getAllLabelsOnCard(cardId)
+
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Get all labels on card successfullt', result))
+        }catch(err){
+            next(err)
+        }
+    }
 }
 
 export default new LabelController()

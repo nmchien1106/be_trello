@@ -29,3 +29,13 @@ export const UpdateLabelBodySchema = z.object({
     color: z.nativeEnum(LabelColor).optional(),
     name: z.string().max(100).optional()
 })
+
+export const LabelSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().nullable(),
+  color: z.nativeEnum(LabelColor),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime()
+})
+
+export const GetLabelsOnCardResponseSchema = z.array(LabelSchema)
