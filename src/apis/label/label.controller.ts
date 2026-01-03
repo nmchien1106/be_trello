@@ -4,22 +4,41 @@ import { Status } from '@/types/response'
 import LabelService from './label.service'
 
 class LabelController {
-  createLabel = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user?.id) {
-        return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
-      }
+    createLabel = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            if (!req.user?.id) {
+                return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+            }
 
-      const { cardId } = req.params
-      const { color, name } = req.body
+            const { cardId } = req.params
+            const { color, name } = req.body
 
-      const result = await LabelService.createLabel(cardId, color, name)
+            const result = await LabelService.createLabel(cardId, color, name)
 
-      return res.status(Status.CREATED).json(successResponse(Status.CREATED, 'Label created and attached', result))
-    } catch (err) {
-      next(err)
+            return res
+                .status(Status.CREATED)
+                .json(successResponse(Status.CREATED, 'Label created and attached', result))
+        } catch (err) {
+            next(err)
+        }
     }
-  }
+
+    updateLabel = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            if (!req.user?.id) {
+                return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+            }
+
+            const { id } = req.params
+            const { color, name } = req.body
+
+            const result = await LabelService.updateLabel(id, color, name)
+
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Label updated successfully', result))
+        } catch (err) {
+            next(err)
+        }
+    }
 }
 
 export default new LabelController()

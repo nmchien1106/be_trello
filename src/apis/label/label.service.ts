@@ -9,56 +9,91 @@ const cardLabelRepo = AppDataSource.getRepository(CardLabel)
 const cardRepo = AppDataSource.getRepository(Card)
 
 class LabelService {
-  async createLabel(cardId: string, color: LabelColor, name?: string) {
+    async createLabel(cardId: string, color: LabelColor, name?: string) {
+        const card = await cardRepo.findOne({
+            where: { id: cardId },
+            relations: {
+                list: {
+                    board: true
+                }
+            }
+        })
 
-    const card = await cardRepo.findOne({
-      where: { id: cardId },
-      relations: {
-        list: {
-          board: true
+        if (!card) {
+            throw new Error('Card not found')
         }
-      }
-    })
 
-    if (!card) {
-      throw new Error('Card not found')
+        const board = card.list.board
+
+        const existed = await labelRepository.findOne({
+            where: {
+                board: { id: board.id },
+                color,
+                name: name ?? undefined
+            }
+        })
+
+        if (existed) {
+            throw new Error('Label color already exists in this board')
+        }
+
+        const label = labelRepository.create({
+            color,
+            name: name ?? undefined,
+            board
+        })
+
+        const savedLabel = await labelRepository.save(label)
+
+        await cardLabelRepo.save({
+            card: { id: card.id },
+            label: { id: savedLabel.id }
+        })
+
+        return {
+            id: savedLabel.id,
+            name: savedLabel.name,
+            color: savedLabel.color,
+            createdAt: savedLabel.createdAt,
+            updatedAt: savedLabel.updatedAt
+        }
     }
 
-    const board = card.list.board
+    async updateLabel(labelId: string, color?: LabelColor, name?: string) {
+        const label = await labelRepository.findOne({ where: { id: labelId }, relations: { board: true } })
 
-    const existed = await labelRepository.findOne({
-      where: {
-        board: { id: board.id },
-        color,
-        name: name ?? null
-      }
-    })
+        if (!label) {
+            throw new Error('Label not found')
+        }
 
-    if (existed) {
-      throw new Error('Label color already exists in this board')
+        const newColor = color ?? label.color
+        const newName = name ?? label.name
+
+        const existed = await labelRepository.findOne({
+            where: {
+                board: { id: label.board.id },
+                color: newColor,
+                name: newName
+            }
+        })
+
+        if (existed && existed.id !== label.id) {
+            throw new Error('Label with same color and name already exists')
+        }
+
+        label.color = newColor
+        label.name = newName
+
+        const savedLabel = await labelRepository.save(label)
+
+        return {
+            id: savedLabel.id,
+            name: savedLabel.name,
+            color: savedLabel.color,
+            createdAt: savedLabel.createdAt,
+            updateAt: savedLabel.updatedAt
+        }
     }
-
-    const label = labelRepository.create({
-      color,
-      name: name ?? undefined,
-      board
-    })
-
-    const savedLabel = await labelRepository.save(label)
-
-    await cardLabelRepo.save({
-      card: { id: card.id },
-      label: { id: savedLabel.id }
-    })
-
-    return {
-      id: savedLabel.id,
-      name: savedLabel.name,
-      color: savedLabel.color,
-      createdAt: savedLabel.createdAt,
-      updatedAt: savedLabel.updatedAt
-    }
-  }
 }
 
 export default new LabelService()

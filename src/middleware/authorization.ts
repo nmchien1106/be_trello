@@ -12,6 +12,7 @@ import { Board } from '@/entities/board.entity'
 import { Card } from '@/entities/card.entity'
 import { List } from '@/entities/list.entity'
 import { Attachment } from '@/entities/attachment.entity'
+import { Label } from '@/entities/label.entity'
 
 export const loadUserPermission = async (userId: string) => {
     try {
@@ -303,8 +304,7 @@ export const authorizeCardPermission = (requiredPermission: string | string[]) =
                 return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
             }
             next()
-        }
-        catch (err) {
+        } catch (err) {
             return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
         }
     }
@@ -346,9 +346,9 @@ export const authorizeAttachmentPermission = (requiredPermission: string | strin
                 return next(errorResponse(Status.NOT_FOUND, 'Role not found'))
             }
 
-            const permissions = role.permissions?.map(p => p.name) ?? []
+            const permissions = role.permissions?.map((p) => p.name) ?? []
             const requiredPermissions = Array.isArray(requiredPermission) ? requiredPermission : [requiredPermission]
-            const hasPermission = requiredPermissions.every(p => permissions.includes(p))
+            const hasPermission = requiredPermissions.every((p) => permissions.includes(p))
 
             if (!hasPermission) {
                 return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
@@ -360,8 +360,6 @@ export const authorizeAttachmentPermission = (requiredPermission: string | strin
         }
     }
 }
-
-
 
 export const checkBoardMember = async (requiredRoles: string | string[], boardId: string, userId: string) => {
     const BoardMemberRepository = AppDataSource.getRepository(BoardMembers)
@@ -387,4 +385,61 @@ export const checkBoardMember = async (requiredRoles: string | string[], boardId
         .catch(() => {
             return false
         })
+}
+
+export const authorizeLabelPermission = (requiredPermission: string | string[]) => {
+    return async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            const user = req.user
+            if (!user) {
+                return next(errorResponse(Status.NOT_FOUND, 'User not found'))
+            }
+
+            const labelId = req.params.id || req.body.labelId || req.query.labelId || req.params.labelId
+
+            if (!labelId) {
+                return next(errorResponse(Status.BAD_REQUEST, 'Label id is required'))
+            }
+
+            const labelRepo = AppDataSource.getRepository(Label)
+
+            const label = await labelRepo.findOne({
+                where: { id: labelId },
+                relations: ['board']
+            })
+
+            if (!label) {
+                return next(errorResponse(Status.NOT_FOUND, 'Label not found'))
+            }
+
+            const boardId = label.board.id
+
+            const boardMemberRepo = AppDataSource.getRepository(BoardMembers)
+
+            const membership = await boardMemberRepo.findOne({
+                where: {
+                    board: { id: boardId },
+                    user: { id: user.id }
+                },
+                relations: ['role', 'role.permissions']
+            })
+
+            if (!membership) {
+                return next(errorResponse(Status.FORBIDDEN, 'You are not a member of this board'))
+            }
+
+            const permissions = membership.role.permissions?.map((p) => p.name) ?? []
+            const requiredPermissions = Array.isArray(requiredPermission) ? requiredPermission : [requiredPermission]
+
+            const hasPermission = requiredPermissions.every((p) => permissions.includes(p))
+
+            if (!hasPermission) {
+                return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
+            }
+
+            next()
+        } catch (err) {
+            return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
+        }
+    }
 }
