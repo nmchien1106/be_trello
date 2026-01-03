@@ -33,4 +33,12 @@ router.get(
   LabelController.getAllLabelsOnCard
 )
 
+//Get label
+router.get(
+  '/:id',
+  verifyAccessToken,
+  authorizeLabelPermission(Permissions.READ_CARD),
+  LabelController.getLabel
+)
+
 export default router

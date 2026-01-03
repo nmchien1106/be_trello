@@ -55,6 +55,22 @@ class LabelController {
             next(err)
         }
     }
+
+    getLabel = async (req: Request, res: Response, next: NextFunction) => {
+        try{
+            if (!req.user?.id) {
+                return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+            }
+
+            const { id } = req.params
+
+            const result = await LabelService.getLabel(id)
+
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Get label successfully', result))
+        }catch(err){
+            next(err)
+        }
+    }
 }
 
 export default new LabelController()

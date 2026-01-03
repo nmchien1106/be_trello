@@ -115,6 +115,21 @@ class LabelService {
           updatedAt: cl.label.updatedAt
         }))
     }
+
+    async getLabel(labelId: string){
+        const label = await labelRepository.findOne({ where: { id: labelId } })
+
+        if (!label) {
+            throw new Error('Label not found')
+        }
+        return {
+            id: label.id,
+            name: label.name,
+            color: label.color,
+            createdAt: label.createdAt,
+            updatedAt: label.updatedAt
+        }
+    }
 }
 
 export default new LabelService()

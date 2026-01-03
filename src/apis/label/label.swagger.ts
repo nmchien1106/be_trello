@@ -71,4 +71,19 @@ export const labelsRegisterPath = () => {
             )
         }
     })
+
+      labelRegistry.registerPath({
+        method: 'get',
+        path: '/api/labels/{id}',
+        tags: ['Label'],
+        summary: 'Get label on card',
+        description: 'Get label name or color',
+        security: [{ bearerAuth: [] }],
+        request: {
+            params: z.object({ id: z.string().uuid() }),
+        },
+        responses: {
+            ...createApiResponse(CreateLabelResponseSchema, 'Get label successfully', Status.OK)
+        }
+    })
 }
