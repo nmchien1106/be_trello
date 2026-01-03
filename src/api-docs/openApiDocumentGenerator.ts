@@ -8,6 +8,7 @@ import { listRegistry, listsRegisterPath, ListRegisterPaths } from '@/apis/list/
 import { cardRegistry, cardsRegisterPath } from '@/apis/card/card.swagger'
 import { checklistRegistry, checklistRegisterPath } from '@/apis/checklist/checklist.swagger'
 import { commentRegistry, CommentRegisterPaths } from '@/apis/comment/comment.swagger'
+import { labelRegistry, labelsRegisterPath } from '@/apis/label/label.swagger'
 
 export function generateOpenAPIDocument() {
   listsRegisterPath()
@@ -15,6 +16,7 @@ export function generateOpenAPIDocument() {
   cardsRegisterPath()
   checklistRegisterPath()
   CommentRegisterPaths()
+  labelsRegisterPath()
 
   const registry = new OpenAPIRegistry([
     userRegistry,
@@ -25,7 +27,8 @@ export function generateOpenAPIDocument() {
     listRegistry,
     cardRegistry,
     checklistRegistry,
-    commentRegistry
+    commentRegistry,
+    labelRegistry
   ])
 
   registry.registerComponent('securitySchemes', 'bearerAuth', {

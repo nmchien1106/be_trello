@@ -16,6 +16,8 @@ import { Config } from './config'
 import { BoardMembers } from '../entities/board-member.entity'
 import { Checklist } from '../entities/checklist.entity'
 import { ChecklistItem } from '../entities/checklist-item.entity'
+import { Label } from '../entities/label.entity'
+import { CardLabel } from '../entities/card-label.entity'
 
 config()
 
@@ -41,7 +43,9 @@ export default new DataSource({
         BoardMembers,
         Checklist,
         ChecklistItem,
-        Attachment
+        Attachment,
+        Label,
+        CardLabel
     ],
     migrationsTableName: 'migrations',
     ssl: false,

@@ -5,6 +5,7 @@ import { List } from './list.entity'
 import { Workspace } from './workspace.entity'
 import { BoardMembers } from './board-member.entity'
 import { User } from './user.entity'
+import { Label } from './label.entity'
 
 @Entity('boards')
 export class Board extends DateTimeEntity {
@@ -48,4 +49,7 @@ export class Board extends DateTimeEntity {
 
     @OneToMany(() => List, (list) => list.board)
     lists: List[]
+
+    @OneToMany(() => Label, (label) => label.board)
+    labels: Label[]
 }
