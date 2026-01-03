@@ -71,6 +71,22 @@ class LabelController {
             next(err)
         }
     }
+
+    deleteLabel = async (req: Request, res: Response, next: NextFunction) => {
+        try{
+            if (!req.user?.id) {
+                return next(errorResponse(Status.UNAUTHORIZED, 'User info missing',))
+            }
+
+            const { id } = req.params
+            
+            const result = await LabelService.deleteLabel(id)
+
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Delete label successfully'))
+        }catch(err){
+            next(err)
+        }
+    }
 }
 
 export default new LabelController()

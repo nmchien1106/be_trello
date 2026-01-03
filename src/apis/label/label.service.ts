@@ -3,6 +3,7 @@ import { Card } from '@/entities/card.entity'
 import { Label } from '@/entities/label.entity'
 import { CardLabel } from '@/entities/card-label.entity'
 import { LabelColor } from '@/enums/label.enum'
+import { errorResponse } from '@/utils/response'
 
 const labelRepository = AppDataSource.getRepository(Label)
 const cardLabelRepo = AppDataSource.getRepository(CardLabel)
@@ -129,6 +130,19 @@ class LabelService {
             createdAt: label.createdAt,
             updatedAt: label.updatedAt
         }
+    }
+
+    async deleteLabel(labelId: string){
+        const label = await labelRepository.findOne({ where: { id: labelId }})
+        if(!label){
+            throw new Error('Label not found')
+        }
+
+        await cardLabelRepo.delete({
+            label: { id: labelId}
+        })
+
+        await labelRepository.delete(labelId)
     }
 }
 

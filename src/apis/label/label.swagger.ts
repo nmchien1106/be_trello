@@ -72,7 +72,7 @@ export const labelsRegisterPath = () => {
         }
     })
 
-      labelRegistry.registerPath({
+    labelRegistry.registerPath({
         method: 'get',
         path: '/api/labels/{id}',
         tags: ['Label'],
@@ -84,6 +84,25 @@ export const labelsRegisterPath = () => {
         },
         responses: {
             ...createApiResponse(CreateLabelResponseSchema, 'Get label successfully', Status.OK)
+        }
+    })
+
+    labelRegistry.registerPath({
+        method: 'delete',
+        path: '/api/labels/{id}',
+        tags: ['Label'],
+        summary: 'Delete label permanently',
+        description: 'Delete label permanently from board and remove all card-label relations',
+        security: [{ bearerAuth: [] }],
+        request: {
+            params: z.object({
+                id: z.string().uuid()
+            })
+        },
+        responses: {
+            200: { description: 'Delete label successfully' },
+            404: { description: 'Label not found' },
+            403: { description: 'Permission denied' }
         }
     })
 }

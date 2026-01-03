@@ -41,4 +41,12 @@ router.get(
   LabelController.getLabel
 )
 
+//Delete label
+router.delete(
+  '/:id',
+  verifyAccessToken,
+  authorizeLabelPermission(Permissions.UPDATE_CARD),
+  LabelController.deleteLabel
+)
+
 export default router
