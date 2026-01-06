@@ -6,7 +6,7 @@ import { List } from './list.entity'
 import { User } from './user.entity'
 import { Checklist } from './checklist.entity'
 import { Attachment } from './attachment.entity'
-
+import { CardLabel } from './card-label.entity'
 @Entity('cards')
 export class Card extends DateTimeEntity {
     @PrimaryGeneratedColumn('uuid')
@@ -50,4 +50,7 @@ export class Card extends DateTimeEntity {
 
     @OneToMany(() => Attachment, (attachment) => attachment.card)
     attachments: Attachment[]
+
+    @OneToMany(() => CardLabel, (cardLabel) => cardLabel.card)
+    cardLabels: CardLabel[]
 }
