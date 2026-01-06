@@ -103,7 +103,6 @@ route.patch(
 )
 
 
-
 route.post('/:id/presigned-url',
     verifyAccessToken,
     authorizeCardPermission(Permissions.UPDATE_CARD),

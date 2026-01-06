@@ -88,9 +88,9 @@ export interface ApiErrorResponse {
     error?: string
 }
 
-export const ApiResponseSchema = <T extends z.ZodTypeAny>(statusCode: number, dataSchema: T) =>
+export const ApiResponseSchema = <T extends z.ZodTypeAny>(statusCode: number,message: string, dataSchema: T) =>
     z.object({
         status: z.literal(statusCode).openapi({ description: 'HTTP status code' }),
-        message: z.string(),
+        message: z.literal(message).openapi({ description: 'Response message' }),
         data: dataSchema.optional()
     })
