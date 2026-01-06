@@ -146,16 +146,11 @@ class AuthController {
                 path: '/api/auth/refresh-token'
             })
 
-            return res.json(
-                successResponse(Status.OK, 'Login google successfully', {
-                    accessToken,
-                    refreshToken
-                })
-            )
-            // res.redirect(`${Config.corsOrigin}/oauth2?token=${accessToken}`)
+
+            res.redirect(`${Config.corsOrigin}/oauth2?token=${accessToken}`)
         } catch (err) {
             return next(err)
-            // res.redirect(`${Config.corsOrigin}/oauth2?token=null`)
+            res.redirect(`${Config.corsOrigin}/oauth2?token=null`)
         }
     }
 
