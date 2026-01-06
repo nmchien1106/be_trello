@@ -16,16 +16,18 @@ export const UpdateListSchema = z.object({
 
 // ===== ADVANCED =====
 export const ReorderListsSchema = z.object({
-    beforeId: z.string().nullable(),
-    afterId: z.string().nullable(),
-    boardId: z.string()
+    beforeId: z.string().nullable().describe('ID của list đứng trước'),
+    afterId: z.string().nullable().describe('ID của list đứng sau'),
+    boardId: z.string().describe('ID của board hiện tại')
 })
 
 export const MoveListSchema = z.object({
-    boardId: z.string()
+    boardId: z.string().uuid().describe('ID của Board đích'),
+    beforeId: z.string().nullable().optional().describe('ID của list đứng trước tại board đích'),
+    afterId: z.string().nullable().optional().describe('ID của list đứng sau tại board đích')
 })
 
 export const DuplicateListSchema = z.object({
-    boardId: z.string(),
-    title: z.string().optional()
+    boardId: z.string().uuid().describe('ID của Board đích'),
+    title: z.string().optional().describe('Tên mới cho list')
 })

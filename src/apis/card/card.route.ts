@@ -145,4 +145,5 @@ route.post(
     CardBackgroundUpload.single('file'),
     cardController.uploadCardBackground
 )
-export default route;
+
+export default route
