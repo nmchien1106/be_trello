@@ -3,11 +3,11 @@ import { Card } from '@/entities/card.entity'
 import AppDataSource from '@/config/typeorm.config'
 import { Board } from '@/entities/board.entity'
 import { Config } from '@/config/config'
+import { CardMembers } from '@/entities/card-member.entity'
 
 class ListRepository {
     private repo = AppDataSource.getRepository(List)
 
-    // legacy helper
     async findListById(id: string): Promise<List | null> {
         return await this.repo.findOne({ where: { id } })
     }
@@ -50,7 +50,6 @@ class ListRepository {
                 ...(userId ? { createdBy: { id: userId } as any } : {})
             })
 
-            console.log(newList.position)
             return await manager.save(newList)
         })
     }
@@ -107,26 +106,61 @@ class ListRepository {
         return list ? list.position : null
     }
 
-    async duplicateList(sourceListId: string, boardId: string, title?: string): Promise<List> {
-        const sourceList = await this.findListById(sourceListId)
-        if (!sourceList) {
-            throw new Error('Source list not found')
-        }
+    async duplicateList(sourceListId: string, targetBoardId: string, title?: string, userId?: string): Promise<List> {
+        return await AppDataSource.transaction(async (manager) => {
+            const sourceList = await manager.findOne(List, {
+                where: { id: sourceListId },
+                relations: ['cards', 'cards.cardMembers', 'cards.cardMembers.user']
+            })
+            if (!sourceList) throw new Error('Source list not found')
 
-        let pos = Config.defaultGap
-        const highest = await this.getHighestPositionInBoard(boardId)
-        if (highest !== null) pos = highest + Config.defaultGap
+            const lastList = await manager.findOne(List, {
+                where: { board: { id: targetBoardId } },
+                order: { position: 'DESC' }
+            })
+            const newPos = lastList ? lastList.position + Config.defaultGap : Config.defaultGap
 
-        const newList = this.repo.create({
-            title: title || sourceList.title,
-            position: pos,
-            board: { id: boardId } as any
+            const newList = manager.create(List, {
+                title: title || `${sourceList.title} (Copy)`,
+                position: newPos,
+                board: { id: targetBoardId } as any,
+                createdBy: userId ? ({ id: userId } as any) : undefined
+            })
+            const savedList = await manager.save(newList)
+
+            if (sourceList.cards?.length > 0) {
+                for (const card of sourceList.cards) {
+                    if (card.isArchived) continue; // Bỏ qua card đã archive (tùy chọn)
+
+                    const newCard = manager.create(Card, {
+                        title: card.title,
+                        description: card.description,
+                        position: card.position,
+                        coverUrl: card.coverUrl,
+                        priority: card.priority,
+                        dueDate: card.dueDate,
+                        list: savedList,
+                        isArchived: false
+                    })
+                    const savedCard = await manager.save(newCard)
+
+                    if (card.cardMembers?.length > 0) {
+                        const newMembers = card.cardMembers.map(cm => 
+                            manager.create(CardMembers, {
+                                card: savedCard,
+                                user: cm.user
+                            })
+                        )
+                        await manager.save(newMembers)
+                    }
+                }
+            }
+
+            return savedList
         })
-
-        return await this.repo.save(newList)
     }
 
-    getAllCardsInList = async (listId: string, userId: string) => {
+    async getAllCardsInList(listId: string, userId: string) {
         const list = await this.repo.findOne({
             where: { id: listId },
             relations: ['cards'],

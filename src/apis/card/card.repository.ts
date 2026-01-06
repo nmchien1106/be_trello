@@ -137,7 +137,7 @@ class CardRepository {
     async findCardForDuplicate(id: string) {
         return await this.repo.findOne({
             where: { id },
-            relations: ['list', 'list.board', 'cardMembers', 'cardMembers.user', 'cardMembers.role']
+            relations: ['list', 'list.board', 'cardMembers', 'cardMembers.user'] 
         })
     }
 
@@ -172,11 +172,11 @@ class CardRepository {
             })
             const savedCard = await manager.save(newCard)
 
-            if (sourceCard.cardMembers?.length) {
+            if (sourceCard.cardMembers && sourceCard.cardMembers.length > 0) {
                 const newMembers = sourceCard.cardMembers.map(cm =>
                     manager.create(CardMembers, {
                         card: savedCard,
-                        user: cm.user,
+                        user: cm.user
                     })
                 )
                 await manager.save(newMembers)
@@ -184,6 +184,25 @@ class CardRepository {
 
             return savedCard
         })
+    }
+
+    async getListByCardId(cardId: string) {
+        const card = await this.repo.findOne({
+            where: { id: cardId },
+            relations: ['list'],
+            select: {
+                list: {
+                    id: true,
+                    title: true,
+                    position: true,
+                    isArchived: true,
+                    boardId: true,
+                    createdAt: true,
+                    updatedAt: true
+                }
+            }
+        })
+        return card?.list || null
     }
 }
 
