@@ -88,7 +88,6 @@ export const authorizePermissionWorkspace = (requiredPermission: string | string
             if (!membership) {
                 return next(errorResponse(Status.NOT_FOUND, 'Membership not found'))
             }
-            console.log('Membership:', membership)
             const permissions = Array.isArray(requiredPermission) ? requiredPermission : [requiredPermission]
             const hasPermission = permissions.every((perm) => membership.role.permissions.some((p) => p.name === perm))
 
