@@ -1,22 +1,24 @@
 export class UserDTOForRelation {
     id: string
-    name: string
-    email: string
-    constructor(partial: Partial<UserDTOForRelation>) {
-        Object.assign(this, partial)
+    username: string
+    avatarUrl: string | null
+
+    constructor(user: { id: string; username: string}) {
+        this.id = user.id
+        this.username = user.username
     }
 }
 
 export class UserDTO {
     id: string
-    name: string
+    username: string
     email: string
     roles: string[]
     createdAt: Date
     updatedAt: Date
     constructor(user: any) {
         this.id = user.id
-        this.name = user.name
+        this.username = user.username
         this.email = user.email
         this.roles = user.roles ? user.roles.map((role: any) => role.name) : []
         this.createdAt = user.createdAt

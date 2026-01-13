@@ -103,7 +103,6 @@ route.patch(
 )
 
 
-
 route.post('/:id/presigned-url',
     verifyAccessToken,
     authorizeCardPermission(Permissions.UPDATE_CARD),
@@ -146,4 +145,5 @@ route.post(
     CardBackgroundUpload.single('file'),
     cardController.uploadCardBackground
 )
-export default route;
+
+export default route

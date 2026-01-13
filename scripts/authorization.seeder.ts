@@ -50,14 +50,13 @@ export class seedAuthorization {
             { name: 'list:delete', description: 'Delete list permanently' },
 
             // card permissions
-            { name : 'card:read', description: 'Read card' },
+            { name: 'card:read', description: 'Read card' },
             { name: 'card:create', description: 'Create card' },
-            { name: 'card:read', description: 'Read card'},
+            { name: 'card:read', description: 'Read card' },
             { name: 'card:update', description: 'Update card (move, archive, edit)' },
             { name: 'card:delete', description: 'Delete card permanently' },
             { name: 'card:add_member', description: 'Add member to card' },
-            { name: 'card:remove_member', description: 'Remove member from card' },
-
+            { name: 'card:remove_member', description: 'Remove member from card' }
         ]
 
         // save permissions
@@ -85,7 +84,7 @@ export class seedAuthorization {
                 name: 'workspace_admin',
                 description: 'Workspace administrator with elevated access',
                 permissions: createdPermissions.filter(
-                    perm =>
+                    (perm) =>
                         perm.name.startsWith('workspace:') ||
                         perm.name === 'board:create' ||
                         perm.name === 'board:update_board_settings'
@@ -95,7 +94,7 @@ export class seedAuthorization {
                 name: 'user',
                 description: 'Regular user with limited access',
                 permissions: createdPermissions.filter(
-                    perm =>
+                    (perm) =>
                         perm.name === 'user:read' ||
                         perm.name === 'user:update' ||
                         perm.name === 'workspace:read' ||
@@ -106,15 +105,13 @@ export class seedAuthorization {
             {
                 name: 'guest',
                 description: 'Guest user with minimal access',
-                permissions: createdPermissions.filter(
-                    perm => perm.name === 'workspace:read'
-                )
+                permissions: createdPermissions.filter((perm) => perm.name === 'workspace:read')
             },
             {
                 name: 'workspace_member',
                 description: 'Workspace member with standard access',
                 permissions: createdPermissions.filter(
-                    perm =>
+                    (perm) =>
                         perm.name === 'workspace:read' ||
                         perm.name === 'workspace:update' ||
                         perm.name === 'workspace:read_members' ||
@@ -125,17 +122,15 @@ export class seedAuthorization {
                 name: 'board_admin',
                 description: 'Board administrator with full board access',
                 permissions: createdPermissions.filter(
-                    perm =>
-                        perm.name.startsWith('board:') ||
-                        perm.name.startsWith('list:') ||
-                        perm.name.startsWith('card:')
+                    (perm) =>
+                        perm.name.startsWith('board:') || perm.name.startsWith('list:') || perm.name.startsWith('card:')
                 )
             },
             {
                 name: 'board_member',
                 description: 'Board member with limited access',
                 permissions: createdPermissions.filter(
-                    perm =>
+                    (perm) =>
                         perm.name === 'board:read' ||
                         perm.name === 'board:update' ||
                         perm.name === 'board:read_members' ||
@@ -146,8 +141,7 @@ export class seedAuthorization {
                         perm.name === 'card:create' ||
                         perm.name === 'card:update' ||
                         perm.name === 'card:add_member' ||
-                        perm.name === 'card:remove_member' ||
-                        perm.name === 'card:read'
+                        perm.name === 'card:remove_member'
                 )
             }
         ]

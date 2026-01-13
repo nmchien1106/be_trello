@@ -486,18 +486,18 @@ export const boardsRegisterPath = () => {
         }
     })
 
-    //Create template
-    // Create Board
-    boardRegistry.registerPath({
+
+    // Create template
+   boardRegistry.registerPath({
         method: 'post',
-        path: '/api/boards/template',
+        path: '/api/boards/{boardId}/template',
         tags: ['Board'],
-        summary: 'Create new template',
+        summary: 'Create board template from existing board',
         security: [{ bearerAuth: [] }],
         request: {
-            body: {
-                content: { 'application/json': { schema: CreateTemplateSchema } }
-            }
+            params: z.object({
+                boardId: z.string().uuid()
+            })
         },
         responses: {
             ...createApiResponse(BoardResponseSchema, 'Created', Status.CREATED)

@@ -53,14 +53,16 @@ export const AttachmentSchema = z.object({
     })
 })
 export const ReorderCardSchema = z.object({
-    beforeId: z.string().nullable().describe('ID của card đứng trước (nếu có)'),
-    afterId: z.string().nullable().describe('ID của card đứng sau (nếu có)'),
-    targetListId: z.string().uuid().describe('ID của List đích (nếu kéo sang list khác cùng board)')
+    beforeId: z.string().nullable().optional().describe('ID của card đứng trước (nếu có, null nếu ở đầu list)'),
+    afterId: z.string().nullable().optional().describe('ID của card đứng sau (nếu có, null nếu ở cuối list)'),
+    targetListId: z.string().uuid().describe('ID của List đích (bắt buộc để xác định context)')
 })
 
 export const MoveCardToBoardSchema = z.object({
     targetBoardId: z.string().uuid().describe('ID của Board đích'),
-    targetListId: z.string().uuid().describe('ID của List đích thuộc Board đích')
+    targetListId: z.string().uuid().describe('ID của List đích thuộc Board đích'),
+    beforeId: z.string().nullable().optional().describe('ID card đứng trước (để tính vị trí)'),
+    afterId: z.string().nullable().optional().describe('ID card đứng sau (để tính vị trí)')
 })
 
 export const DuplicateCardSchema = z.object({

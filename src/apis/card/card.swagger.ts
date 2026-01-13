@@ -357,6 +357,36 @@ export const cardsRegisterPath = () => {
 
     cardRegistry.registerPath({
         method: 'get',
+        path: '/api/cards/{id}/list',
+        tags: ['Card'],
+        summary: 'Get list the card is on',
+        description: 'Retrieve the list information that contains the specified card',
+        security: [{ bearerAuth: [] }],
+        request: {
+            params: z.object({
+                id: z.string().uuid().describe('Card ID')
+            })
+        },
+        responses: {
+            ...createApiResponse(
+                z.object({
+                    id: z.string().uuid(),
+                    title: z.string(),
+                    position: z.number(),
+                    boardId: z.string().uuid(),
+                    isArchived: z.boolean()
+                }),
+                'Get list successfully',
+                Status.OK
+            ),
+            ...createApiResponse(z.object({ message: z.string() }), 'Unauthorized', Status.UNAUTHORIZED),
+            ...createApiResponse(z.object({ message: z.string() }), 'Permission denied', Status.FORBIDDEN),
+            ...createApiResponse(z.object({ message: z.string() }), 'Card or List not found', Status.NOT_FOUND)
+        }
+    })
+
+    cardRegistry.registerPath({
+        method: 'get',
         path: '/api/cards/{id}/attachments',
         tags: ['Card'],
         summary: 'Get attachments on card',

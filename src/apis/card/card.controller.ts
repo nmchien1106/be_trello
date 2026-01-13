@@ -5,15 +5,14 @@ import cardService from './card.service'
 import { Status } from '@/types/response'
 import cardRepository from './card.repository'
 import boardRepository from '../board/board.repository'
-import { UserDTOForRelation, UserDTO } from '../users/user.dto'
-import { da } from 'zod/v4/locales'
+import { UserDTOForRelation } from '../users/user.dto'
+
 
 class CardController {
     createCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
             const result = await cardService.createCard(req.body, req.user.id)
-
             return res.status(Status.CREATED).json(successResponse(Status.CREATED, 'Card created successfully', result))
         } catch (err: any) {
             next(errorResponse(err.status || Status.BAD_REQUEST, err.message || 'Bad request'))
@@ -34,7 +33,6 @@ class CardController {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
             const result = await cardService.updateCard(req.params.id, req.body, req.user.id)
-
             return res.status(Status.OK).json(successResponse(Status.OK, 'Card updated successfully', result))
         } catch (err: any) {
             next(errorResponse(err.status || 500, err.message))
@@ -55,28 +53,20 @@ class CardController {
         try {
             const cardId = req.params.id
             const memberId = req.body.memberId
-
             const boardId: string = await cardRepository.getBoardIdFromCard(cardId)
-            console.log('boardId', boardId)
             const isMemberOfBoard = await boardRepository.findMemberByUserId(boardId, memberId)
 
             if (!isMemberOfBoard) {
-                return res
-                    .status(Status.BAD_REQUEST)
-                    .json(errorResponse(Status.BAD_REQUEST, 'User is not a member of the board'))
+                return res.status(Status.BAD_REQUEST).json(errorResponse(Status.BAD_REQUEST, 'User is not a member of the board'))
             }
 
             const result = await cardRepository.findMemberById(cardId, memberId)
-
             if (result) {
                 return res.status(Status.CONFLICT).json(errorResponse(Status.CONFLICT, 'Member already added to card'))
             }
 
             const newMember = await cardRepository.addMemberToCard(cardId, memberId)
-
-            return res
-                .status(Status.CREATED)
-                .json(successResponse(Status.CREATED, 'Member added to card successfully', newMember))
+            return res.status(Status.CREATED).json(successResponse(Status.CREATED, 'Member added to card successfully', newMember))
         } catch (err: any) {
             next(err)
         }
@@ -86,39 +76,25 @@ class CardController {
         try {
             const cardId = req.params.id
             const members = await cardRepository.getMembersOfCard(cardId)
-
-            const result = members.map((m) => {
-                {
-                    const userDto = new UserDTOForRelation({
-                        id: m.user.id,
-                        name: m.user.username,
-                        email: m.user.email
-                    })
-                    return userDto
-                }
-            })
-
+            const result = members.map((m) => new UserDTOForRelation({
+                id: m.user.id,
+                username: m.user.username,
+            }))
             return res.status(Status.OK).json(successResponse(Status.OK, 'Get card members successfully', result))
         } catch (err: any) {
             next(err)
         }
     }
 
-    // remove and leave member from card
     removeMemberOfCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const cardId = req.params.id
             const memberId = req.body?.memberId
             const existingMember = await cardRepository.findMemberById(cardId, memberId)
-            console.log('existingMember', existingMember)
             if (!existingMember) {
-                return res
-                    .status(Status.NOT_FOUND)
-                    .json(errorResponse(Status.NOT_FOUND, 'User is not member of the card'))
+                return res.status(Status.NOT_FOUND).json(errorResponse(Status.NOT_FOUND, 'User is not member of the card'))
             }
-
             await cardRepository.removeMemberFromCard(cardId, memberId)
-
             return res.status(Status.OK).json(successResponse(Status.OK, 'Member removed from card successfully'))
         } catch (err: any) {
             next(err)
@@ -145,16 +121,6 @@ class CardController {
         }
     }
 
-    reorderCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
-        try {
-            if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
-            const result = await cardService.reorderCard(req.user.id, req.params.id, req.body)
-            return res.status(result.status).json(successResponse(result.status, result.message, result.data))
-        } catch (err: any) {
-            next(errorResponse(err.status || 500, err.message))
-        }
-    }
-
     duplicateCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
@@ -165,10 +131,31 @@ class CardController {
         }
     }
 
+    reorderCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+
+            const result = await cardService.reorderCard(req.user.id, req.params.id, req.body)
+
+            return res.status(result.status).json(successResponse(result.status, result.message, result.data))
+        } catch (err: any) {
+            next(errorResponse(err.status || 500, err.message))
+        }
+    }
+
     moveCardToBoard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
-            const result = await cardService.moveCardToBoard(req.user.id, req.params.id, req.body)
+
+            const { targetBoardId, targetListId, beforeId, afterId } = req.body
+
+            const result = await cardService.moveCardToBoard(req.user.id, req.params.id, {
+                targetBoardId,
+                targetListId,
+                beforeId,
+                afterId
+            })
+
             return res.status(result.status).json(successResponse(result.status, result.message, result.data))
         } catch (err: any) {
             next(errorResponse(err.status || 500, err.message))
@@ -268,6 +255,18 @@ class CardController {
             });
         } catch (err) {
             next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to get attachments', err));
+        }
+    }
+
+    getListOnCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+
+            const result = await cardService.getListOnCard(req.user.id, req.params.id)
+
+            return res.status(result.status).json(successResponse(result.status, result.message, result.data))
+        } catch (err: any) {
+            next(errorResponse(err.status || Status.INTERNAL_SERVER_ERROR, err.message))
         }
     }
 }

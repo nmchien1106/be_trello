@@ -7,12 +7,10 @@ export class CreateCardDto {
     priority?: 'low' | 'medium' | 'high';
   }
 
-  export class CardDTOForRelation {
-    id!: string;
-    title : string;
+export class CardDTOForRelation {
+  id: string;
 
-    constructor(id: string, title: string) {
-      this.id = id;
-      this.title = title;
-    }
+  constructor(card: { id: string }) {
+    this.id = card.id;
   }
+}
