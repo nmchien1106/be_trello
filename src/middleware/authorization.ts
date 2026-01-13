@@ -74,7 +74,7 @@ export const authorizePermissionWorkspace = (requiredPermission: string | string
                 return next(errorResponse(Status.NOT_FOUND, 'User not found'))
             }
 
-            const workspaceId = req.params.id || req.body.workspaceId
+            const workspaceId = req.params.workspaceId || req.body.workspaceId
             const workspaceMemberRepository = AppDataSource.getRepository(WorkspaceMembers)
 
             const membership = await workspaceMemberRepository.findOne({
@@ -88,7 +88,7 @@ export const authorizePermissionWorkspace = (requiredPermission: string | string
             if (!membership) {
                 return next(errorResponse(Status.NOT_FOUND, 'Membership not found'))
             }
-
+            console.log('Membership:', membership)
             const permissions = Array.isArray(requiredPermission) ? requiredPermission : [requiredPermission]
             const hasPermission = permissions.every((perm) => membership.role.permissions.some((p) => p.name === perm))
 
@@ -98,6 +98,7 @@ export const authorizePermissionWorkspace = (requiredPermission: string | string
 
             next()
         } catch (err) {
+            console.log(err);
             return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
         }
     }
@@ -267,7 +268,7 @@ export const authorizeCardPermission = (requiredPermission: string | string[]) =
     return async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const user = req.user
-            const cardId = req.params.id || req.params.cardId || req.body.cardId || req.query.cardId 
+            const cardId = req.params.id || req.params.cardId || req.body.cardId || req.query.cardId
 
             const cardRepository = AppDataSource.getRepository(Card)
             const card = await cardRepository.findOne({
@@ -288,7 +289,7 @@ export const authorizeCardPermission = (requiredPermission: string | string[]) =
                 relations: ['role', 'role.permissions']
             })
 
-            
+
             if (!membership) {
                 return next(errorResponse(Status.NOT_FOUND, 'You are not a member of this board'))
             }
@@ -301,7 +302,7 @@ export const authorizeCardPermission = (requiredPermission: string | string[]) =
             const permissions = role.permissions?.map((p) => p.name) ?? []
             const requiredPermissions = Array.isArray(requiredPermission) ? requiredPermission : [requiredPermission]
             const hasPermission = requiredPermissions.some((p) => permissions.includes(p))
-        
+
             if (!hasPermission) {
                 return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
             }

@@ -3,6 +3,7 @@ import { Workspace } from '../../entities/workspace.entity'
 import { User } from '@/entities/user.entity'
 import { Role } from '@/entities/role.entity'
 import AppDataSource from '@/config/typeorm.config'
+import { Board } from '@/entities/board.entity';
 
 export class WorkspaceRepository {
     private workspaceRepo = AppDataSource.getRepository(Workspace)
@@ -118,5 +119,16 @@ export class WorkspaceRepository {
             { user: { id: invitation.user.id }, workspace: { id: invitation.workspace.id } },
             { status: invitation.status }
         )
+    }
+
+    async getBoardsInWorkspace(workspaceId: string): Promise<Board[]> {
+        const workspace = await this.workspaceRepo.findOne({
+            where: { id: workspaceId },
+            relations: ['boards']
+        })
+        if (!workspace) {
+            throw new Error('Workspace not found')
+        }
+        return workspace.boards
     }
 }

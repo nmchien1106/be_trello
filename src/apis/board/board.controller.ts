@@ -647,7 +647,7 @@ class BoardController {
                     })
                 )
             })
-    
+
             return res.status(Status.OK).json({
                 status: Status.OK,
                 message: 'Board created from template successfully',
