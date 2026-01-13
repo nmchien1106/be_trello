@@ -35,7 +35,7 @@ router
     .post(verifyAccessToken, validateHandle(InvitationResponseSchema), WorkspaceController.respondToInvitation)
 
 router
-    .route('/:id')
+    .route('/:workspaceId')
     .delete(
         verifyAccessToken,
         authorizePermissionWorkspace(Permissions.DELETE_WORKSPACE),
@@ -88,4 +88,11 @@ router
         WorkspaceController.removeMemberFromWorkspace
     )
 
+router
+    .route('/:workspaceId/boards')
+    .get(
+        verifyAccessToken,
+        authorizePermissionWorkspace(Permissions.READ_WORKSPACE),
+        WorkspaceController.getAllBoardsInWorkspace
+    )
 export default router

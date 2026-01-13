@@ -240,6 +240,20 @@ class WorkspaceController {
             next(err)
         }
     }
+
+    getAllBoardsInWorkspace = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            const user = req.user
+            if (!user) {
+                return next(errorResponse(Status.UNAUTHORIZED, 'Authentication required'))
+            }
+            const workspaceId = req.params.workspaceId
+            const boards = await repo.getBoardsInWorkspace(workspaceId)
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Get all boards in workspace', boards))
+        } catch (err) {
+            next(err)
+        }
+    }
 }
 
 export default new WorkspaceController()
