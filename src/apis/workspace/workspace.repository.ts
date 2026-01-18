@@ -131,4 +131,22 @@ export class WorkspaceRepository {
         }
         return workspace.boards
     }
+
+    async findMemberByUserId(workspaceId: string, userId: string) {
+        return this.workspaceMemberRepo.findOne({
+            where: {
+                workspace: { id: workspaceId },
+                user: { id: userId }
+            }
+        })
+    }
+
+    async findMemberByEmail(workspaceId: string, email){
+        return this.workspaceMemberRepo.findOne({
+            where: {
+                workspace: { id: workspaceId},
+                user: { email: email}
+            }
+        })
+    }
 }
