@@ -32,6 +32,12 @@ export class User extends DateTimeEntity {
     @Column({ type: 'varchar', length: 255, nullable: true })
     public googleID: string
 
+    @Column({ type: 'varchar', length: 100, nullable: true })
+    public jobTitle: string
+
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    public location: string
+    
     @Column({ type: 'bool', nullable: false, default: false })
     public isActive: boolean
 

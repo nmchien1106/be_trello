@@ -26,6 +26,24 @@ route
     )
 
 route
+    .route('/profile')
+    .put(
+        verifyAccessToken,
+        // authorizePermission(Permissions.UPDATE_USER), 
+        validateHandle(UpdateUserRequest), 
+        UserController.updateProfile 
+    )
+
+route
+    .route('/avatar')
+    .post(
+        verifyAccessToken,
+        authorizePermission(Permissions.UPDATE_USER),
+        AvatarUpload.single('avatar'),
+        UserController.uploadAvatar
+    )
+
+route
     .route('/:id')
     .get(verifyAccessToken, authorizePermission(Permissions.READ_USER), UserController.getUserByID)
     .patch(
@@ -36,13 +54,5 @@ route
     )
     .delete(verifyAccessToken, authorizePermission(Permissions.DELETE_USER), UserController.removeUser)
 
-route
-    .route('/avatar')
-    .post(
-        verifyAccessToken,
-        authorizePermission(Permissions.UPDATE_USER),
-        AvatarUpload.single('avatar'),
-        UserController.uploadAvatar
-    )
 
 export default route

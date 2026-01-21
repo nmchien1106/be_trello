@@ -130,7 +130,7 @@ export const authorizeRoleWorkspace = (requiredRoles: string | string[]) => {
             if (!user) {
                 return next(errorResponse(Status.NOT_FOUND, 'User not found'))
             }
-            const workspaceId = req.params.id || req.body.workspaceId
+            const workspaceId = req.params.workspaceId || req.body.workspaceId
             const workspaceMemberRepository = AppDataSource.getRepository(WorkspaceMembers)
             const membership = await workspaceMemberRepository.findOne({
                 where: {
@@ -179,7 +179,7 @@ export const authorizeBoardPermission = (requiredPermission: string | string[]) 
             if (!user) {
                 return next(errorResponse(Status.NOT_FOUND, 'User not found'))
             }
-            const boardId = req.params.id || req.body.boardId || req.query.boardId
+            const boardId = req.params.boardId || req.body.boardId || req.query.boardId || req.params.id
 
             const boardMemberRepository = AppDataSource.getRepository(BoardMembers)
 
@@ -218,7 +218,7 @@ export const authorizeListPermission = (requiredPermission: string | string[]) =
         try {
             const user = req.user
 
-            const listId = req.params.id || req.body.listId || req.query.listId
+            const listId = req.params.listId || req.body.listId || req.query.listId || req.params.id
 
             const listRepository = AppDataSource.getRepository(List)
             const list = await listRepository.findOne({

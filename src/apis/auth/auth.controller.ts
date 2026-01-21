@@ -168,7 +168,9 @@ class AuthController {
                     avatarUrl: true,
                     isActive: true,
                     createdAt: true,
-                    updatedAt: true
+                    updatedAt: true,
+                    jobTitle: true,
+                    location: true
                 }
             })
 

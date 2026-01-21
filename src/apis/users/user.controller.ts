@@ -88,6 +88,31 @@ class UserController {
             next(err)
         }
     }
-}
 
+    updateProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.user?.id
+            
+            if (!userId) {
+                 return res.status(Status.UNAUTHORIZED).json(errorResponse(Status.UNAUTHORIZED, 'Unauthorized'))
+            }
+
+            const data = { ...req.body };
+            if (data.fullName) {
+                data.username = data.fullName;
+                delete data.fullName; 
+            }
+            
+            const updatedUser = await UserRepository.updateUser(userId, data)
+            
+            if (updatedUser) {
+                return res.json(successResponse(Status.OK, 'Profile updated successfully', updatedUser))
+            } else {
+                return res.status(Status.NOT_FOUND).json(errorResponse(Status.NOT_FOUND, 'User not found'))
+            }
+        } catch (err) {
+            next(err)
+        }
+    }
+}
 export default new UserController()
