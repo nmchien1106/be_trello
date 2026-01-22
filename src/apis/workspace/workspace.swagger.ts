@@ -9,7 +9,10 @@ import {
     WorkspaceResponseSchema,
     WorkspaceDetailResponseSchema,
     WorkspaceMemberSchema,
-    InvitationSchema
+    ShareLinkResponseSchema,
+    InvitationSchema,
+    JoinWorkspaceQuerySchema,
+    RevokeShareLinkQuerySchema
 } from './workspace.schema'
 import { createApiResponse } from '@/api-docs/openApiResponseBuilder'
 import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi'
@@ -303,4 +306,80 @@ export const registerPath = () => {
             ...createApiResponse(z.object({ message: z.literal('Workspace not found') }), 'Workspace not found', Status.NOT_FOUND)
         }
     })
+
+    //invite by email
+    workspaceRegister.registerPath({
+        method: 'post',
+        path: '/api/workspaces/{workspaceId}/invite',
+        tags: ['Workspace'],
+        summary: 'Invite member to workspace by email',
+        security: [{ bearerAuth: [] }],
+        request: {
+            params: z.object({
+            workspaceId: z.string().uuid()
+            }),
+            body: {
+            content: {
+                'application/json': {
+                schema: AddWorkspaceMemberRequestSchema
+                }
+            }
+            }
+        },
+        responses: {
+            ...createApiResponse(z.object({ token: z.string() }), 'Invitation sent successfully', Status.OK),
+            ...createApiResponse(z.object({ message: z.literal('Already a member') }), 'Already a member', Status.FORBIDDEN)
+        }
+    })
+
+    //create share link
+    workspaceRegister.registerPath({
+        method: 'post',
+        path: '/api/workspaces/{workspaceId}/share-link',
+        tags: ['Workspace'],
+        summary: 'Create workspace share link',
+        security: [{ bearerAuth: [] }],
+        request: {
+            params: z.object({
+            workspaceId: z.string().uuid()
+            })
+        },
+        responses: {
+            ...createApiResponse(ShareLinkResponseSchema, 'Share link created', Status.OK),
+            ...createApiResponse(z.object({ message: z.literal('Workspace not found') }), 'Workspace not found', Status.NOT_FOUND)
+        }
+    })
+
+    //join 
+    workspaceRegister.registerPath({
+        method: 'get',
+        path: '/api/workspaces/join',
+        tags: ['Workspace'],
+        summary: 'Join workspace via invite or share link',
+        security: [{ bearerAuth: [] }],
+        request: {
+            query: JoinWorkspaceQuerySchema
+        },
+        responses: {
+            ...createApiResponse(z.null(), 'Joined workspace successfully', Status.OK),
+            ...createApiResponse(z.object({ message: z.literal('Invalid or expired token') }), 'Invalid token', Status.BAD_REQUEST)
+        }
+    })
+
+    //revoke share link
+    workspaceRegister.registerPath({
+        method: 'post',
+        path: '/api/workspaces/share-link/revoke',
+        tags: ['Workspace'],
+        summary: 'Revoke workspace share link',
+        security: [{ bearerAuth: [] }],
+        request: {
+            query: RevokeShareLinkQuerySchema
+        },
+        responses: {
+            ...createApiResponse(z.null(), 'Share link revoked', Status.OK)
+        }
+    })
+
+
 }

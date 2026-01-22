@@ -146,3 +146,30 @@ export const InvitationSchema = z.object({
         updatedAt: '2024-01-01T00:00:00Z'
     }
 });
+
+export const ShareLinkResponseSchema = z.object({
+  link: z.string().url()
+}).openapi({
+  description: 'Workspace share link',
+  example: {
+    link: 'https://example.com/api/workspaces/join?token=abc123'
+  }
+})
+
+export const JoinWorkspaceQuerySchema = z.object({
+  token: z.string().uuid()
+}).openapi({
+  description: 'Join workspace by invite or share link token',
+  example: {
+    token: 'cc7a10e2-df5e-4974-8a5c-df541cdc2a17'
+  }
+})
+
+export const RevokeShareLinkQuerySchema = z.object({
+  token: z.string().uuid()
+}).openapi({
+  description: 'Revoke workspace share link',
+  example: {
+    token: 'cc7a10e2-df5e-4974-8a5c-df541cdc2a17'
+  }
+})

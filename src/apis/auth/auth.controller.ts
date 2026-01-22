@@ -206,7 +206,7 @@ class AuthController {
                 )
             }
             const otp = generateNumericOTP(6)
-            const resetLink = `${Config.corsOrigin}/reset-password?email=${email}&otp=${otp}`
+            const resetLink = `${Config.corsOrigin}/react-app/reset-password?email=${email}&otp=${otp}`
             redisClient.setEx(`reset-${email}`, 300, otp)
 
             const mailOptions = {
