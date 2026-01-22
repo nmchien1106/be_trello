@@ -208,6 +208,7 @@ export const authorizeBoardPermission = (requiredPermission: string | string[]) 
             }
             next()
         } catch (err) {
+            console.log(err);
             return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
         }
     }
