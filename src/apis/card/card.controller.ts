@@ -220,7 +220,7 @@ class CardController {
             return next(errorResponse(Status.BAD_REQUEST, 'Missing required fields'));
             }
 
-            const attachment = await cardService.uploadAttachmentFromUrl(id, fileUrl, fileName, req.user!, publicId);
+            const attachment = await cardService.uploadAttachmentFromUrl(id, fileUrl, fileName, req.user!.id, publicId);
 
             return res.status(Status.OK).json({
             status: Status.OK,

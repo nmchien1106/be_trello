@@ -1,0 +1,34 @@
+
+services:
+  backend:
+    build: .
+    container_name: trello-backend
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+    restart: unless-stopped
+
+  redis:
+    image: redis:7
+    container_name: trello-redis
+    ports:
+      - "6379:6379"
+
+  db:
+    image: postgres:15
+    container_name: trello-db
+    environment:
+      POSTGRES_USER: trello
+      POSTGRES_PASSWORD: trello123
+      POSTGRES_DB: trello_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:

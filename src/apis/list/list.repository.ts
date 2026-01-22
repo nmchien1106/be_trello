@@ -83,6 +83,16 @@ class ListRepository {
                 board: {
                     id: true
                 },
+                cards: {
+                    id: true,
+                    title: true,
+                    position: true,
+                    backgroundUrl: true,
+                    priority: true,
+                    dueDate: true,
+                    description: true,
+                    isArchived: true
+                }
             }
         })
     }
@@ -133,7 +143,7 @@ class ListRepository {
                         title: card.title,
                         description: card.description,
                         position: card.position,
-                        coverUrl: card.coverUrl,
+                        backgroundUrl: card.backgroundUrl,
                         priority: card.priority,
                         dueDate: card.dueDate,
                         list: savedList,

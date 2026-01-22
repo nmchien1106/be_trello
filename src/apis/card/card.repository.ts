@@ -3,6 +3,7 @@ import { List } from '@/entities/list.entity'
 import { CardMembers } from '@/entities/card-member.entity'
 import AppDataSource from '@/config/typeorm.config'
 import { Config } from '@/config/config'
+import { DeepPartial } from 'typeorm'
 
 class CardRepository {
     private repo = AppDataSource.getRepository(Card)
@@ -39,10 +40,10 @@ class CardRepository {
                 position: newPosition,
                 list: list,
                 description: data.description ?? null,
-                coverUrl: data.coverUrl ?? null,
+                backgroundUrl: data.coverUrl ?? null,
                 dueDate: dueDateVal,
                 priority: data.priority ?? 'medium'
-            })
+            }as DeepPartial<Card>)
 
             return await manager.save(newCard)
         })
@@ -163,7 +164,7 @@ class CardRepository {
             const newCard = manager.create(Card, {
                 title: newTitle ? newTitle : `${sourceCard.title} Copy`,
                 description: sourceCard.description,
-                coverUrl: sourceCard.coverUrl,
+                backgroundUrl: sourceCard.backgroundUrl,
                 priority: sourceCard.priority,
                 dueDate: sourceCard.dueDate,
                 list: targetList,

@@ -12,6 +12,7 @@ import { Express } from 'express'
 import { User } from '@/entities/user.entity'
 import { Attachment } from '@/entities/attachment.entity'
 import cloudinary from '@/config/cloundinary'
+import { DeepPartial } from 'typeorm'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'application/pdf']
@@ -46,10 +47,10 @@ export class CardService {
                     list: { id: data.listId } as any,
                     position: newPosition,
                     description: data.description || null,
-                    coverUrl: data.coverUrl || null,
+                    backgroundUrl: data.coverUrl || null,
                     priority: data.priority || 'medium',
                     dueDate: data.dueDate ? new Date(data.dueDate) : null
-                })
+                }as DeepPartial<Card>)
 
                 const savedCard = await manager.save(newCard)
                 return savedCard
@@ -260,16 +261,16 @@ export class CardService {
         }
     }
 
-    async uploadAttachmentFromUrl(cardId: string, fileUrl: string, fileName: string, user: User, publicId: string) {
+    async uploadAttachmentFromUrl(cardId: string, fileUrl: string, fileName: string, userId: string, publicId: string) {
         const card = await CardRepository.findById(cardId)
         if (!card) throw new Error('Card not found')
 
         const attachment = attachmentRepo.create({
-            fileName: fileName,
-            fileUrl: fileUrl,
+            fileName,
+            fileUrl,
             card,
-            uploadedBy: user,
-            publicId: publicId
+            uploadedBy: { id: userId } as any,
+            publicId
         })
 
         return await attachmentRepo.save(attachment)
@@ -299,6 +300,25 @@ export class CardService {
             message: 'Get list of card successfully',
             data: list
         }
+    }
+
+    async deleteAttachment(attachmentId: string) {
+        const attachment = await attachmentRepo.findOne({
+            where: { id: attachmentId },
+            relations: ['card']
+        });
+
+        if (!attachment) {
+            throw { status: Status.NOT_FOUND, message: 'Attachment not found' };
+        }
+
+       
+        if (attachment.publicId) {
+            await cloudinary.uploader.destroy(attachment.publicId);
+        }
+
+        await attachmentRepo.remove(attachment);
+        return;
     }
 }
 
