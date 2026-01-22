@@ -19,14 +19,18 @@ class RoleController {
         try {
             const { id } = req.params
             const role = await roleRepository.getRoleById(id)
+
             if (!role) {
-                return res.status(Status.NOT_FOUND).json(successResponse(Status.NOT_FOUND, 'Role not found'))
+                return res
+                .status(Status.NOT_FOUND)
+                .json(successResponse(Status.NOT_FOUND, 'Role not found'))
             }
+
             const roleDTO = new RoleDTO(role)
-            roleDTO.permissions= role.permissions.map((permission) => {
-                return new PermissionDTOForRelation(permission.id, permission.name)
-            })
-            return res.status(Status.OK).json(successResponse(Status.OK, 'Role fetched successfully', roleDTO))
+
+            return res
+            .status(Status.OK)
+            .json(successResponse(Status.OK, 'Role fetched successfully', roleDTO))
         } catch (err) {
             next(err)
         }
@@ -36,14 +40,18 @@ class RoleController {
         try {
             const { name } = req.params
             const role = await roleRepository.getRoleByName(name)
+
             if (!role) {
-                return res.status(Status.NOT_FOUND).json(successResponse(Status.NOT_FOUND, 'Role not found'))
+                return res
+                .status(Status.NOT_FOUND)
+                .json(successResponse(Status.NOT_FOUND, 'Role not found'))
             }
+
             const roleDTO = new RoleDTO(role)
-            roleDTO.permissions= role.permissions.map((permission) => {
-                return new PermissionDTOForRelation(permission.id, permission.name)
-            })
-            return res.status(Status.OK).json(successResponse(Status.OK, 'Role fetched successfully', roleDTO))
+
+            return res
+            .status(Status.OK)
+            .json(successResponse(Status.OK, 'Role fetched successfully', roleDTO))
         } catch (err) {
             next(err)
         }

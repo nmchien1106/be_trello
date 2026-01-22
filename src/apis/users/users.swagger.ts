@@ -78,7 +78,6 @@ export const usersRegisterPath = () => {
         tags: ['Users'],
         summary: 'Upload user avatar',
         security: [{ BearerAuth: [] }],
-        security: [{ bearerAuth: [] }],
         request: {
             body: {
                 description: 'Avatar file to upload',

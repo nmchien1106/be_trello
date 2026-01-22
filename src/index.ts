@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import 'reflect-metadata'
 import AppDataSource from '@/config/typeorm.config'
 import express, { urlencoded } from 'express'
