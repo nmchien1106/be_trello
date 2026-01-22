@@ -6,6 +6,15 @@ export interface AuthRequest extends Request {
     user?: {
         id: string
         [key: string]: any
+    },
+    file?: {
+        fieldname: string
+        originalname: string
+        encoding: string
+        mimetype: string
+        size: number
+        destination: string
+        filename: string
     }
 }
 

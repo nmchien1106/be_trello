@@ -143,6 +143,17 @@ class CardController {
         }
     }
 
+    reorderCardList = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+            const result = await cardService.moveCardToAnotherList(req.user.id, req.params.id, req.body)
+            return res.status(result.status).json(successResponse(result.status, result.message, result.data))
+        }
+        catch (err: any) {
+            next(errorResponse(err.status || 500, err.message))
+        }
+    }
+
     moveCardToBoard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))

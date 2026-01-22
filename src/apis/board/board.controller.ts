@@ -117,7 +117,6 @@ class BoardController {
             }
 
             const { path, filename } = req.file as any
-            console.log(req.file)
             const updatedBoard = await BoardRepository.updateBoard(boardId, {
                 backgroundPath: path,
                 backgroundPublicId: filename

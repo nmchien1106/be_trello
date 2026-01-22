@@ -9,7 +9,7 @@ import { Config } from '@/config/config'
 import { calcPosition } from '@/utils/calcPosition'
 
 export class ListService {
-    
+
     private async checkPermission(userId: string, boardId: string, permission: string) {
         const hasPerm = await BoardRepository.hasPermission(userId, boardId, permission)
         if (!hasPerm) throw { status: Status.FORBIDDEN, message: `Permission denied: ${permission}` }
@@ -40,7 +40,7 @@ export class ListService {
                 })
 
                 const savedList = await manager.save(newList)
-                
+
                 return {
                     status: Status.CREATED,
                     message: 'List created successfully',
@@ -56,7 +56,7 @@ export class ListService {
     async getListById(id: string, userId: string) {
         const list = await ListRepository.findById(id)
         if (!list) throw { status: Status.NOT_FOUND, message: 'List not found' }
-        
+
         await this.checkPermission(userId, list.board.id, Permissions.READ_BOARD)
 
         return { status: Status.OK, message: 'Get list successfully', data: list }
@@ -96,19 +96,20 @@ export class ListService {
         const afterList = data.afterId ? await ListRepository.findListById(data.afterId) : null
 
         const newPosition = await calcPosition(
-            beforeList?.position ?? null, 
-            afterList?.position ?? null, 
+            beforeList?.position ?? null,
+            afterList?.position ?? null,
             data.boardId,
             'list'
         )
 
-        const updated = await ListRepository.updateList(listId, { position: newPosition })
+        await ListRepository.updateList(listId, { position: newPosition })
+        const updated = await ListRepository.getAllListsInBoard(data.boardId)
         return { status: Status.OK, message: 'List reordered successfully', data: updated }
     }
 
     async moveListToAnotherBoard(
-        userId: string, 
-        listId: string, 
+        userId: string,
+        listId: string,
         data: { targetBoardId: string, beforeId?: string | null, afterId?: string | null }
     ) {
         const list = await ListRepository.findById(listId)
@@ -126,7 +127,7 @@ export class ListService {
         if (data.beforeId !== undefined || data.afterId !== undefined) {
             const beforeList = data.beforeId ? await ListRepository.findListById(data.beforeId) : null
             const afterList = data.afterId ? await ListRepository.findListById(data.afterId) : null
-            
+
             newPosition = await calcPosition(
                 beforeList?.position ?? null,
                 afterList?.position ?? null,
@@ -151,7 +152,7 @@ export class ListService {
         if (!sourceList) throw { status: Status.NOT_FOUND, message: 'Source list not found' }
 
         await this.checkPermission(userId, sourceList.board.id, Permissions.READ_BOARD)
-        
+
         await this.checkPermission(userId, targetBoardId, Permissions.CREATE_LIST)
 
         const newList = await ListRepository.duplicateList(listId, targetBoardId, title, userId)

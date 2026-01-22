@@ -4,10 +4,17 @@ import AppDataSource from '@/config/typeorm.config'
 import { Board } from '@/entities/board.entity'
 import { Config } from '@/config/config'
 import { CardMembers } from '@/entities/card-member.entity'
+import boardRepository from '../board/board.repository'
 
 class ListRepository {
     private repo = AppDataSource.getRepository(List)
 
+    async getAllListsInBoard(boardId: string): Promise<List[]> {
+        return await this.repo.find({
+            where: { board: { id: boardId } },
+            order: { position: 'ASC' }
+        })
+    }
     async findListById(id: string): Promise<List | null> {
         return await this.repo.findOne({ where: { id } })
     }
@@ -76,16 +83,6 @@ class ListRepository {
                 board: {
                     id: true
                 },
-                cards: {
-                    id: true,
-                    title: true,
-                    position: true,
-                    coverUrl: true,
-                    priority: true,
-                    dueDate: true,
-                    description: true,
-                    isArchived: true
-                }
             }
         })
     }
@@ -145,7 +142,7 @@ class ListRepository {
                     const savedCard = await manager.save(newCard)
 
                     if (card.cardMembers?.length > 0) {
-                        const newMembers = card.cardMembers.map(cm => 
+                        const newMembers = card.cardMembers.map(cm =>
                             manager.create(CardMembers, {
                                 card: savedCard,
                                 user: cm.user
@@ -163,22 +160,24 @@ class ListRepository {
     async getAllCardsInList(listId: string, userId: string) {
         const list = await this.repo.findOne({
             where: { id: listId },
-            relations: ['cards'],
+            relations: ['cards', 'cards.list'],
             select: {
                 id: true,
                 cards: {
                     id: true,
                     title: true,
                     position: true,
-                    coverUrl: true,
+                    backgroundUrl: true,
                     priority: true,
                     dueDate: true,
                     description: true,
                     isArchived: true,
                     createdAt: true,
-                    updatedAt: true
+                    updatedAt: true,
+                    list: { id: true}
                 }
-            }
+            },
+            order: { cards: { position: 'ASC' } }
         })
 
         if (!list) {

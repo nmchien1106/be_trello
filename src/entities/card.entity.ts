@@ -18,7 +18,7 @@ export class Card extends DateTimeEntity {
     @Column({ type: 'text', nullable: true })
     description: string
 
-    @Column({ type: 'int', default: 0 })
+    @Column({ type: 'float', default: 0 })
     position: number
 
     @Column({ type: 'varchar', length: 255, nullable: true })

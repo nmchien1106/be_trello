@@ -33,7 +33,7 @@ route.patch(
     '/:id',
     verifyAccessToken,
     authorizeCardPermission(Permissions.UPDATE_CARD),
-    validateHandle(CreateCardSchema),
+    // validateHandle(CreateCardSchema),
     cardController.updateCard
 )
 
@@ -71,6 +71,14 @@ route.post(
     authorizeCardPermission(Permissions.UPDATE_BOARD),
     validateHandle(ReorderCardSchema),
     cardController.reorderCard
+)
+
+route.post(
+    '/:id/reorder-list',
+    verifyAccessToken,
+    authorizeCardPermission(Permissions.UPDATE_CARD),
+    validateHandle(ReorderCardSchema),
+    cardController.reorderCardList
 )
 
 route.post(

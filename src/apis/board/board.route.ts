@@ -168,7 +168,7 @@ route.post(
 route.get(
     '/:boardId/lists',
     verifyAccessToken,
-    authorizeBoardPermission(Permissions.READ_BOARD),
+    // authorizeBoardPermission(Permissions.READ_BOARD),
     boardController.getAllListOnBoard
 )
 

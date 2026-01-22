@@ -55,7 +55,7 @@ export const AttachmentSchema = z.object({
 export const ReorderCardSchema = z.object({
     beforeId: z.string().nullable().optional().describe('ID của card đứng trước (nếu có, null nếu ở đầu list)'),
     afterId: z.string().nullable().optional().describe('ID của card đứng sau (nếu có, null nếu ở cuối list)'),
-    targetListId: z.string().uuid().describe('ID của List đích (bắt buộc để xác định context)')
+    listId: z.string().uuid().describe('ID của List đích (bắt buộc để xác định context)')
 })
 
 export const MoveCardToBoardSchema = z.object({
