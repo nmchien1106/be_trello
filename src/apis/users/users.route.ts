@@ -10,10 +10,6 @@ import { Permissions } from '@/enums/permissions.enum'
 const route = Router()
 
 usersRegisterPath()
-// route.route('/').get(UserController.getAll).post(validateHandle(CreateUserSchema), UserController.createUser)
-// route.route('/:id').get(UserController.getUserByID).patch(validateHandle(UpdateUserRequest), UserController.updateUser)
-// route.route('/avatar').post(verifyAccessToken, AvatarUpload.single('avatar'), UserController.uploadAvatar)
-// route.route('/:id').delete(UserController.removeUser)
 
 route
     .route('/')
@@ -27,13 +23,16 @@ route
 
 route
     .route('/profile')
+    .get(
+        verifyAccessToken,
+        // authorizePermission(Permissions.READ_USER),
+        UserController.getProfile
+    )
     .put(
         verifyAccessToken,
-        // authorizePermission(Permissions.UPDATE_USER), 
-        validateHandle(UpdateUserRequest), 
-        UserController.updateProfile 
+        validateHandle(UpdateUserRequest),
+        UserController.updateProfile
     )
-
 route
     .route('/avatar')
     .post(
@@ -53,6 +52,5 @@ route
         UserController.updateUser
     )
     .delete(verifyAccessToken, authorizePermission(Permissions.DELETE_USER), UserController.removeUser)
-
 
 export default route

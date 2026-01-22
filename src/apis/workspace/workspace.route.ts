@@ -2,7 +2,7 @@ import { Permissions } from './../../enums/permissions.enum'
 import WorkspaceController from './workspace.controller'
 import { Router } from 'express'
 import { verifyAccessToken } from '@/utils/jwt'
-import { InvitationResponseSchema, WorkspaceSchema } from './workspace.schema'
+import { InvitationResponseSchema, WorkspaceSchema, AddWorkspaceMemberRequestSchema } from './workspace.schema'
 import { validateHandle } from '@/middleware/validate-handle'
 import { authorizePermission, authorizePermissionWorkspace } from '@/middleware/authorization'
 import { registerPath } from './workspace.swagger'
@@ -32,6 +32,12 @@ router
 // Workspace Invitations
 router.route('/invitations').get(verifyAccessToken, WorkspaceController.getAllInvitations)
 
+router
+  .route('/join')
+  .get(
+    verifyAccessToken,
+    WorkspaceController.joinWorkspace
+  )
 router
     .route('/invitations/:workspaceId')
     .post(verifyAccessToken, validateHandle(InvitationResponseSchema), WorkspaceController.respondToInvitation)
@@ -97,4 +103,30 @@ router
         authorizePermissionWorkspace(Permissions.READ_WORKSPACE),
         WorkspaceController.getAllBoardsInWorkspace
     )
+
+router
+  .route('/:workspaceId/invite')
+  .post(
+    verifyAccessToken,
+    authorizePermissionWorkspace(Permissions.ADD_MEMBER_TO_WORKSPACE),
+    validateHandle(AddWorkspaceMemberRequestSchema),
+    WorkspaceController.inviteByEmail
+  )
+
+router
+  .route('/:workspaceId/share-link')
+  .post(
+    verifyAccessToken,
+    authorizePermissionWorkspace(Permissions.MANAGE_WORKSPACE_PERMISSIONS),
+    WorkspaceController.createShareLink
+  )
+
+
+router
+  .route('/share-link/revoke')
+  .post(
+    verifyAccessToken,
+    authorizePermissionWorkspace(Permissions.MANAGE_WORKSPACE_PERMISSIONS),
+    WorkspaceController.revokeShareLink
+  )
 export default router
