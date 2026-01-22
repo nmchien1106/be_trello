@@ -8,6 +8,7 @@ import { AuthRequest } from '@/types/auth-request'
 import bcrypt from 'bcrypt'
 
 const roleRepo = AppDataSource.getRepository(Role)
+
 class UserController {
     getAll = async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -49,6 +50,27 @@ class UserController {
         }
     }
 
+    updateProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.user?.id
+            
+            if (!userId) {
+                return res.status(Status.UNAUTHORIZED).json(errorResponse(Status.UNAUTHORIZED, 'Unauthorized'))
+            }
+
+            const data = req.body
+
+            const updatedUser = await UserRepository.updateUser(userId, data)
+
+            if (updatedUser) {
+                res.json(successResponse(Status.OK, 'Profile updated successfully', updatedUser))
+            } else {
+                res.status(Status.NOT_FOUND).json(errorResponse(Status.NOT_FOUND, 'User not found'))
+            }
+        } catch (err) {
+            next(err)
+        }
+    }
     updateUser = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { id } = req.params
@@ -78,7 +100,24 @@ class UserController {
             next(err)
         }
     }
+    getProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.user?.id
+            if (!userId) {
+                return res.status(Status.UNAUTHORIZED).json(errorResponse(Status.UNAUTHORIZED, 'Unauthorized'))
+            }
 
+            const user = await UserRepository.findById(userId)
+            
+            if (user) {
+                return res.json(successResponse(Status.OK, 'Get profile successfully', user))
+            } else {
+                return res.status(Status.NOT_FOUND).json(errorResponse(Status.NOT_FOUND, 'User not found'))
+            }
+        } catch (err) {
+            next(err)
+        }
+    }
     removeUser = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { id } = req.params
