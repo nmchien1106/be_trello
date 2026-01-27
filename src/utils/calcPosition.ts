@@ -6,8 +6,8 @@ import { Card } from '@/entities/card.entity'
 type ResourceType = 'list' | 'card'
 
 export async function calcPosition(
-    beforePosition: number | null, 
-    afterPosition: number | null, 
+    beforePosition: number | null,
+    afterPosition: number | null,
     contextId: string,
     type: ResourceType = 'list'
 ): Promise<number> {
@@ -23,8 +23,8 @@ export async function calcPosition(
 
     if (beforePosition !== null && afterPosition !== null) {
         const gap = afterPosition - beforePosition
-        
-        if (gap <= 1) {
+
+        if (gap <= 10) {
             if (type === 'list') {
                 await rebalanceListPositions(contextId) // contextId ở đây là boardId
             } else {
@@ -32,7 +32,7 @@ export async function calcPosition(
             }
             return calcPosition(beforePosition, afterPosition, contextId, type)
         }
-        
+
         newPosition = (beforePosition + afterPosition) / 2
     }
 
@@ -47,8 +47,8 @@ export async function rebalanceListPositions(boardId: string) {
         })
 
         for (let i = 0; i < lists.length; i++) {
-            await manager.update(List, lists[i].id, { 
-                position: (i + 1) * Config.defaultGap 
+            await manager.update(List, lists[i].id, {
+                position: (i + 1) * Config.defaultGap
             })
         }
     })
@@ -63,8 +63,8 @@ export async function rebalanceCardPositions(listId: string) {
         })
 
         for (let i = 0; i < cards.length; i++) {
-            await manager.update(Card, cards[i].id, { 
-                position: (i + 1) * Config.defaultGap 
+            await manager.update(Card, cards[i].id, {
+                position: (i + 1) * Config.defaultGap
             })
         }
     })

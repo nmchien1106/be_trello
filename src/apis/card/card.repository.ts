@@ -138,7 +138,7 @@ class CardRepository {
     async findCardForDuplicate(id: string) {
         return await this.repo.findOne({
             where: { id },
-            relations: ['list', 'list.board', 'cardMembers', 'cardMembers.user'] 
+            relations: ['list', 'list.board', 'cardMembers', 'cardMembers.user']
         })
     }
 

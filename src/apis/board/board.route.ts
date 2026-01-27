@@ -138,13 +138,13 @@ route.post(
 )
 
 // Get Board Detail
-route.get('/:id', verifyAccessToken, authorizeBoardPermission(Permissions.READ_BOARD), boardController.getBoardById)
+route.get('/:id', verifyAccessToken, boardController.getBoardById)
 
 // Get Members
 route.get(
-    '/:id/members',
+    '/:boardId/members',
     verifyAccessToken,
-    authorizeBoardPermission(Permissions.READ_BOARD),
+    authorizeBoardPermission(Permissions.UPDATE_BOARD),
     boardController.getAllMembers
 )
 
@@ -168,7 +168,7 @@ route.post(
 route.get(
     '/:boardId/lists',
     verifyAccessToken,
-    authorizeBoardPermission(Permissions.READ_BOARD),
+    authorizeBoardPermission(Permissions.UPDATE_BOARD),
     boardController.getAllListOnBoard
 )
 

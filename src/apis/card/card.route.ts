@@ -10,7 +10,7 @@ import {
     AddMemberToCard
 } from './card.schema'
 import { Permissions } from './../../enums/permissions.enum';
-import { authorizeCardPermission, authorizeAttachmentPermission } from '@/middleware/authorization';
+import { authorizeCardPermission, authorizeAttachmentPermission, authorizeListPermission } from '@/middleware/authorization';
 import multer from 'multer'
 import { AttachmentUpload, CardBackgroundUpload } from '@/middleware/upload';
 
@@ -20,7 +20,7 @@ const route = Router()
 route.post(
     '/',
     verifyAccessToken,
-    authorizeCardPermission(Permissions.CREATE_CARD),
+    authorizeListPermission(Permissions.UPDATE_LIST),
     validateHandle(CreateCardSchema),
     cardController.createCard
 )
@@ -33,7 +33,7 @@ route.patch(
     '/:id',
     verifyAccessToken,
     authorizeCardPermission(Permissions.UPDATE_CARD),
-    validateHandle(CreateCardSchema),
+    // validateHandle(CreateCardSchema),
     cardController.updateCard
 )
 
@@ -71,6 +71,14 @@ route.post(
     authorizeCardPermission(Permissions.UPDATE_BOARD),
     validateHandle(ReorderCardSchema),
     cardController.reorderCard
+)
+
+route.post(
+    '/:id/reorder-list',
+    verifyAccessToken,
+    authorizeCardPermission(Permissions.UPDATE_CARD),
+    validateHandle(ReorderCardSchema),
+    cardController.reorderCardList
 )
 
 route.post(

@@ -309,7 +309,8 @@ class BoardRepository {
     async getAllListsOnBoard(boardId: string) {
         const board = await this.repo.findOne({
             where: { id: boardId },
-            relations: ['lists', 'lists.cards']
+            relations: ['lists'],
+            order: { lists: { position: 'ASC' } }
         })
         return board?.lists || []
     }

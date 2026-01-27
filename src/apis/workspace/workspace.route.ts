@@ -15,7 +15,9 @@ registerPath()
 // Get all user workspaces
 router
     .route('/')
-    .get(verifyAccessToken, authorizePermission(Permissions.READ_WORKSPACE), WorkspaceController.getAllUserWorkspaces)
+    .get(verifyAccessToken, 
+    authorizePermission(Permissions.READ_WORKSPACE), 
+    WorkspaceController.getAllUserWorkspaces)
 
 // Create Workspace
 router

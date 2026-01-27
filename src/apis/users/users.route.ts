@@ -10,39 +10,36 @@ import { Permissions } from '@/enums/permissions.enum'
 const route = Router()
 
 usersRegisterPath()
-// route.route('/').get(UserController.getAll).post(validateHandle(CreateUserSchema), UserController.createUser)
-// route.route('/:id').get(UserController.getUserByID).patch(validateHandle(UpdateUserRequest), UserController.updateUser)
-// route.route('/avatar').post(verifyAccessToken, AvatarUpload.single('avatar'), UserController.uploadAvatar)
-// route.route('/:id').delete(UserController.removeUser)
 
+// Get all users
 route
     .route('/')
     .get(verifyAccessToken, authorizePermission(Permissions.READ_USER), UserController.getAll)
-    .post(
-        verifyAccessToken,
-        authorizePermission(Permissions.CREATE_USER),
-        validateHandle(CreateUserSchema),
-        UserController.createUser
-    )
 
+// Get profile
 route
-    .route('/:id')
-    .get(verifyAccessToken, authorizePermission(Permissions.READ_USER), UserController.getUserByID)
-    .patch(
+    .route('/profile')
+    .get(
         verifyAccessToken,
-        authorizePermission(Permissions.UPDATE_USER),
-        validateHandle(UpdateUserRequest),
-        UserController.updateUser
+        UserController.getProfile
     )
-    .delete(verifyAccessToken, authorizePermission(Permissions.DELETE_USER), UserController.removeUser)
 
+// Upload avatar
 route
     .route('/avatar')
     .post(
         verifyAccessToken,
-        authorizePermission(Permissions.UPDATE_USER),
         AvatarUpload.single('avatar'),
         UserController.uploadAvatar
     )
+
+// Update self profile
+route.route('/').patch(verifyAccessToken, validateHandle(UpdateUserRequest), UserController.updateProfile);
+
+// Get user by id
+route.route('/:id').get(verifyAccessToken, UserController.getUserByID);
+
+// Delete profile
+route.route('/').delete(verifyAccessToken, UserController.removeUser);
 
 export default route

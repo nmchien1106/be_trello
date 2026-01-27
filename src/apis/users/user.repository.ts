@@ -10,7 +10,9 @@ class UserRepository {
     }
 
     findById = async (id: string): Promise<User | null> => {
-        return this.repo.findOne({ where: { id }, relations: ['role'] })
+        return this.repo.findOne({
+            where: { id }
+        })
     }
 
     createUser = async (data: Partial<User>): Promise<User> => {

@@ -39,7 +39,6 @@ export const verifyAccessToken = async (req: AuthRequest, res: Response, next: N
         if (!req.headers['authorization']) {
             return next(errorResponse(Status.UNAUTHORIZED, 'Unauthorized!'))
         }
-
         const authHeader = req.headers['authorization']
         const token = authHeader.split(' ')[1]
 

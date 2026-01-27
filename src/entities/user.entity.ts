@@ -23,6 +23,9 @@ export class User extends DateTimeEntity {
     @Column({ type: 'varchar', length: 100, nullable: true })
     public username: string
 
+    @Column({ type: 'varchar', length: 50, nullable: true })
+    public fullName: string
+
     @Column({ type: 'text', nullable: true })
     public bio: string
 

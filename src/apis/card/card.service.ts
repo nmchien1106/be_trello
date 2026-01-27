@@ -127,7 +127,8 @@ export class CardService {
         const newPosition = await calcPosition(
             beforeCard?.position ?? null,
             afterCard?.position ?? null,
-            data.targetListId
+            data.targetListId,
+            'card'
         )
 
         const updated = await CardRepository.updateCard(cardId, {

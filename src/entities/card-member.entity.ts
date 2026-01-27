@@ -11,7 +11,9 @@ export class CardMembers extends DateTimeEntity {
     @PrimaryGeneratedColumn('uuid')
     public id: string
 
-    @ManyToOne(() => Card, (card) => card.cardMembers)
+    @ManyToOne(() => Card, (card) => card.cardMembers, {
+        onDelete: 'CASCADE',
+    })
     card: Card
 
     @ManyToOne(() => User, (user) => user.cardMembers)

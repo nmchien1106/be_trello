@@ -49,5 +49,5 @@ export const Config: ConfigTypes = {
     cloundinaryName: process.env.CLOUDINARY_CLOUD_NAME || '',
     cloudinaryApiKey: process.env.CLOUDINARY_API_KEY || '',
     cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET || '',
-    defaultGap: parseInt(process.env.DEFAULT_GAP || '16384'),
+    defaultGap: parseInt(process.env.DEFAULT_GAP || '100'),
 }
