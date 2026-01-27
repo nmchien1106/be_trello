@@ -6,6 +6,7 @@ import { Role } from '@/entities/role.entity'
 import AppDataSource from '@/config/typeorm.config'
 import { AuthRequest } from '@/types/auth-request'
 import bcrypt from 'bcrypt'
+import { RoleDTOForRelation } from '../role/role.dto'
 
 const roleRepo = AppDataSource.getRepository(Role)
 
@@ -33,51 +34,18 @@ class UserController {
         }
     }
 
-    createUser = async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            const { email, password, username } = req.body
-            const isExistEmail = await UserRepository.findByEmailAsync(email)
-            if (isExistEmail) {
-                return next(errorResponse(Status.BAD_REQUEST, 'This email is already used!'))
-            }
-
-            const hashedPassword = await bcrypt.hash(password, 10)
-            const newUser = UserRepository.createUser({ email, password: hashedPassword, username })
-
-            return res.json(successResponse(Status.CREATED, 'Create new user successfully!'))
-        } catch (err) {
-            next(err)
-        }
-    }
-
     updateProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id
 
-            if (!userId) {
-                return res.status(Status.UNAUTHORIZED).json(errorResponse(Status.UNAUTHORIZED, 'Unauthorized'))
-            }
-
             const data = req.body
-
+            if (data.password) {
+                data.password = await bcrypt.hash(data.password, 10)
+            }
             const updatedUser = await UserRepository.updateUser(userId, data)
 
             if (updatedUser) {
-                res.json(successResponse(Status.OK, 'Profile updated successfully', updatedUser))
-            } else {
-                res.status(Status.NOT_FOUND).json(errorResponse(Status.NOT_FOUND, 'User not found'))
-            }
-        } catch (err) {
-            next(err)
-        }
-    }
-    updateUser = async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            const { id } = req.params
-            const data = req.body
-            const updatedUser = await UserRepository.updateUser(id, data)
-            if (updatedUser) {
-                res.json(successResponse(Status.OK, 'User updated successfully', updatedUser))
+                res.json(successResponse(Status.OK, 'Profile updated successfully'))
             } else {
                 res.status(Status.NOT_FOUND).json(errorResponse(Status.NOT_FOUND, 'User not found'))
             }
@@ -93,9 +61,11 @@ class UserController {
                 return res.status(Status.BAD_REQUEST).json(errorResponse(Status.BAD_REQUEST, 'No file uploaded'))
             }
 
-            await UserRepository.updateAvatar(req.user?.id as string, file.path)
+            await UserRepository.updateAvatar(req.user?.id as string, file.path as string)
 
-            return res.json(successResponse(Status.OK, 'Avatar uploaded successfully'))
+            return res.json(successResponse(Status.OK, 'Avatar uploaded successfully', {
+                avatarUrl: file.path
+            }))
         } catch (err) {
             next(err)
         }
@@ -118,6 +88,7 @@ class UserController {
             next(err)
         }
     }
+
     removeUser = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { id } = req.params
@@ -128,30 +99,5 @@ class UserController {
         }
     }
 
-    updateProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
-        try {
-            const userId = req.user?.id
-
-            if (!userId) {
-                 return res.status(Status.UNAUTHORIZED).json(errorResponse(Status.UNAUTHORIZED, 'Unauthorized'))
-            }
-
-            const data = { ...req.body };
-            if (data.fullName) {
-                data.username = data.fullName;
-                delete data.fullName;
-            }
-
-            const updatedUser = await UserRepository.updateUser(userId, data)
-
-            if (updatedUser) {
-                return res.json(successResponse(Status.OK, 'Profile updated successfully', updatedUser))
-            } else {
-                return res.status(Status.NOT_FOUND).json(errorResponse(Status.NOT_FOUND, 'User not found'))
-            }
-        } catch (err) {
-            next(err)
-        }
-    }
 }
 export default new UserController()

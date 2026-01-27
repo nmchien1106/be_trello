@@ -9,9 +9,6 @@ export const UpdateUserRequest = z
         username: z.string().min(3).max(30).optional(),
         fullName: z.string().optional(),
         bio: z.string().max(500).optional(),
-        jobTitle: z.string().max(100).optional(),
-        location: z.string().max(255).optional(),
-        email: z.string().email('Invalid email address').optional(),
         password: z.string().min(6).max(100).optional(),
         avatarUrl: z.string().url().nullable().optional()
     })

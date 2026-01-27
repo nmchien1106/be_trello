@@ -40,15 +40,6 @@ export const usersRegisterPath = () => {
         }
     })
 
-    userRegistry.registerPath({
-        method: 'post',
-        path: '/api/users',
-        tags: ['Users'],
-        security: [{ bearerAuth: [] }],
-        summary: 'Register new user [only admin]',
-        request: { body: PostCreateUser },
-        responses: createApiResponse(z.null(), 'Success')
-    })
 
     userRegistry.registerPath({
         method: 'patch',

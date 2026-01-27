@@ -1,5 +1,5 @@
 import { Request } from 'express'
-import type {} from 'multer'
+import type { } from 'multer'
 
 
 export interface AuthRequest extends Request {
@@ -15,6 +15,7 @@ export interface AuthRequest extends Request {
         size: number
         destination: string
         filename: string
+        path?: string
     }
 }
 
