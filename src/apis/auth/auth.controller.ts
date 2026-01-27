@@ -28,7 +28,7 @@ class AuthController {
             }
 
             const hashedPassword = await bcrypt.hash(password, 10)
-            const newUser = useRepo.create({ email, password: hashedPassword, username })
+            const newUser = useRepo.create({ email, password: hashedPassword, username, isActive: true }) // TODO set isActive to false in production
 
             const roleRepo = AppDataSource.getRepository(Role)
             const userRole = await roleRepo.findOne({ where: { name: 'user' } })

@@ -129,10 +129,13 @@ class CardRepository {
     }
 
     async findCardWithBoard(id: string) {
-        return await this.repo.findOne({
+        console.log('findCardWithBoard called with ID:', id);
+        const card = await this.repo.findOne({
             where: { id },
             relations: ['list', 'list.board']
-        })
+        });
+        console.log('findCardWithBoard result:', card ? 'found' : 'not found');
+        return card;
     }
 
     async findCardForDuplicate(id: string) {

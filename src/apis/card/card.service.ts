@@ -71,12 +71,19 @@ export class CardService {
     }
 
     async deleteCard(cardId: string, userId: string) {
+        console.log('deleteCard called with:', { cardId, userId });
+        
         const card = await CardRepository.findCardWithBoard(cardId)
+        console.log('Found card:', card ? 'exists' : 'not found');
+        
         if (!card) throw { status: Status.NOT_FOUND, message: 'Card not found' }
 
+        console.log('Checking permission for board:', card.list.board.id);
         await this.checkPermission(userId, card.list.board.id, Permissions.DELETE_CARD)
 
+        console.log('Deleting card from repository...');
         await CardRepository.deleteCard(cardId)
+        console.log('Card deleted successfully');
         return
     }
 
@@ -141,13 +148,19 @@ export class CardService {
     async moveCardToAnotherList(
         userId: string,
         cardId: string,
-        data: { targetListId: string; beforeId?: string | null; afterId?: string | null; targetBoardId?: string }
+        data: { listId?: string; targetListId?: string; beforeId?: string | null; afterId?: string | null; targetBoardId?: string }
     ) {
+        // Support both 'listId' (from reorder-list endpoint) and 'targetListId' (from move endpoint)
+        const targetListId = data.listId || data.targetListId;
+        if (!targetListId) {
+            throw { status: Status.BAD_REQUEST, message: 'Target list ID is required' };
+        }
+
         const card = await CardRepository.findCardWithBoard(cardId)
         if (!card) throw { status: Status.NOT_FOUND, message: 'Card not found' }
         const sourceBoardId = card.list.board.id
 
-        const targetList = await ListRepository.findById(data.targetListId)
+        const targetList = await ListRepository.findById(targetListId)
         if (!targetList) throw { status: Status.NOT_FOUND, message: 'Target list not found' }
 
         const realTargetBoardId = targetList.board.id
@@ -312,7 +325,7 @@ export class CardService {
             throw { status: Status.NOT_FOUND, message: 'Attachment not found' };
         }
 
-       
+
         if (attachment.publicId) {
             await cloudinary.uploader.destroy(attachment.publicId);
         }

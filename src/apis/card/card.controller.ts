@@ -165,6 +165,7 @@ class CardController {
                 targetListId,
                 beforeId,
                 afterId
+
             })
 
             return res.status(result.status).json(successResponse(result.status, result.message, result.data))
