@@ -39,7 +39,7 @@ class AuthController {
             }
 
             const hashedPassword = await bcrypt.hash(password, 10)
-            const newUser = useRepo.create({ email, password: hashedPassword, username })
+            const newUser = useRepo.create({ email, password: hashedPassword, username, isActive: true }) // TODO set isActive to false in production
 
             if (!newUser) {
                 return next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to create user'))

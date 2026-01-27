@@ -94,9 +94,14 @@ export class CardService {
     }
 
     async deleteCard(cardId: string, userId: string) {
+        console.log('deleteCard called with:', { cardId, userId })
+
         const card = await CardRepository.findCardWithBoard(cardId)
+        console.log('Found card:', card ? 'exists' : 'not found')
+
         if (!card) throw { status: Status.NOT_FOUND, message: 'Card not found' }
 
+        console.log('Deleting card from repository...')
         await CardRepository.deleteCard(cardId)
 
         EventBus.publish({
@@ -134,7 +139,12 @@ export class CardService {
         const before = data.beforeId ? await CardRepository.getCardById(data.beforeId) : null
         const after = data.afterId ? await CardRepository.getCardById(data.afterId) : null
 
-        const newPosition = await calcPosition(before?.position ?? null, after?.position ?? null, data.targetListId, 'card')
+        const newPosition = await calcPosition(
+            before?.position ?? null,
+            after?.position ?? null,
+            data.targetListId,
+            'card'
+        )
 
         const updated = await CardRepository.updateCard(cardId, { position: newPosition })
 
@@ -236,7 +246,11 @@ export class CardService {
             boardId: attachment.card.list.board.id,
             cardId: attachment.card.id,
             actorId: userId,
-            payload: { fileName: attachment.fileName, cardTitle: attachment.card.title, listName: attachment.card.list.title }
+            payload: {
+                fileName: attachment.fileName,
+                cardTitle: attachment.card.title,
+                listName: attachment.card.list.title
+            }
         })
     }
 
