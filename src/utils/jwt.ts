@@ -41,26 +41,18 @@ export const verifyAccessToken = async (req: AuthRequest, res: Response, next: N
         }
         const authHeader = req.headers['authorization']
         const token = authHeader.split(' ')[1]
-
-        jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, async (error: any, payload: any) => {
-            if (error) {
-                if (error.name === 'TokenExpiredError') {
-                    return next(errorResponse(Status.UNAUTHORIZED, 'Access Token Expired'))
-                }
-
-                return next(errorResponse(Status.UNAUTHORIZED, 'Invalid Access Token'))
-            }
-
-            req.user = payload as { id: string }
-            const redisToken = await redisClient.get(`${req.user?.id}-access`)
-            if (redisToken !== token) {
-                return next(errorResponse(Status.UNAUTHORIZED, 'Invalid Access Token'))
-            }
-        })
-
+        const payload = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!) as { id: string }
+        req.user = payload
+        const redisToken = await redisClient.get(`${req.user.id}-access`)
+        if (redisToken !== token) {
+            return next(errorResponse(Status.UNAUTHORIZED, 'Invalid Access Token'))
+        }
         next()
-    } catch (err) {
-        next(errorResponse(Status.UNAUTHORIZED, 'Invalid access token'))
+    } catch (err: any) {
+        if (err.name === "TokenExpiredError") {
+            return next(errorResponse(Status.UNAUTHORIZED, 'Access Token Expired'))
+        }
+        return next(errorResponse(Status.UNAUTHORIZED, "Invalid Access Token"))
     }
 }
 

@@ -4,7 +4,7 @@ import { Router } from 'express'
 import { verifyAccessToken } from '@/utils/jwt'
 import { InvitationResponseSchema, WorkspaceSchema, AddWorkspaceMemberRequestSchema } from './workspace.schema'
 import { validateHandle } from '@/middleware/validate-handle'
-import { authorizePermission, authorizePermissionWorkspace } from '@/middleware/authorization'
+import { authorizePermissionWorkspace } from '@/middleware/authorization'
 import { registerPath } from './workspace.swagger'
 
 const router = Router()
@@ -15,16 +15,16 @@ registerPath()
 // Get all user workspaces
 router
     .route('/')
-    .get(verifyAccessToken, 
-    authorizePermission(Permissions.READ_WORKSPACE), 
-    WorkspaceController.getAllUserWorkspaces)
+    .get(verifyAccessToken,
+        // authorizePermissionWorkspace(Permissions.READ_WORKSPACE),
+        WorkspaceController.getAllUserWorkspaces)
 
 // Create Workspace
 router
     .route('/')
     .post(
         verifyAccessToken,
-        authorizePermission(Permissions.CREATE_WORKSPACE),
+        // authorizePermissionWorkspace(Permissions.CREATE_WORKSPACE),
         validateHandle(WorkspaceSchema),
         WorkspaceController.createWorkspace
     )
@@ -33,11 +33,11 @@ router
 router.route('/invitations').get(verifyAccessToken, WorkspaceController.getAllInvitations)
 
 router
-  .route('/join')
-  .get(
-    verifyAccessToken,
-    WorkspaceController.joinWorkspace
-  )
+    .route('/join')
+    .get(
+        verifyAccessToken,
+        WorkspaceController.joinWorkspace
+    )
 router
     .route('/invitations/:workspaceId')
     .post(verifyAccessToken, validateHandle(InvitationResponseSchema), WorkspaceController.respondToInvitation)
@@ -105,28 +105,28 @@ router
     )
 
 router
-  .route('/:workspaceId/invite')
-  .post(
-    verifyAccessToken,
-    authorizePermissionWorkspace(Permissions.ADD_MEMBER_TO_WORKSPACE),
-    validateHandle(AddWorkspaceMemberRequestSchema),
-    WorkspaceController.inviteByEmail
-  )
+    .route('/:workspaceId/invite')
+    .post(
+        verifyAccessToken,
+        authorizePermissionWorkspace(Permissions.ADD_MEMBER_TO_WORKSPACE),
+        validateHandle(AddWorkspaceMemberRequestSchema),
+        WorkspaceController.inviteByEmail
+    )
 
 router
-  .route('/:workspaceId/share-link')
-  .post(
-    verifyAccessToken,
-    authorizePermissionWorkspace(Permissions.MANAGE_WORKSPACE_PERMISSIONS),
-    WorkspaceController.createShareLink
-  )
+    .route('/:workspaceId/share-link')
+    .post(
+        verifyAccessToken,
+        authorizePermissionWorkspace(Permissions.MANAGE_WORKSPACE_PERMISSIONS),
+        WorkspaceController.createShareLink
+    )
 
 
 router
-  .route('/share-link/revoke')
-  .post(
-    verifyAccessToken,
-    authorizePermissionWorkspace(Permissions.MANAGE_WORKSPACE_PERMISSIONS),
-    WorkspaceController.revokeShareLink
-  )
+    .route('/share-link/revoke')
+    .post(
+        verifyAccessToken,
+        authorizePermissionWorkspace(Permissions.MANAGE_WORKSPACE_PERMISSIONS),
+        WorkspaceController.revokeShareLink
+    )
 export default router

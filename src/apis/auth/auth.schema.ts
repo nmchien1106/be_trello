@@ -3,42 +3,36 @@ import { ZodRequestBody, extendZodWithOpenApi } from '@asteasolutions/zod-to-ope
 
 extendZodWithOpenApi(z)
 
+export const PasswordSchema = z.string()
+    .min(8, 'Password must be at least 8 characters long')
+    .regex(
+        /(?=^.{8,}$)((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/,
+        'Password must contain at least one uppercase letter, one lowercase letter, and one number or special character'
+    )
+
 export const LoginSchema = z.object({
     email: z.string().email('Invalid email address').openapi({ example: 'admin@gmail.com' }),
-    password: z.string().min(6, 'Password must be at least 6 characters long').openapi({ example: 'Demo@123' })
+    password: PasswordSchema
 })
-export type LoginInput = z.infer<typeof LoginSchema>
 
 export const RegisterSchema = z.object({
     username: z.string(),
     email: z.string().email('Invalid email address'),
-    password: z
-        .string()
-        .min(6, 'Password must be at least 6 characters long')
-        .regex(
-            /(?=^.{8,}$)((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/,
-            'Password must contain at least one uppercase letter, one lowercase letter, and one number or special character'
-        )
+    password: PasswordSchema
 })
-export type RegisterInput = z.infer<typeof RegisterSchema>
 
 export const forgotPasswordSchema = z.object({
     email: z.string().email('Invalid email address')
 })
-export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>
+
 
 export const resetPasswordSchema = z.object({
     email: z.string().email('Invalid email address'),
     otp: z.string().length(6, 'OTP must be 6 digits'),
-    newPassword: z
-        .string()
-        .min(6, 'Password must be at least 6 characters long')
-        .regex(
-            /(?=^.{8,}$)((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/,
-            'Password must contain at least one uppercase letter, one lowercase letter, and one number or special character'
-        )
+    newPassword: PasswordSchema
 })
-export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>
+
+
 
 export const TokenSchema = z.object({
     refreshToken: z.string(),
@@ -49,6 +43,11 @@ export const refreshTokenSchema = z.object({
 })
 export const sendEmailSchema = z.object({
     email: z.string().email('Invalid email address')
+})
+
+export const verifyEmailSchema = z.object({
+    email: z.string().email('Invalid email address'),
+    otp: z.string().length(6, 'OTP must be 6 digits')
 })
 
 export const PostLogin: ZodRequestBody = {

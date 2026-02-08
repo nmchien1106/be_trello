@@ -15,11 +15,12 @@ import { Config } from '@/config/config'
 import generateNumericOTP from '@/utils/generateOTP'
 import emailTransporter from '@/config/email.config'
 import { generateEmailToken } from '@/utils/jwt'
+import sendVerifyEmail from '@/utils/sendVerifyEmail'
 
 const useRepo = AppDataSource.getRepository(User)
 
 class AuthController {
-    async register(req: Request, res: Response, next: NextFunction) {
+    register = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { email, password, username } = req.body
             const isExistEmail = await useRepo.findOneBy({ email })
@@ -30,18 +31,13 @@ class AuthController {
             const hashedPassword = await bcrypt.hash(password, 10)
             const newUser = useRepo.create({ email, password: hashedPassword, username })
 
-            const roleRepo = AppDataSource.getRepository(Role)
-            const userRole = await roleRepo.findOne({ where: { name: 'user' } })
-            if (userRole) {
-                newUser.role = [userRole]
-            }
             if (!newUser) {
                 return next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to create user'))
             }
 
             await useRepo.save(newUser)
 
-            await this.sendVerifyEmail({ body: { email } } as Request, res, next)
+            this.sendVerifyEmail({ body: { email } } as Request, res, next)
 
             return res.status(201).json(successResponse(Status.CREATED, 'Register successfully'))
         } catch (err) {
@@ -49,7 +45,7 @@ class AuthController {
         }
     }
 
-    async login(req: Request, res: Response, next: NextFunction) {
+    login = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { email, password } = req.body
 
@@ -60,8 +56,7 @@ class AuthController {
             if (!user) {
                 return next(errorResponse(Status.BAD_REQUEST, 'Invalid email'))
             }
-
-            const isPasswordValid = bcrypt.compare(password, user.password)
+            const isPasswordValid = bcrypt.compareSync(password, user.password)
             if (!isPasswordValid) {
                 return next(errorResponse(Status.BAD_REQUEST, 'Email or password is incorrect!'))
             }
@@ -109,13 +104,14 @@ class AuthController {
             }
 
             try {
-                jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET!)
+                const decoded = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET!)
                 const redisToken = await redisClient.get(`${user_id}-access`)
-                console.log('Redis token:', redisToken)
-                console.log('Provided access token:', accessToken)
+
                 if (redisToken === accessToken) {
                     return next(errorResponse(Status.BAD_REQUEST, 'Access token is still valid'))
                 }
+
+                return next(errorResponse(Status.UNAUTHORIZED, 'Access token has been revoked'))
             } catch (err: any) {
                 if (err.name !== 'TokenExpiredError') {
                     return next(errorResponse(Status.UNAUTHORIZED, 'Invalid access token'))
@@ -142,53 +138,19 @@ class AuthController {
             res.cookie('refresh', refreshToken, {
                 maxAge: Config.cookieMaxAge,
                 httpOnly: true,
-                secure: false,
-                path: '/api/auth/refresh-token'
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict',
+                path: '/'
             })
 
 
             res.redirect(`${Config.corsOrigin}/oauth2?token=${accessToken}`)
         } catch (err) {
-            return next(err)
             res.redirect(`${Config.corsOrigin}/oauth2?token=null`)
         }
     }
 
-    async me(req: AuthRequest, res: Response, next: NextFunction) {
-        try {
-            const user_id = req.user?.id
-            const user = await useRepo.findOne({
-                where: { id: user_id },
-                relations: ['role'],
-                select: {
-                    id: true,
-                    email: true,
-                    username: true,
-                    bio: true,
-                    avatarUrl: true,
-                    isActive: true,
-                    createdAt: true,
-                    updatedAt: true,
-                    jobTitle: true,
-                    location: true
-                }
-            })
 
-            const { ...userData } = user!
-
-            if (!user) {
-                return next(errorResponse(Status.NOT_FOUND, 'User not found'))
-            }
-
-            return res.json(
-                successResponse(Status.OK, 'User fetched successfully', {
-                    ...userData
-                })
-            )
-        } catch (err) {
-            return next(err)
-        }
-    }
 
     async forgotPassword(req: Request, res: Response, next: NextFunction) {
         try {
@@ -208,7 +170,7 @@ class AuthController {
                 )
             }
             const otp = generateNumericOTP(6)
-            const resetLink = `${Config.corsOrigin}/react-app/reset-password?email=${email}&otp=${otp}`
+            const resetLink = `${Config.corsOrigin}/reset-password?email=${email}&otp=${otp}`
             redisClient.setEx(`reset-${email}`, 300, otp)
 
             const mailOptions = {
@@ -267,17 +229,8 @@ class AuthController {
             if (!user) {
                 return next(errorResponse(Status.BAD_REQUEST, 'User not found'))
             }
-            const otp = generateNumericOTP(6)
-            const verifyEmail = `${Config.baseUrl}/api/auth/verify-email?email=${user.email}&otp=${otp}`
-            redisClient.setEx(`verify-${user.id}`, 300, otp)
-            const mailOptions = {
-                from: Config.emailUser,
-                to: user.email,
-                subject: 'Verify your email',
-                text: `Your verification link is ${verifyEmail}. This link is valid for 5 minutes.`
-            }
-            await emailTransporter.sendMail(mailOptions)
-            // return res.json(successResponse(Status.OK, 'Verification email sent successfully'))
+            await sendVerifyEmail(user)
+            return res.json(successResponse(Status.OK, 'Verification email sent successfully'))
         } catch (err) {
             return next(err)
         }

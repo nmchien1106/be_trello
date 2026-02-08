@@ -55,7 +55,5 @@ export class User extends DateTimeEntity {
 
     @OneToMany(() => Notification, (notification) => notification.user)
     public notifications: Notification[]
-    @ManyToMany(() => Role, (role) => role.users)
-    @JoinTable()
-    public role: Role[]
+
 }

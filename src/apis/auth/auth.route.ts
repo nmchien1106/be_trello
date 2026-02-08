@@ -2,11 +2,10 @@ import AuthController from './auth.controller'
 import { Router } from 'express'
 import { verifyAccessToken, verifyRefreshToken } from '@/utils/jwt'
 import { validateHandle } from '@/middleware/validate-handle'
+import { rateLimiter } from '@/config/rateLimiter.config'
 import {
     RegisterSchema,
     LoginSchema,
-    TokenSchema,
-    refreshTokenSchema,
     forgotPasswordSchema,
     resetPasswordSchema,
     sendEmailSchema
@@ -18,7 +17,7 @@ const route = Router()
 
 AuthRegisterPath()
 
-route.route('/register').post(validateHandle(RegisterSchema), AuthController.register.bind(AuthController))
+route.route('/register').post(validateHandle(RegisterSchema), AuthController.register)
 route.route('/login').post(validateHandle(LoginSchema), AuthController.login)
 route.route('/refresh-token').post(verifyRefreshToken, AuthController.refreshToken)
 
@@ -29,11 +28,9 @@ route.get(
     AuthController.googleOAuthCallback
 )
 
-route.get('/me', verifyAccessToken, AuthController.me)
-
-route.post('/forgot-password', validateHandle(forgotPasswordSchema), AuthController.forgotPassword)
+route.post('/forgot-password', rateLimiter, validateHandle(forgotPasswordSchema), AuthController.forgotPassword)
 route.post('/reset-password', validateHandle(resetPasswordSchema), AuthController.resetPassword)
-route.post('/send-verify-email', validateHandle(sendEmailSchema), AuthController.sendVerifyEmail)
+route.post('/send-verify-email', rateLimiter, validateHandle(sendEmailSchema), AuthController.sendVerifyEmail)
 route.get('/verify-email', AuthController.verifyEmail)
 
 export default route

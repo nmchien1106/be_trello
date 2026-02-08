@@ -4,9 +4,8 @@ import UserController from './user.controller'
 import { Router } from 'express'
 import { verifyAccessToken } from '@/utils/jwt'
 import { validateHandle } from '@/middleware/validate-handle'
-import { UpdateUserRequest, CreateUserSchema } from './user.schema'
-import { authorizePermission } from '@/middleware/authorization'
-import { Permissions } from '@/enums/permissions.enum'
+import { UpdateUserRequest } from './user.schema'
+
 const route = Router()
 
 usersRegisterPath()
@@ -14,7 +13,7 @@ usersRegisterPath()
 // Get all users
 route
     .route('/')
-    .get(verifyAccessToken, authorizePermission(Permissions.READ_USER), UserController.getAll)
+    .get(verifyAccessToken, UserController.getAll)
 
 // Get profile
 route

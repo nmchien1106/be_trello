@@ -10,16 +10,19 @@ import { CardMembers } from './card-member.entity'
 export class Role extends DateTimeEntity {
     @PrimaryGeneratedColumn('uuid')
     public id: string
+
     @Column({ type: 'varchar', unique: true, length: 100 })
     public name: string
+
     @Column({ type: 'text', nullable: true })
     public description: string
-    @ManyToMany(() => User, (user) => user.role)
-    public users: User[]
+
     @OneToMany(() => WorkspaceMembers, (workspaceMember) => workspaceMember.role)
     public workspaceMembers: WorkspaceMembers[]
+
     @OneToMany(() => BoardMembers, (boardMember) => boardMember.role)
     public boardMembers: BoardMembers[]
+
     @ManyToMany(() => Permission, (permission) => permission.roles, {
         cascade: true
     })
