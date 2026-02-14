@@ -1,6 +1,4 @@
 import { Router } from 'express'
-
-
 import UserRoute from '@/apis/users/users.route'
 import AuthRoute from '@/apis/auth/auth.route'
 import WorkspaceRoute from '@/apis/workspace/workspace.route'
@@ -12,6 +10,7 @@ import CardRoute from '@/apis/card/card.route'
 import ChecklistRoute from '@/apis/checklist/checklist.route'
 import CommentRoute from '@/apis/comment/comment.route'
 import LabelRoute from '@/apis/label/label.route'
+import ActivityRoute from '@/apis/activity/activity.route'
 
 const route = Router()
 
@@ -26,5 +25,6 @@ route.use('/cards', CardRoute)
 route.use('/checklists', ChecklistRoute)
 route.use('/comments', CommentRoute)
 route.use('/labels', LabelRoute)
+route.use('/activities', ActivityRoute)
 
 export default route

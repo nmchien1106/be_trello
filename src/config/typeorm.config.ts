@@ -18,6 +18,7 @@ import { Checklist } from '../entities/checklist.entity'
 import { ChecklistItem } from '../entities/checklist-item.entity'
 import { Label } from '../entities/label.entity'
 import { CardLabel } from '../entities/card-label.entity'
+import { Activity } from '@/entities/activity.entity'
 
 config()
 
@@ -45,7 +46,8 @@ export default new DataSource({
         ChecklistItem,
         Attachment,
         Label,
-        CardLabel
+        CardLabel,
+        Activity
     ],
     migrationsTableName: 'migrations',
     ssl: false,

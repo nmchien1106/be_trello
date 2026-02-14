@@ -5,7 +5,16 @@ import { Status } from '@/types/response'
 
 export const validateHandle = (schema: ZodSchema) => (req: Request, res: Response, next: NextFunction) => {
     try {
-        const parseResult = req.method === 'GET' ? schema.safeParse(req.query) : schema.safeParse(req.body)
+        let parseResult
+
+        if (req.method === 'GET') {
+            parseResult = schema.safeParse({
+                params: req.params,
+                query: req.query
+            })
+        } else {
+            parseResult = schema.safeParse(req.body)
+        }
 
         if (!parseResult.success) {
             throw parseResult.error
@@ -27,8 +36,9 @@ export const validateHandle = (schema: ZodSchema) => (req: Request, res: Respons
                 }
             })
 
-
-            return res.status(Status.BAD_REQUEST).json(errorResponse(Status.BAD_REQUEST, 'Validate error: One or more fields are invalid', error))
+            return res
+                .status(Status.BAD_REQUEST)
+                .json(errorResponse(Status.BAD_REQUEST, 'Validate error: One or more fields are invalid', error))
         }
 
         next(err)
