@@ -51,6 +51,6 @@ export default new DataSource({
     ],
     migrationsTableName: 'migrations',
     ssl: false,
-    migrations: [],
-    synchronize: Config.NODE_ENV !== 'production'
+    migrations: ["src/migrations/**/*.ts"],
+    synchronize: true
 })

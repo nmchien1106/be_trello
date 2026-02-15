@@ -2,10 +2,8 @@ import { Column, Entity, JoinTable, ManyToMany, ManyToOne, OneToMany, PrimaryGen
 
 import { DateTimeEntity } from './base/DateTimeEntity'
 import { Permission } from './permission.entity'
-import { User } from './user.entity'
 import { WorkspaceMembers } from './workspace-member.entity'
 import { BoardMembers } from './board-member.entity'
-import { CardMembers } from './card-member.entity'
 @Entity('roles')
 export class Role extends DateTimeEntity {
     @PrimaryGeneratedColumn('uuid')

@@ -11,6 +11,7 @@ import ChecklistRoute from '@/apis/checklist/checklist.route'
 import CommentRoute from '@/apis/comment/comment.route'
 import LabelRoute from '@/apis/label/label.route'
 import ActivityRoute from '@/apis/activity/activity.route'
+import NotificationRoute from '@/apis/notification/notification.route'
 
 const route = Router()
 
@@ -26,5 +27,6 @@ route.use('/checklists', ChecklistRoute)
 route.use('/comments', CommentRoute)
 route.use('/labels', LabelRoute)
 route.use('/activities', ActivityRoute)
+route.use('/notifications', NotificationRoute)
 
 export default route

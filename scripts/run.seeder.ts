@@ -1,14 +1,21 @@
 import 'reflect-metadata'
 import { DataSource } from 'typeorm'
 import { seedAuthorization } from './authorization.seeder'
+import { SeedData } from './data.seeder'
 import AppDataSource from '../src/config/typeorm.config'
 
 async function runSeeder() {
     try {
         const dataSource: DataSource = await AppDataSource.initialize()
-        const seeder = new seedAuthorization(dataSource)
 
-        await seeder.init()
+        console.log('--- Seeding Authorization ---')
+        const authSeeder = new seedAuthorization(dataSource)
+        await authSeeder.init()
+
+        console.log('--- Seeding Test Data ---')
+        const dataSeeder = new SeedData(dataSource)
+        await dataSeeder.init()
+
         console.log('🌱 Seeding completed successfully!')
         await dataSource.destroy()
     } catch (error) {

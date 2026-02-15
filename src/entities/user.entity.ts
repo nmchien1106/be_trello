@@ -6,7 +6,6 @@ import { BoardMembers } from './board-member.entity'
 import { Comment } from './comment.entity'
 import { Notification } from './notification.entity'
 import { WorkspaceMembers } from './workspace-member.entity'
-import { Role } from './role.entity'
 import { Board } from './board.entity'
 
 @Entity('users')
