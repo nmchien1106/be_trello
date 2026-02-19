@@ -64,7 +64,24 @@ class CardRepository {
     getCardsByListId = async (listId: string) => {
         return await this.repo.find({
             where: { list: { id: listId } },
-            order: { position: 'ASC' }
+            order: { position: 'ASC' },
+            select: {
+                id: true,
+                title: true,
+                description: true,
+                position: true,
+                labels: true,
+                dueDate: true,
+                backgroundUrl: true,
+                backgroundPublicId: true,
+                priority: true,
+                isArchived: true,
+                createdAt: true,
+                updatedAt: true,
+                list: {
+                    id: true
+                }
+            }
         })
     }
 

@@ -91,7 +91,9 @@ class ListRepository {
                     priority: true,
                     dueDate: true,
                     description: true,
-                    isArchived: true
+                    isArchived: true,
+                    // --- SỬA Ở ĐÂY: Thêm cột labels ---
+                    labels: true
                 }
             }
         })
@@ -146,6 +148,7 @@ class ListRepository {
                         backgroundUrl: card.backgroundUrl,
                         priority: card.priority,
                         dueDate: card.dueDate,
+                        labels: card.labels,
                         list: savedList,
                         isArchived: false
                     })
@@ -184,7 +187,8 @@ class ListRepository {
                     isArchived: true,
                     createdAt: true,
                     updatedAt: true,
-                    list: { id: true}
+                    list: { id: true},
+                    labels: true
                 }
             },
             order: { cards: { position: 'ASC' } }

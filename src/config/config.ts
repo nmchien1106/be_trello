@@ -21,7 +21,7 @@ interface ConfigTypes {
     corsOrigin: string
     baseUrl: string
     NODE_ENV: 'development' | 'production'
-    cloundinaryName: string
+    cloudinaryName: string 
     cloudinaryApiKey: string
     cloudinaryApiSecret: string
     defaultGap: number
@@ -43,10 +43,10 @@ export const Config: ConfigTypes = {
     googleRedirectURI: process.env.GOOGLE_REDIRECT_URI || '',
     cookieMaxAge: parseInt(process.env.COOKIE_MAX_AGE || '604800000'),
     sessionSecret: process.env.SESSION_SECRET || '',
-    corsOrigin: process.env.CORS_ORIGIN || 'localhost:5173',
-    baseUrl: process.env.BASE_URL || 'localhost:3000',
-    NODE_ENV: process.env.NODE_ENV as 'development' | 'production' || 'development',
-    cloundinaryName: process.env.CLOUDINARY_CLOUD_NAME || '',
+    corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    baseUrl: process.env.BASE_URL || 'http://localhost:3000',
+    NODE_ENV: (process.env.NODE_ENV as 'development' | 'production') || 'development',
+    cloudinaryName: process.env.CLOUDINARY_CLOUD_NAME || '', 
     cloudinaryApiKey: process.env.CLOUDINARY_API_KEY || '',
     cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET || '',
     defaultGap: parseInt(process.env.DEFAULT_GAP || '100'),

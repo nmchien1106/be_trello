@@ -1,12 +1,11 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
+import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
 import { DateTimeEntity } from './base/DateTimeEntity'
 import { CardMembers } from './card-member.entity'
 import { Comment } from './comment.entity'
 import { List } from './list.entity'
-import { User } from './user.entity'
 import { Checklist } from './checklist.entity'
 import { Attachment } from './attachment.entity'
-import { CardLabel } from './card-label.entity'
+
 @Entity('cards')
 export class Card extends DateTimeEntity {
     @PrimaryGeneratedColumn('uuid')
@@ -21,6 +20,12 @@ export class Card extends DateTimeEntity {
     @Column({ type: 'float', default: 0 })
     position: number
 
+    @Column("simple-array", { nullable: true })
+    labels: string[] // Lưu mảng màu: ["#ff0000", "#00ff00"]
+
+    @Column({ name: 'dueDate', type: 'timestamp', nullable: true }) 
+    dueDate: Date
+
     @Column({ type: 'varchar', length: 255, nullable: true })
     backgroundUrl: string
 
@@ -29,9 +34,6 @@ export class Card extends DateTimeEntity {
 
     @Column({ type: 'enum', enum: ['low', 'medium', 'high'], default: 'medium' })
     priority: string
-
-    @Column({ name: 'dueDate', type: 'date', nullable: true })
-    dueDate: Date
 
     @Column({ type: 'boolean', default: false })
     isArchived: boolean
@@ -50,7 +52,4 @@ export class Card extends DateTimeEntity {
 
     @OneToMany(() => Attachment, (attachment) => attachment.card)
     attachments: Attachment[]
-
-    @OneToMany(() => CardLabel, (cardLabel) => cardLabel.card)
-    cardLabels: CardLabel[]
 }
