@@ -47,18 +47,18 @@ export class SeedData {
 
         const usersData = [
             {
-                email: 'testuser1@example.com',
-                username: 'testuser1',
-                fullName: 'Test User One',
+                email: 'admin@gmail.com',
+                username: 'admin',
+                fullName: 'Admin',
                 password: hashedPassword,
                 isActive: true,
                 bio: 'I am the first test user',
                 avatarUrl: 'https://ui-avatars.com/api/?name=Test+User+One'
             },
             {
-                email: 'testuser2@example.com',
-                username: 'testuser2',
-                fullName: 'Test User Two',
+                email: 'user@gmail.com',
+                username: 'user',
+                fullName: 'User',
                 password: hashedPassword,
                 isActive: true,
                 bio: 'I am the second test user',
