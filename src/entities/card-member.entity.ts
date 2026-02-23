@@ -3,7 +3,6 @@ import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeo
 import { DateTimeEntity } from './base/DateTimeEntity'
 import { Card } from './card.entity'
 import { User } from './user.entity'
-import { Role } from './role.entity'
 
 @Entity('card_members')
 @Unique(['card', 'user'])
