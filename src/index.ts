@@ -12,11 +12,29 @@ import './config/passport.config'
 import { openAPIRouter } from '@/api-docs/openApiRouter'
 import cookieParser from 'cookie-parser'
 import morgan from 'morgan'
+import { ActivitySubscriber } from './apis/activity/activity.subscriber'
+import { Activity } from './entities/activity.entity'
+import { ActivityRepository } from './apis/activity/activity.repository'
 
 // Create Express app
 
 const app = express()
 const PORT = 3000
+
+let subscriber: ActivitySubscriber | null = null
+AppDataSource.initialize()
+    .then(() => {
+        console.log('Data Source has been initialized!')
+        const activityRepo = new ActivityRepository(AppDataSource.getRepository(Activity))
+        subscriber = new ActivitySubscriber(activityRepo)
+        return subscriber.init()
+    })
+    .then(() => {
+        console.log('Activity subscriber registered')
+    })
+    .catch((err) => {
+        console.error('Error during Data Source initialization or subscriber setup:', err)
+    })
 
 app.use(morgan('dev')) // Logging middleware
 
@@ -43,15 +61,6 @@ app.use(
 
 app.use(passport.initialize())
 app.use(passport.session())
-
-// Connect database
-AppDataSource.initialize()
-    .then(() => {
-        console.log('Data Source has been initialized!')
-    })
-    .catch((err) => {
-        console.error('Error during Data Source initialization:', err)
-    })
 
 app.use(cookieParser()) // Parse cookies
 

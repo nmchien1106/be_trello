@@ -1,6 +1,6 @@
 import multer from 'multer'
 import cloudinary from '@/config/cloundinary'
-import { CloudinaryStorage } from 'multer-storage-cloudinary'
+import CloudinaryStorage from 'multer-storage-cloudinary'
 
 
 const AvatarStorage = new CloudinaryStorage({

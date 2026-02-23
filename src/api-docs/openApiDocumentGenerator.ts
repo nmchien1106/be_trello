@@ -9,41 +9,44 @@ import { cardRegistry, cardsRegisterPath } from '@/apis/card/card.swagger'
 import { checklistRegistry, checklistRegisterPath } from '@/apis/checklist/checklist.swagger'
 import { commentRegistry, CommentRegisterPaths } from '@/apis/comment/comment.swagger'
 import { labelRegistry, labelsRegisterPath } from '@/apis/label/label.swagger'
+import { activityRegistry, activitiesRegisterPath } from '@/apis/activity/activity.swagger'
 
 export function generateOpenAPIDocument() {
-  listsRegisterPath()
-  ListRegisterPaths()
-  cardsRegisterPath()
-  checklistRegisterPath()
-  CommentRegisterPaths()
-  labelsRegisterPath()
+    listsRegisterPath()
+    ListRegisterPaths()
+    cardsRegisterPath()
+    checklistRegisterPath()
+    CommentRegisterPaths()
+    labelsRegisterPath()
+    activitiesRegisterPath()
 
-  const registry = new OpenAPIRegistry([
-    userRegistry,
-    authRegistry,
-    roleRegistry,
-    workspaceRegister,
-    boardRegistry,
-    listRegistry,
-    cardRegistry,
-    checklistRegistry,
-    commentRegistry,
-    labelRegistry
-  ])
+    const registry = new OpenAPIRegistry([
+        userRegistry,
+        authRegistry,
+        roleRegistry,
+        workspaceRegister,
+        boardRegistry,
+        listRegistry,
+        cardRegistry,
+        checklistRegistry,
+        commentRegistry,
+        labelRegistry,
+        activityRegistry
+    ])
 
-  registry.registerComponent('securitySchemes', 'bearerAuth', {
-    type: 'http',
-    scheme: 'bearer',
-    bearerFormat: 'JWT'
-  })
+    registry.registerComponent('securitySchemes', 'bearerAuth', {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT'
+    })
 
-  const generator = new OpenApiGeneratorV3(registry.definitions)
+    const generator = new OpenApiGeneratorV3(registry.definitions)
 
-  return generator.generateDocument({
-    openapi: '3.0.0',
-    info: {
-      title: 'Swagger API',
-      version: '1.0.0'
-    }
-  })
+    return generator.generateDocument({
+        openapi: '3.0.0',
+        info: {
+            title: 'Swagger API',
+            version: '1.0.0'
+        }
+    })
 }
