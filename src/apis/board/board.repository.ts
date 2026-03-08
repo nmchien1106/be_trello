@@ -5,8 +5,11 @@ import { User } from '@/entities/user.entity'
 import { BoardMembers } from '@/entities/board-member.entity'
 import { Workspace } from '@/entities/workspace.entity'
 import { WorkspaceMembers } from '@/entities/workspace-member.entity'
-import { Brackets, Repository } from 'typeorm'
+import { Brackets, Repository, In } from 'typeorm'
 import { Permissions } from '@/enums/permissions.enum'
+import { List } from '@/entities/list.entity'
+import { Card } from '@/entities/card.entity'
+import { Activity } from '@/entities/activity.entity'
 
 class BoardRepository {
     private repo = AppDataSource.getRepository(Board)
@@ -22,12 +25,52 @@ class BoardRepository {
         return this.repo.findOne({ where: { id: boardId } })
     }
     updateBoard = async (boardId: string, updateData: Partial<Board>): Promise<Board | null> => {
+        if (!boardId) {
+            throw new Error('Board ID is required for update')
+        }
+        if (!updateData || Object.keys(updateData).length === 0) {
+            throw new Error('No update data provided')
+        }
+
         await this.repo.update(boardId, updateData)
         return this.repo.findOne({ where: { id: boardId } })
     }
 
     deleteBoard = async (boardId: string): Promise<void> => {
-        await this.repo.delete(boardId)
+        if (!boardId) {
+            throw new Error('Board ID is required for delete')
+        }
+        
+        try {
+            await AppDataSource.transaction(async (manager) => {
+                const listRepo = manager.getRepository(List)
+                const cardRepo = manager.getRepository(Card)
+                const boardMemberRepo = manager.getRepository(BoardMembers)
+                const boardRepo = manager.getRepository(Board)
+                const activityRepo = manager.getRepository(Activity)
+
+                await activityRepo.update({ boardId: boardId }, { boardId: null })
+                
+                const lists = await listRepo.find({ where: { board: { id: boardId } } })
+                
+                if (lists.length > 0) {
+                    const listIds = lists.map(l => l.id)
+                    await cardRepo.delete({ list: { id: In(listIds) } })
+                }
+
+                await listRepo.delete({ board: { id: boardId } })
+ 
+                await boardMemberRepo.delete({ board: { id: boardId } })
+                
+                const result = await boardRepo.delete({ id: boardId })
+                if (result.affected === 0) {
+                    throw new Error('Board not found or already deleted')
+                }
+            })
+        } catch (error: any) {
+            console.error('Error deleting board:', error.message)
+            throw error
+        }
     }
     async findMemberByEmail(boardId: string, email: string): Promise<boolean> {
         const board = await this.repo.findOne({

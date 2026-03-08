@@ -11,6 +11,9 @@ import redisClient from '@/config/redis.config'
 import { Config } from '@/config/config'
 import crypto from 'crypto'
 import emailTransporter from '@/config/email.config'
+import { EventBus } from '@/events/event-bus'
+import { EventType } from '@/enums/event-type.enum'
+import { DomainEvent } from '@/events/interface'
 
 const repo = new WorkspaceRepository()
 
@@ -38,7 +41,7 @@ class WorkspaceController {
             if (!user) {
                 return next(errorResponse(Status.UNAUTHORIZED, 'Authentication required'))
             }
-            const workspace = await repo.findWithMembersById(req.params.id)
+            const workspace = await repo.findWithMembersById(req.params.workspaceId)
 
             if (!workspace) {
                 return res.status(Status.NOT_FOUND).json(errorResponse(Status.NOT_FOUND, 'Workspace not found'))
@@ -47,6 +50,7 @@ class WorkspaceController {
                 id: workspace.id,
                 title: workspace.title,
                 description: workspace.description,
+                is_Archived: workspace.isArchived,
                 members: workspace.workspaceMembers.map((wm) => ({
                     id: wm.user.id,
                     username: wm.user.username,
@@ -67,6 +71,17 @@ class WorkspaceController {
             }
             const createdWorkspace = await repo.createWorkspace(req.body, user.id)
             await repo.addMemberToWorkspace(user.id, createdWorkspace.id, Roles.WORKSPACE_ADMIN, 'accepted')
+            const event: DomainEvent = {
+                eventId: crypto.randomUUID(),
+                type: EventType.WORKSPACE_CREATED,
+                workspaceId: createdWorkspace.id,
+                actorId: user.id,
+                payload: {
+                    title: createdWorkspace.title
+                }
+            }
+
+            EventBus.publish(event)
             return res
                 .status(Status.CREATED)
                 .json(successResponse(Status.CREATED, 'Created workspace', createdWorkspace))
@@ -77,7 +92,19 @@ class WorkspaceController {
 
     updateWorkspace = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
-            const data = await repo.updateWorkspace(req.params.id, req.body)
+            const data = await repo.updateWorkspace(req.params.workspaceId, req.body)
+            const event: DomainEvent = {
+                eventId: crypto.randomUUID(),
+                type: EventType.WORKSPACE_UPDATED,
+                workspaceId: req.params.workspaceId,
+                actorId: req.user.id,
+                payload: {
+                    updates: req.body
+                }
+            }
+
+            EventBus.publish(event)
+
             return res.status(Status.OK).json(successResponse(Status.OK, 'Updated workspace', data))
         } catch (err) {
             next(err)
@@ -90,9 +117,18 @@ class WorkspaceController {
             if (!user) {
                 return next(errorResponse(Status.UNAUTHORIZED, 'Authentication required'))
             }
-            await repo.deleteWorkspace(req.params.id)
+            await repo.deleteWorkspace(req.params.workspaceId)
+            const event: DomainEvent = {
+                eventId: crypto.randomUUID(),
+                type: EventType.WORKSPACE_DELETED,
+                workspaceId: req.params.workspaceId,
+                actorId: user.id
+            }
+
+            EventBus.publish(event)
             return res.status(Status.OK).json(successResponse(Status.OK, 'Deleted workspace'))
         } catch (err) {
+            console.error(err)
             next(err)
         }
     }
@@ -106,6 +142,12 @@ class WorkspaceController {
             }
             const workspaceId: string = req.params.workspaceId
             await repo.archiveWorkspace(workspaceId)
+            EventBus.publish({
+                eventId: crypto.randomUUID(),
+                type: EventType.WORKSPACE_ARCHIVED,
+                workspaceId,
+                actorId: user.id
+            })
             return res.status(Status.OK).json(successResponse(Status.OK, 'Archived workspace'))
         } catch (err) {
             next(err)
@@ -147,6 +189,17 @@ class WorkspaceController {
             }
 
             await repo.addMemberToWorkspace(user.id, workspaceId, Roles.WORKSPACE_MEMBER)
+            const event: DomainEvent = {
+                eventId: crypto.randomUUID(),
+                type: EventType.WORKSPACE_MEMBER_ADDED,
+                workspaceId,
+                actorId: req.user!.id,
+                payload: {
+                    memberEmail: email
+                }
+            }
+
+            EventBus.publish(event)
             return res.status(Status.OK).json(successResponse(Status.OK, 'Added member to workspace'))
         } catch (err) {
             next(err)
@@ -167,6 +220,15 @@ class WorkspaceController {
             }
 
             await repo.removeMemberFromWorkspace(member.id, workspaceId)
+            EventBus.publish({
+                eventId: crypto.randomUUID(),
+                type: EventType.WORKSPACE_MEMBER_REMOVED,
+                workspaceId,
+                actorId: user.id,
+                payload: {
+                    memberId: member.id
+                }
+            })
             return res.status(Status.OK).json(successResponse(Status.OK, 'Removed member from workspace'))
         } catch (err) {
             next(err)
@@ -190,6 +252,7 @@ class WorkspaceController {
                 return {
                     id: wm.user.id,
                     username: wm.user.username,
+                    email: wm.user.email,
                     role: wm.role.name
                 }
             })
@@ -305,7 +368,7 @@ class WorkspaceController {
             JSON.stringify({ workspaceId, email })
         )
 
-        const inviteLink = `${Config.baseUrl}/api/workspaces/join?token=${token}`
+        const inviteLink = `${Config.corsOrigin}/react-app/workspace/join?token=${token}`
         const mailOptions = {
             from: Config.emailUser,
             to: email,
@@ -329,7 +392,7 @@ class WorkspaceController {
         const token = crypto.randomUUID()
         const payload = {workspaceId}
         await redisClient.setEx(`workspaceShareLink:${token}`, 7 * 24 * 60 * 60, JSON.stringify(payload))
-        const link = `${Config.baseUrl}/api/workspaces/join?token=${token}`
+        const link = `${Config.corsOrigin}/react-app/workspace/join?token=${token}`
         return res.status(Status.OK).json(successResponse(Status.OK, 'Share link created', { link }))
     }
 
@@ -363,11 +426,22 @@ class WorkspaceController {
                 'accepted'
             )
 
+            EventBus.publish({
+                eventId: crypto.randomUUID(),
+                type: EventType.WORKSPACE_MEMBER_JOINED,
+                workspaceId,
+                actorId: userId
+            })
+
             if (type === 'invite') {
                 await redisClient.del(`workspaceInvite:${token}`)
             }
 
-            return res.status(Status.OK).json(successResponse(Status.OK, 'Successfully joined the workspace'))
+            return res.status(Status.OK).json(
+                successResponse(Status.OK, 'Successfully joined the workspace', {
+                    workspaceId
+                })
+            )
         }catch(err){
             next(err)
         }
