@@ -16,12 +16,14 @@ import { Express } from 'express'
 import { User } from '@/entities/user.entity'
 import { Attachment } from '@/entities/attachment.entity'
 import cloudinary from '@/config/cloundinary'
-import { DeepPartial } from 'typeorm'
+import { DeepPartial, Between, Like } from 'typeorm'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'application/pdf']
 
 const attachmentRepo = AppDataSource.getRepository(Attachment)
+const cardRepo = AppDataSource.getRepository(Card)
+
 export class CardService {
     private async checkPermission(userId: string, boardId: string, permission: string) {
         const hasPerm = await BoardRepository.hasPermission(userId, boardId, permission)
@@ -78,13 +80,25 @@ export class CardService {
     }
 
     async updateCard(cardId: string, data: any, userId: string) {
-        const card = await CardRepository.findCardWithBoard(cardId)
+        const card = await cardRepo.findOne({ 
+            where: { id: cardId },
+            relations: ['list', 'list.board'] 
+        })
+        
         if (!card) throw { status: Status.NOT_FOUND, message: 'Card not found' }
-
         await this.checkPermission(userId, card.list.board.id, Permissions.UPDATE_CARD)
-
-        const updated = await CardRepository.updateCard(cardId, data)
-        // publish card updated event
+        if (data.title !== undefined) card.title = data.title;
+        if (data.description !== undefined) card.description = data.description;
+        if (data.dueDate !== undefined) {
+            card.dueDate = data.dueDate ? new Date(data.dueDate) : null as any;
+        }
+        if (data.labels !== undefined) {
+             card.labels = data.labels;
+        }
+        if (data.priority !== undefined) card.priority = data.priority;
+        if (data.isArchived !== undefined) card.isArchived = data.isArchived;
+        const updated = await cardRepo.save(card);
+        
         const updateEvent: DomainEvent = {
             eventId: crypto.randomUUID(),
             type: EventType.CARD_UPDATED,
@@ -384,6 +398,46 @@ export class CardService {
 
         await attachmentRepo.remove(attachment)
         return
+    }
+
+    async getCardsDueSoon(userId: string) {
+        const today = new Date()
+        const nextWeek = new Date()
+        nextWeek.setDate(today.getDate() + 7)
+
+        return await cardRepo.find({
+            where: {
+                cardMembers: { user: { id: userId } },
+                isArchived: false,
+                dueDate: Between(today, nextWeek)
+            },
+            relations: ['list', 'list.board'],
+            order: { dueDate: 'ASC' }
+        })
+    }
+
+    async getAssignedCards(userId: string, query: any) {
+        return await cardRepo.find({
+            where: {
+                cardMembers: { user: { id: userId } },
+                isArchived: false
+            },
+            relations: ['list', 'list.board'],
+            order: { createdAt: 'DESC' },
+            take: 20
+        })
+    }
+
+    async globalSearch(userId: string, keyword: string) {
+        if (!keyword) return []
+        return await cardRepo.find({
+            where: [
+                { title: Like(`%${keyword}%`), cardMembers: { user: { id: userId } }, isArchived: false },
+                { description: Like(`%${keyword}%`), cardMembers: { user: { id: userId } }, isArchived: false }
+            ],
+            relations: ['list', 'list.board'],
+            take: 10
+        })
     }
 }
 
