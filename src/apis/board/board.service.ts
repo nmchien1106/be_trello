@@ -1,4 +1,8 @@
 import BoardRepository from './board.repository'
+import { EventBus } from '@/events/event-bus'
+import { DomainEvent } from '@/events/interface'
+import { EventType } from '@/enums/event-type.enum'
+import crypto from 'crypto'
 import { CreateBoardDto } from './board.dto'
 import { Status } from '@/types/response'
 
@@ -59,6 +63,21 @@ export class BoardService {
                 createdAt: board.createdAt,
                 updatedAt: board.updatedAt
             }
+            const existing = await BoardRepository.findMemberByUserId(board.id, userId)
+            if (!existing) {
+                await BoardRepository.addMemberToBoard(board.id, userId, 'board_admin')
+            }
+
+            // publish board created event for activity logging
+            const event: DomainEvent = {
+                eventId: crypto.randomUUID(),
+                type: EventType.BOARD_CREATED,
+                boardId: board.id,
+                actorId: userId,
+                payload: { title: board.title, description: board.description }
+            }
+            EventBus.publish(event)
+
             return {
                 status: Status.CREATED,
                 message: 'Board created successfully',

@@ -25,6 +25,10 @@ import { CardMembers } from '@/entities/card-member.entity'
 import { Permissions } from '@/enums/permissions.enum'
 import { Auth } from 'typeorm'
 import boardRepository from './board.repository'
+import { EventBus } from '@/events/event-bus'
+import { DomainEvent } from '@/events/interface'
+import { EventType } from '@/enums/event-type.enum'
+import crypto from 'crypto'
 
 const roleRepo = AppDataSource.getRepository(Role)
 const listRepo = AppDataSource.getRepository(List)
@@ -41,11 +45,23 @@ class BoardController {
         try {
             const { boardId } = req.params
             const data = req.body
+            const userId = req.user?.id
 
             const updatedBoard = await BoardRepository.updateBoard(boardId, data)
             if (!updatedBoard) {
                 return next(errorResponse(Status.NOT_FOUND, 'Board not found'))
             }
+            
+            // Publish board updated event for activity logging
+            const event: DomainEvent = {
+                eventId: crypto.randomUUID(),
+                type: EventType.BOARD_UPDATED,
+                boardId: boardId,
+                actorId: userId,
+                payload: { title: updatedBoard.title, changes: data }
+            }
+            EventBus.publish(event)
+            
             return res.status(Status.OK).json({
                 status: Status.OK,
                 message: 'Board updated successfully',
@@ -59,6 +75,8 @@ class BoardController {
     archiveBoard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const { boardId } = req.params
+            const userId = req.user?.id
+            
             const board = await BoardRepository.getBoardById(boardId)
             if (!board) {
                 return next(errorResponse(Status.NOT_FOUND, 'Board not found'))
@@ -67,6 +85,16 @@ class BoardController {
                 return next(errorResponse(Status.BAD_REQUEST, 'Board is already archived'))
             }
             const updatedBoard = await BoardRepository.updateBoard(boardId, { isArchived: true })
+            
+            const event: DomainEvent = {
+                eventId: crypto.randomUUID(),
+                type: EventType.BOARD_ARCHIVED,
+                boardId: boardId,
+                actorId: userId,
+                payload: { title: board.title }
+            }
+            EventBus.publish(event)
+            
             return res.status(Status.OK).json({
                 status: Status.OK,
                 message: 'Board archived successfully'
@@ -79,6 +107,8 @@ class BoardController {
     reopenBoard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const { boardId } = req.params
+            const userId = req.user?.id
+            
             const board = await BoardRepository.getBoardById(boardId)
             if (!board) {
                 return next(errorResponse(Status.NOT_FOUND, 'Board not found'))
@@ -87,6 +117,17 @@ class BoardController {
                 return next(errorResponse(Status.BAD_REQUEST, 'Board is not archived'))
             }
             const updatedBoard = await BoardRepository.updateBoard(boardId, { isArchived: false })
+            
+            // Publish board restored event for activity logging
+            const event: DomainEvent = {
+                eventId: crypto.randomUUID(),
+                type: EventType.BOARD_RESTORED,
+                boardId: boardId,
+                actorId: userId,
+                payload: { title: board.title }
+            }
+            EventBus.publish(event)
+            
             return res.status(Status.OK).json({
                 status: Status.OK,
                 message: 'Board reopened successfully'
@@ -99,12 +140,30 @@ class BoardController {
     deleteBoardPerrmanently = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const { boardId } = req.params
+            const userId = req.user?.id
+            
+            const board = await BoardRepository.getBoardById(boardId)
+            if (!board) {
+                return next(errorResponse(Status.NOT_FOUND, 'Board not found'))
+            }
+            
             await BoardRepository.deleteBoard(boardId)
+            
+            const event: DomainEvent = {
+                eventId: crypto.randomUUID(),
+                type: EventType.BOARD_DELETED,
+                boardId: boardId,
+                actorId: userId,
+                payload: { title: board.title }
+            }
+            EventBus.publish(event)
+            
             return res.status(Status.OK).json({
                 status: Status.OK,
                 message: 'Board deleted permanently'
             })
-        } catch (err) {
+        } catch (err: any) {
+            console.error('Delete board error:', err.message || err)
             next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to delete board', err))
         }
     }
@@ -314,6 +373,16 @@ class BoardController {
             }
 
             await BoardRepository.changeOwner(boardId, currentOwnerId, newOwnerId)
+            
+            // Publish board owner changed event for activity logging
+            const event: DomainEvent = {
+                eventId: crypto.randomUUID(),
+                type: EventType.BOARD_OWNER_CHANGED,
+                boardId: boardId,
+                actorId: currentOwnerId,
+                payload: { title: board.title, newOwnerId }
+            }
+            EventBus.publish(event)
 
             return res.status(Status.OK).json(successResponse(Status.OK, 'Successfully changed board owner'))
         } catch (err: any) {
@@ -550,6 +619,16 @@ class BoardController {
                 }
             })
 
+            // Publish board template created event for activity logging
+            const event: DomainEvent = {
+                eventId: crypto.randomUUID(),
+                type: EventType.BOARD_CREATED,
+                boardId: templateBoard.id,
+                actorId: userId,
+                payload: { title: templateBoard.title, isTemplate: true }
+            }
+            EventBus.publish(event)
+            
             return res.status(Status.CREATED).json(
                 successResponse(
                     Status.CREATED,

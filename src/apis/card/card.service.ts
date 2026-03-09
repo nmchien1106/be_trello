@@ -2,6 +2,10 @@ import AppDataSource from '@/config/typeorm.config'
 import CardRepository from './card.repository'
 import ListRepository from '../list/list.repository'
 import BoardRepository from '../board/board.repository'
+import { EventBus } from '@/events/event-bus'
+import { DomainEvent } from '@/events/interface'
+import { EventType } from '@/enums/event-type.enum'
+import crypto from 'crypto'
 import { CreateCardDto } from './card.dto'
 import { Status } from '@/types/response'
 import { Permissions } from '@/enums/permissions.enum'
@@ -35,7 +39,7 @@ export class CardService {
         await this.checkPermission(userId, list.board.id, Permissions.CREATE_CARD)
 
         try {
-            return await AppDataSource.transaction(async (manager) => {
+            const savedCard = await AppDataSource.transaction(async (manager) => {
                 const lastCard = await manager.findOne(Card, {
                     where: { list: { id: data.listId } },
                     order: { position: 'DESC' },
@@ -54,9 +58,22 @@ export class CardService {
                     dueDate: data.dueDate ? new Date(data.dueDate) : null
                 } as DeepPartial<Card>)
 
-                const savedCard = await manager.save(newCard)
-                return savedCard
+                const saved = await manager.save(newCard)
+                return saved
             })
+
+            // publish card created event
+            const event: DomainEvent = {
+                eventId: crypto.randomUUID(),
+                type: EventType.CARD_CREATED,
+                boardId: list.board.id,
+                cardId: savedCard.id,
+                actorId: userId,
+                payload: { title: savedCard.title }
+            }
+            EventBus.publish(event)
+
+            return savedCard
         } catch (error: any) {
             throw { status: error.status || Status.BAD_REQUEST, message: error.message || 'Create card failed' }
         }
@@ -82,7 +99,16 @@ export class CardService {
         if (data.isArchived !== undefined) card.isArchived = data.isArchived;
         const updated = await cardRepo.save(card);
         
-        return updated;
+        const updateEvent: DomainEvent = {
+            eventId: crypto.randomUUID(),
+            type: EventType.CARD_UPDATED,
+            boardId: card.list.board.id,
+            cardId: cardId,
+            actorId: userId,
+            payload: { changes: data }
+        }
+        EventBus.publish(updateEvent)
+        return updated
     }
 
     async deleteCard(cardId: string, userId: string) {
@@ -109,6 +135,18 @@ export class CardService {
         }
 
         const updated = await CardRepository.updateCard(cardId, updateData)
+
+        // publish archive/restore event
+        const evt: DomainEvent = {
+            eventId: crypto.randomUUID(),
+            type: isArchived ? EventType.CARD_ARCHIVED : EventType.CARD_RESTORED,
+            boardId: card.list.board.id,
+            cardId: cardId,
+            actorId: userId,
+            payload: { isArchived }
+        }
+        EventBus.publish(evt)
+
         return {
             status: Status.OK,
             message: isArchived ? 'Card archived' : 'Card unarchived',
@@ -149,6 +187,17 @@ export class CardService {
         const updated = await CardRepository.updateCard(cardId, {
             position: newPosition
         })
+
+        // publish reorder event
+        const reorderEvent: DomainEvent = {
+            eventId: crypto.randomUUID(),
+            type: EventType.CARD_REORDERED,
+            boardId: card.list.board.id,
+            cardId: cardId,
+            actorId: userId,
+            payload: { beforeId: data.beforeId ?? null, afterId: data.afterId ?? null }
+        }
+        EventBus.publish(reorderEvent)
 
         return { status: Status.OK, message: 'Card reordered successfully', data: updated }
     }
@@ -201,6 +250,22 @@ export class CardService {
             list: { id: targetList.id },
             position: newPosition
         })
+
+        // publish move event
+        const moveEvent: DomainEvent = {
+            eventId: crypto.randomUUID(),
+            type: EventType.CARD_MOVED,
+            boardId: sourceBoardId,
+            cardId: cardId,
+            actorId: userId,
+            payload: {
+                fromListId: card.list.id,
+                toListId: targetList.id,
+                fromBoardId: sourceBoardId,
+                toBoardId: realTargetBoardId
+            }
+        }
+        EventBus.publish(moveEvent)
 
         return {
             status: Status.OK,
@@ -321,19 +386,18 @@ export class CardService {
         const attachment = await attachmentRepo.findOne({
             where: { id: attachmentId },
             relations: ['card']
-        });
+        })
 
         if (!attachment) {
-            throw { status: Status.NOT_FOUND, message: 'Attachment not found' };
+            throw { status: Status.NOT_FOUND, message: 'Attachment not found' }
         }
 
-       
         if (attachment.publicId) {
-            await cloudinary.uploader.destroy(attachment.publicId);
+            await cloudinary.uploader.destroy(attachment.publicId)
         }
 
-        await attachmentRepo.remove(attachment);
-        return;
+        await attachmentRepo.remove(attachment)
+        return
     }
 
     async getCardsDueSoon(userId: string) {

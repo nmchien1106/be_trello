@@ -5,7 +5,7 @@ import { da } from 'zod/locales'
 class CommentRepository {
     private repo = AppDataSource.getRepository(Comment)
     findById = async (id: string): Promise<Comment | null> => {
-        return this.repo.findOne({ where: { id }, relations: ['user', 'card'] })
+        return this.repo.findOne({ where: { id }, relations: ['user', 'card', 'card.list', 'card.list.board'] })
     }
 
     createComment = async (data: any): Promise<Comment> => {
@@ -27,7 +27,7 @@ class CommentRepository {
     }
 
     findCommentsOnCard = async (cardId: string): Promise<Comment[]> => {
-        return this.repo.find({ where: { card: { id: cardId } }, relations: ['user']})
+        return this.repo.find({ where: { card: { id: cardId } }, relations: ['user'] })
     }
 }
 

@@ -21,7 +21,7 @@
         "morgan": "^1.10.1",
         "ms": "^2.1.3",
         "multer": "^2.0.2",
-        "multer-storage-cloudinary": "^4.0.0",
+        "multer-storage-cloudinary": "^2.2.1",
         "nodemailer": "^7.0.6",
         "passport": "^0.7.0",
         "passport-google-oauth20": "^2.0.0",
@@ -33,6 +33,7 @@
         "reflect-metadata": "^0.2.2",
         "swagger-jsdoc": "^6.2.8",
         "swagger-ui-express": "^5.0.1",
+        "tsconfig-paths": "^4.2.0",
         "typeorm": "^0.3.27",
         "undici-types": "^7.12.0",
         "zod": "^4.1.11"
@@ -45,7 +46,7 @@
         "lint:fix": "eslint . --fix",
         "prettier": "prettier --check .",
         "prettier:fix": "prettier --write .",
-        "seed:auth": "ts-node ./scripts/run.seeder.ts"
+        "seed:auth": "ts-node -r tsconfig-paths/register ./scripts/run.seeder.ts"
     },
     "keywords": [
         "trello",

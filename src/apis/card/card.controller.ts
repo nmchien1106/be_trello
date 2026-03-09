@@ -6,6 +6,9 @@ import { Status } from '@/types/response'
 import cardRepository from './card.repository'
 import boardRepository from '../board/board.repository'
 import { UserDTOForRelation } from '../users/user.dto'
+import notificationService from '../notification/notification.service'
+import { User } from '@/entities/user.entity'
+import { EntityType, NotificationType } from '@/enums/notification.enum'
 
 class CardController {
     createCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -70,10 +73,21 @@ class CardController {
 
             const result = await cardRepository.findMemberById(cardId, memberId)
             if (result) {
-                return res.status(Status.CONFLICT).json(errorResponse(Status.CONFLICT, 'Member already added to card'))
+                return res.status(Status.BAD_REQUEST).json(errorResponse(Status.BAD_REQUEST, 'Member already added to card'))
             }
 
             const newMember = await cardRepository.addMemberToCard(cardId, memberId)
+
+            await notificationService.create({
+                user: { id: memberId } as User,
+                message: 'You have been added to a card',
+                type: NotificationType.CARD_ASSIGNED,
+                actionUrl: `/card/${cardId}`,
+                actor: { id: req.user?.id } as User,
+                entityType: EntityType.CARD,
+                entityId: cardId,
+            })
+
             return res.status(Status.CREATED).json(successResponse(Status.CREATED, 'Member added to card successfully', newMember))
         } catch (err: any) {
             next(err)
@@ -177,9 +191,9 @@ class CardController {
     }
 
     uploadCardBackground = async (req: AuthRequest, res: Response, next: NextFunction) => {
-        try{
+        try {
             const { id } = req.params;
-            if(!req.file){
+            if (!req.file) {
                 return next(errorResponse(Status.BAD_REQUEST, 'No file uploaded'));
             }
             const updatedCard = await cardService.uploadCardBackground(id, req.file)
@@ -188,13 +202,13 @@ class CardController {
                 message: 'Card background updated successfully',
                 data: updatedCard
             })
-        }catch(err){
-            next(errorResponse(Status.INTERNAL_SERVER_ERROR,'Failed to upload card background',err))
+        } catch (err) {
+            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to upload card background', err))
         }
     }
 
-    getPresignedUrl = async(req: AuthRequest, res: Response, next: NextFunction) => {
-        try{
+    getPresignedUrl = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
             const { fileName, fileType, fileSize } = req.body;
             if(!fileName || !fileType || !fileSize){
                 return next(errorResponse(Status.BAD_REQUEST, 'Missing required fields'));
@@ -205,8 +219,8 @@ class CardController {
                 message: 'Presigned URL generated successfully',
                 data: presignedUrl
             })
-        }catch(err){
-            next(errorResponse(Status.INTERNAL_SERVER_ERROR,'Failed to generate presigned URL',err))
+        } catch (err) {
+            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to generate presigned URL', err))
         }
     }
 

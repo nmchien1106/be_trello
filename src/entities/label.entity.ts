@@ -4,7 +4,7 @@ import { DateTimeEntity } from './base/DateTimeEntity'
 import { CardLabel } from './card-label.entity'
 import { LabelColor } from '../enums/label.enum'
 import { ManyToOne } from 'typeorm'
-import { Board } from '@/entities/board.entity'
+import { Board } from './board.entity'
 
 @Entity('labels')
 export class Label extends DateTimeEntity {
