@@ -7,6 +7,21 @@ export class ActivityMessageFactory {
             case EventType.BOARD_CREATED:
                 return `Board created: ${event.payload?.title ?? ''}`
 
+            case EventType.BOARD_UPDATED:
+                return `Board updated: ${event.payload?.title ?? ''}`
+
+            case EventType.BOARD_ARCHIVED:
+                return `Board archived: ${event.payload?.title ?? ''}`
+
+            case EventType.BOARD_RESTORED:
+                return `Board restored: ${event.payload?.title ?? ''}`
+
+            case EventType.BOARD_DELETED:
+                return `Board deleted: ${event.payload?.title ?? ''}`
+
+            case EventType.BOARD_OWNER_CHANGED:
+                return `Board owner changed: ${event.payload?.title ?? ''}`
+
             case EventType.CARD_CREATED:
                 return `Card created`
 
