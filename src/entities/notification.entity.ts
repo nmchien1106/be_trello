@@ -1,9 +1,11 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
+import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
 
 import { DateTimeEntity } from './base/DateTimeEntity'
 import { User } from './user.entity'
-import { EntityType, NotificationType } from '../enums/notification.enum'
+import { EntityType } from '../enums/notification.enum'
+import { EventType } from '@/enums/event-type.enum'
 
+@Index(['user', 'isRead'])
 @Entity('notifications')
 export class Notification extends DateTimeEntity {
     @PrimaryGeneratedColumn('uuid')
@@ -12,33 +14,19 @@ export class Notification extends DateTimeEntity {
     @Column({ type: 'text' })
     message: string
 
-    @Column({
-        type: 'enum',
-        enum: NotificationType,
-        default: NotificationType.CARD_ASSIGNED
-    })
-    type: NotificationType
+    @Column({ type: 'varchar', length: 100, nullable: true })
+    type: EventType
 
-    @Column({ type: 'json', nullable: true })
-    data: Record<string, any> | null
+    @Column({ type: 'jsonb', nullable: true })
+    payload: Record<string, any> | null
 
-    @Column({
-        type: 'boolean',
-        default: false
-    })
+    @Column({ type: 'boolean', default: false })
     isRead: boolean
-
 
     @Column({ type: 'varchar', length: 500, nullable: true })
     actionUrl: string | null
 
-    @Column({ type: 'uuid' })
-    actorId: string
-
-    @Column({
-        type: 'enum',
-        enum: EntityType
-    })
+    @Column({ type: 'enum', enum: EntityType })
     entityType: EntityType
 
     @Column({ type: 'uuid' })

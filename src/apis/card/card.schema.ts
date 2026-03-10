@@ -24,6 +24,11 @@ export const CreateCardSchema = z.object({
     priority: z.enum(['low', 'medium', 'high']).optional().default('medium')
 })
 
+export const UpdateCardSchema = z.object({
+    title: z.string().min(1, "Title is required").max(100, "Title must be less than 100 characters").optional(),
+    description: z.string().optional()
+})
+
 export const CreateAttachmentParamsSchema = z.object({
     id: z.string().uuid('Invalid card ID')
 })

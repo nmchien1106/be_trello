@@ -1,14 +1,15 @@
 import { User } from '@/entities/user.entity';
-import { EntityType, NotificationType } from '@/enums/notification.enum';
+import { EntityType } from '@/enums/notification.enum';
+import { EventType } from '@/enums/event-type.enum';
 
 export interface CreateNotificationDto {
     user: User
     message: string
-    type: NotificationType
+    type: EventType
     actionUrl?: string
     actor: User
     entityType: EntityType
     entityId: string
-    data?: Record<string, any>
+    payload?: Record<string, any>
     isRead?: boolean
 }

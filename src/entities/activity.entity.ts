@@ -29,7 +29,7 @@ export class Activity extends DateTimeEntity {
     @Column({ type: 'uuid' })
     actorId: string
 
-    @Column({ type: 'enum', enum: EventType })
+    @Column({ type: 'varchar', length: 100, nullable: true })
     type: EventType
 
     @Column({ type: 'text' })
@@ -50,7 +50,7 @@ export class Activity extends DateTimeEntity {
     @JoinColumn({ name: 'boardId' })
     board: Board | null
 
-    @ManyToOne(() => Card, { nullable: true })
+    @ManyToOne(() => Card, { nullable: true, onDelete: 'CASCADE' })
     @JoinColumn({ name: 'cardId' })
     card: Card | null
 }

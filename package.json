@@ -46,7 +46,7 @@
         "lint:fix": "eslint . --fix",
         "prettier": "prettier --check .",
         "prettier:fix": "prettier --write .",
-        "seed:auth": "ts-node -r tsconfig-paths/register ./scripts/run.seeder.ts"
+        "seed:auth": "tsx ./scripts/run.seeder.ts"
     },
     "keywords": [
         "trello",

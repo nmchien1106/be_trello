@@ -12,11 +12,12 @@ import { Permissions } from '@/enums/permissions.enum'
 import { Card } from '@/entities/card.entity'
 import { Config } from '@/config/config'
 import { calcPosition } from '@/utils/calcPosition'
-import { Express } from 'express'
-import { User } from '@/entities/user.entity'
 import { Attachment } from '@/entities/attachment.entity'
 import cloudinary from '@/config/cloundinary'
-import { DeepPartial, Between, Like } from 'typeorm'
+import { DeepPartial } from 'typeorm'
+import { Between, Like } from 'typeorm'
+import cardRepository from './card.repository'
+import boardRepository from '../board/board.repository'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'application/pdf']
@@ -80,11 +81,11 @@ export class CardService {
     }
 
     async updateCard(cardId: string, data: any, userId: string) {
-        const card = await cardRepo.findOne({ 
+        const card = await cardRepo.findOne({
             where: { id: cardId },
-            relations: ['list', 'list.board'] 
+            relations: ['list', 'list.board']
         })
-        
+
         if (!card) throw { status: Status.NOT_FOUND, message: 'Card not found' }
         await this.checkPermission(userId, card.list.board.id, Permissions.UPDATE_CARD)
         if (data.title !== undefined) card.title = data.title;
@@ -93,12 +94,12 @@ export class CardService {
             card.dueDate = data.dueDate ? new Date(data.dueDate) : null as any;
         }
         if (data.labels !== undefined) {
-             card.labels = data.labels;
+            card.labels = data.labels;
         }
         if (data.priority !== undefined) card.priority = data.priority;
         if (data.isArchived !== undefined) card.isArchived = data.isArchived;
         const updated = await cardRepo.save(card);
-        
+
         const updateEvent: DomainEvent = {
             eventId: crypto.randomUUID(),
             type: EventType.CARD_UPDATED,
@@ -334,7 +335,7 @@ export class CardService {
 
         return {
             signature,
-            cloudName: Config.cloundinaryName,
+            cloudName: Config.cloudinaryName,
             apiKey: Config.cloudinaryApiKey,
             timestamp,
             folder
@@ -438,6 +439,54 @@ export class CardService {
             relations: ['list', 'list.board'],
             take: 10
         })
+    }
+
+    addMemberToCard = async (userId: string, cardId: string, memberId: string) => {
+        const boardId: string = await cardRepository.getBoardIdFromCard(cardId)
+        const isMemberOfBoard = await boardRepository.findMemberByUserId(boardId, memberId)
+
+        if (!isMemberOfBoard) {
+            throw { status: Status.BAD_REQUEST, message: 'User is not a member of the board' }
+        }
+
+        const result = await cardRepository.findMemberById(cardId, memberId)
+        if (result) {
+            throw { status: Status.BAD_REQUEST, message: 'Member already added to card' }
+        }
+        const newMember = await cardRepository.addMemberToCard(cardId, memberId)
+
+        // EventBus
+        const updateEvent: DomainEvent = {
+            eventId: crypto.randomUUID(),
+            type: EventType.CARD_MEMBER_ASSIGNED,
+            boardId: boardId,
+            cardId: cardId,
+            actorId: userId,
+            payload: { memberId: memberId }
+        }
+        EventBus.publish(updateEvent)
+
+        return {
+            status: Status.CREATED,
+            message: 'Member added to card successfully',
+            data: newMember
+        }
+    }
+
+    getUnassignedMembers = async (cardId: string) => {
+        const boardId: string = await cardRepository.getBoardIdFromCard(cardId)
+        const members = await boardRepository.findMemberByBoardId(boardId)
+        const cardMembers = await cardRepository.getMembersOfCard(cardId)
+        const cardMemberIds = cardMembers.map((cm) => cm.user.id)
+        const result = members.filter((m) => !cardMemberIds.includes(m.user.id)).map((m) => ({
+            userId: m.user.id,
+            username: m.user.username,
+            email: m.user.email,
+            avatarUrl: m.user.avatarUrl,
+            role: m.role.name || 'card_member',
+            fullName: m.user.fullName
+        }))
+        return result
     }
 }
 

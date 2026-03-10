@@ -2,7 +2,7 @@ import NotificationRepository from "./notification.repository";
 import { CreateNotificationDto } from "./notification.dto";
 import { Notification } from "@/entities/notification.entity";
 import { User } from "@/entities/user.entity";
-import { NotificationType } from "@/enums/notification.enum";
+import { EventType } from "@/enums/event-type.enum";
 import { notificationSSEService } from "./SSE/notification-sse.service";
 
 interface GetUserNotificationsOptions {
@@ -17,8 +17,8 @@ class NotificationService {
         const saved = await NotificationRepository.create({
             message: notify.message,
             user: notify.user,
-            type: notify.type as NotificationType,
-            data: notify.data,
+            type: notify.type as EventType,
+            payload: notify.payload,
             isRead: false,
             actionUrl: notify.actionUrl || undefined,
             entityType: notify.entityType,

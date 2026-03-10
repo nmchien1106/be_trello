@@ -52,5 +52,8 @@ export default new DataSource({
     migrationsTableName: 'migrations',
     ssl: false,
     migrations: ["src/migrations/**/*.ts"],
-    synchronize: true
+    synchronize: true,
+    extra: {
+        timezone: 'Asia/Ho_Chi_Minh'
+    }
 })

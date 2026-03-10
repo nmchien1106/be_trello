@@ -26,7 +26,7 @@ route.get('/public', boardController.getPublicBoards)
 //Get Template
 route.get('/template', verifyAccessToken, boardController.getAllTemplates)
 
-route.get('/join', verifyAccessToken, validateHandle(acceptInviteSchema), boardController.joinBoard)
+route.get('/join', verifyAccessToken, boardController.joinBoard)
 
 route.delete(
     '/revoke-link',

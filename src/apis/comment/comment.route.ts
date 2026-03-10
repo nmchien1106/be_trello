@@ -2,7 +2,7 @@ import commentController from "./comment.controller";
 import express from "express";
 import { verifyAccessToken } from "@/utils/jwt";
 import { validateHandle } from "@/middleware/validate-handle";
-import { CommentSchema } from "./comment.schema";
+import { CommentSchema, UpdateCommentSchema } from "./comment.schema";
 
 const router = express.Router();
 
@@ -16,7 +16,7 @@ router.get("/card/:cardId", verifyAccessToken, commentController.getCommentsOnCa
 router.delete("/:commentId", verifyAccessToken, commentController.deleteComment);
 
 // Update a comment
-router.put("/:commentId", verifyAccessToken, validateHandle(CommentSchema), commentController.updateComment);
+router.put("/:commentId", verifyAccessToken, validateHandle(UpdateCommentSchema), commentController.updateComment);
 
 // Get a comment by ID
 router.get("/:commentId", verifyAccessToken, commentController.getCommentById);

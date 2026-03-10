@@ -243,14 +243,15 @@ class BoardController {
             JSON.stringify({ boardId, email, role })
         )
 
-        const inviteLink = `${Config.baseUrl}/api/boards/join?token=${token}`
+        const inviteLink = `${Config.corsOrigin}join-board?token=${token}`
+
         const mailOptions = {
             from: Config.emailUser,
             to: email,
             subject: 'Invitation to join board',
             html: `
                 <p>You have been invited to join the board as <b>${role}</b>.</p>
-                <a href="${inviteLink}">Accept Invitation</a>
+                <a href="${inviteLink}">${inviteLink}</a>
             `
         }
 
@@ -262,7 +263,7 @@ class BoardController {
     async joinBoard(req: AuthRequest, res: Response, next: NextFunction) {
         try {
             const { token } = req.query
-
+            console.log(token)
             let dataStr = await redisClient.get(`invite:${token}`)
             let type = 'invite'
 
@@ -516,10 +517,11 @@ class BoardController {
 
             const result = members.map((m) => ({
                 userId: m.user.id,
-                fullName: m.user.username,
+                username: m.user.username,
                 email: m.user.email,
-                avatar: m.user.avatarUrl,
-                role: m.role.name || 'member'
+                avatarUrl: m.user.avatarUrl,
+                role: m.role.name || 'member',
+                fullName: m.user.fullName
             }))
 
             return res.json(successResponse(Status.OK, 'Get board members successfully', result))
@@ -756,7 +758,7 @@ class BoardController {
             const lists = await boardRepository.getAllListsOnBoard(boardId)
             return res.status(Status.OK).json(successResponse(Status.OK, 'Lists fetched successfully', lists))
         }
-        catch(err){
+        catch (err) {
             next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to get lists on board', err))
         }
     }

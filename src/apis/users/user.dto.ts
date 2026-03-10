@@ -3,9 +3,10 @@ export class UserDTOForRelation {
     username: string
     avatarUrl: string | null
 
-    constructor(user: { id: string; username: string}) {
+    constructor(user: { id: string; username: string, avatarUrl?: string | null }) {
         this.id = user.id
         this.username = user.username
+        this.avatarUrl = user.avatarUrl || null
     }
 }
 

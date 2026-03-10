@@ -43,7 +43,7 @@ class CardRepository {
                 backgroundUrl: data.coverUrl ?? null,
                 dueDate: dueDateVal,
                 priority: data.priority ?? 'medium'
-            }as DeepPartial<Card>)
+            } as DeepPartial<Card>)
 
             return await manager.save(newCard)
         })
@@ -52,10 +52,18 @@ class CardRepository {
     getCardById = async (cardId: string) => {
         return await this.repo.findOne({
             where: { id: cardId },
-            relations: ['list'],
+            relations: ['list', 'cardMembers', 'cardMembers.user'],
             select: {
                 list: {
                     id: true
+                },
+                cardMembers: {
+                    id: true,
+                    user: {
+                        id: true,
+                        username: true,
+                        avatarUrl: true
+                    }
                 }
             }
         })
@@ -64,24 +72,8 @@ class CardRepository {
     getCardsByListId = async (listId: string) => {
         return await this.repo.find({
             where: { list: { id: listId } },
-            order: { position: 'ASC' },
-            select: {
-                id: true,
-                title: true,
-                description: true,
-                position: true,
-                labels: true,
-                dueDate: true,
-                backgroundUrl: true,
-                backgroundPublicId: true,
-                priority: true,
-                isArchived: true,
-                createdAt: true,
-                updatedAt: true,
-                list: {
-                    id: true
-                }
-            }
+            relations: ['cardMembers', 'cardMembers.user'],
+            order: { position: 'ASC' }
         })
     }
 
@@ -96,7 +88,7 @@ class CardRepository {
     findById = async (id: string) => {
         return await this.repo.findOne({
             where: { id },
-            relations: ['list', 'list.board']
+            relations: ['list', 'list.board', 'cardMembers', 'cardMembers.user']
         })
     }
 

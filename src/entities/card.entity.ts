@@ -11,7 +11,7 @@ export class Card extends DateTimeEntity {
     @PrimaryGeneratedColumn('uuid')
     public id: string
 
-    @Column({ type: 'varchar', length: 255 })
+    @Column({ type: 'varchar', length: 100, default: 'Untitled Card' })
     title: string
 
     @Column({ type: 'text', nullable: true })

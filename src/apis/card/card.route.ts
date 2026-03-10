@@ -7,7 +7,7 @@ import {
     ReorderCardSchema,
     DuplicateCardSchema,
     MoveCardToBoardSchema,
-    AddMemberToCard
+    AddMemberToCard, UpdateCardSchema
 } from './card.schema'
 import { Permissions } from './../../enums/permissions.enum';
 import { authorizeCardPermission, authorizeAttachmentPermission, authorizeListPermission } from '@/middleware/authorization';
@@ -33,7 +33,7 @@ route.patch(
     '/:id',
     verifyAccessToken,
     authorizeCardPermission(Permissions.UPDATE_CARD),
-    // validateHandle(CreateCardSchema),
+    validateHandle(UpdateCardSchema),
     cardController.updateCard
 )
 
@@ -152,6 +152,14 @@ route.post(
     authorizeCardPermission(Permissions.UPDATE_CARD),
     CardBackgroundUpload.single('file'),
     cardController.uploadCardBackground
+)
+
+// Get unassigned members of a card
+route.get(
+    '/:id/unassigned-members',
+    verifyAccessToken,
+    authorizeCardPermission(Permissions.READ_CARD),
+    cardController.getUnassignedMembers
 )
 
 export default route

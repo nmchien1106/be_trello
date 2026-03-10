@@ -1,5 +1,6 @@
 import { DataSource } from 'typeorm'
 import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 import { User } from '../src/entities/user.entity'
 import { Workspace } from '../src/entities/workspace.entity'
 import { WorkspaceMembers } from '../src/entities/workspace-member.entity'
@@ -11,7 +12,9 @@ import { CardMembers } from '../src/entities/card-member.entity'
 import { Notification } from '../src/entities/notification.entity'
 import { Role } from '../src/entities/role.entity'
 import { Comment } from '../src/entities/comment.entity'
-import { NotificationType, EntityType } from '../src/enums/notification.enum'
+import { Activity } from '../src/entities/activity.entity'
+import { EventType } from '../src/enums/event-type.enum'
+import { EntityType } from '../src/enums/notification.enum'
 
 export class SeedData {
     constructor(private dataSource: DataSource) { }
@@ -28,6 +31,7 @@ export class SeedData {
         const notificationRepository = this.dataSource.getRepository(Notification)
         const roleRepository = this.dataSource.getRepository(Role)
         const commentRepository = this.dataSource.getRepository(Comment)
+        const activityRepository = this.dataSource.getRepository(Activity)
 
         console.log('🌱 Starting data seeding...')
 
@@ -49,20 +53,20 @@ export class SeedData {
             {
                 email: 'admin@gmail.com',
                 username: 'admin',
-                fullName: 'Admin',
+                fullName: 'Admin User',
                 password: hashedPassword,
                 isActive: true,
-                bio: 'I am the first test user',
-                avatarUrl: 'https://ui-avatars.com/api/?name=Test+User+One'
+                bio: 'Lead project administrator',
+                avatarUrl: 'https://ui-avatars.com/api/?name=Admin+User&background=random'
             },
             {
-                email: 'user@gmail.com',
-                username: 'user',
-                fullName: 'User',
+                email: 'member@gmail.com',
+                username: 'member',
+                fullName: 'Team Member',
                 password: hashedPassword,
                 isActive: true,
-                bio: 'I am the second test user',
-                avatarUrl: 'https://ui-avatars.com/api/?name=Test+User+Two'
+                bio: 'Regular project developer',
+                avatarUrl: 'https://ui-avatars.com/api/?name=Team+Member&background=random'
             }
         ]
 
@@ -77,24 +81,24 @@ export class SeedData {
             users.push(user)
         }
 
-        const [user1, user2] = users
+        const [adminUser, memberUser] = users
 
         // 3. Create Workspace
-        let workspace = await workspaceRepository.findOneBy({ title: 'Test Workspace' })
+        let workspace = await workspaceRepository.findOneBy({ title: 'Main Project Workspace' })
         if (!workspace) {
             workspace = workspaceRepository.create({
-                title: 'Test Workspace',
-                description: 'Workspace for testing notifications',
-                owner: user1
+                title: 'Main Project Workspace',
+                description: 'Workspace for high-priority Trello clone development',
+                owner: adminUser
             })
             await workspaceRepository.save(workspace)
-            console.log('Created workspace: Test Workspace')
+            console.log('Created workspace: Main Project Workspace')
         }
 
         // 4. Add Workspace Members
         const wsMembers = [
-            { user: user1, workspace, role: workspaceAdminRole || adminRole, status: 'accepted' as const },
-            { user: user2, workspace, role: userRole, status: 'accepted' as const }
+            { user: adminUser, workspace, role: workspaceAdminRole || adminRole, status: 'accepted' as const },
+            { user: memberUser, workspace, role: userRole, status: 'accepted' as const }
         ]
 
         for (const wsMem of wsMembers) {
@@ -110,23 +114,23 @@ export class SeedData {
         }
 
         // 5. Create Board
-        let board = await boardRepository.findOneBy({ title: 'Main Project Board', workspace: { id: workspace.id } })
+        let board = await boardRepository.findOneBy({ title: 'Fullstack Trello Development', workspace: { id: workspace.id } })
         if (!board) {
             board = boardRepository.create({
-                title: 'Main Project Board',
-                description: 'A board to track project progress',
+                title: 'Fullstack Trello Development',
+                description: 'Development board for Trello project',
                 permissionLevel: 'workspace',
-                owner: user1,
+                owner: adminUser,
                 workspace: workspace
             })
             await boardRepository.save(board)
-            console.log('Created board: Main Project Board')
+            console.log('Created board: Fullstack Trello Development')
         }
 
         // 6. Add Board Members
         const bMembers = [
-            { user: user1, board, role: boardAdminRole || adminRole },
-            { user: user2, board, role: boardMemberRole || userRole }
+            { user: adminUser, board, role: boardAdminRole || adminRole },
+            { user: memberUser, board, role: boardMemberRole || userRole }
         ]
 
         for (const bMem of bMembers) {
@@ -144,9 +148,8 @@ export class SeedData {
         // 7. Create Lists
         const listsData = [
             { title: 'To Do', position: 1, board },
-            { title: 'In Progress', position: 2, board },
-            { title: 'Review', position: 3, board },
-            { title: 'Done', position: 4, board }
+            { title: 'Doing', position: 2, board },
+            { title: 'Done', position: 3, board }
         ]
 
         const lists: List[] = []
@@ -162,10 +165,9 @@ export class SeedData {
 
         // 8. Create Cards
         const cardsData = [
-            { title: 'Setup Notification SSE', description: 'Implement SSE for real-time notifications', position: 1, list: lists[0], priority: 'high' },
-            { title: 'Design Seed Data Script', description: 'Create a script to seed test data', position: 2, list: lists[1], priority: 'medium' },
-            { title: 'UI for Notifications', description: 'Build the notification dropdown UI', position: 1, list: lists[1], priority: 'medium' },
-            { title: 'Backend API for Marks as Read', description: 'Create endpoint to mark notifications as read', position: 1, list: lists[3], priority: 'low' }
+            { title: 'Setup Redis Config', description: 'Fix Redis connection issues on Windows', position: 1, list: lists[0], priority: 'high' },
+            { title: 'Implement SSE', description: 'Real-time notification system', position: 2, list: lists[0], priority: 'medium' },
+            { title: 'Database Optimization', description: 'Optimize PostgreSQL queries', position: 1, list: lists[1], priority: 'medium' }
         ]
 
         const cards: Card[] = []
@@ -181,10 +183,8 @@ export class SeedData {
 
         // 9. Assign Users to Cards
         const cardAssignments = [
-            { card: cards[0], user: user1 },
-            { card: cards[0], user: user2 },
-            { card: cards[1], user: user1 },
-            { card: cards[2], user: user2 }
+            { card: cards[0], user: adminUser },
+            { card: cards[1], user: memberUser }
         ]
 
         for (const assign of cardAssignments) {
@@ -201,66 +201,55 @@ export class SeedData {
 
         // 10. Create Comments
         const commentsData = [
-            { content: 'I started working on this!', card: cards[0], user: user1 },
-            { content: 'Great, let me know if you need help.', card: cards[0], user: user2 }
+            { content: 'Redis is finally working properly!', card: cards[0], user: adminUser },
+            { content: 'I will handle the SSE implementation tomorrow.', card: cards[1], user: memberUser }
         ]
 
         const comments: Comment[] = []
         for (const comData of commentsData) {
-            const exists = await commentRepository.findOneBy({
+            let comment = await commentRepository.findOneBy({
                 content: comData.content,
                 card: { id: comData.card.id },
                 user: { id: comData.user.id }
             })
-            if (!exists) {
-                const comment = commentRepository.create(comData)
+            if (!comment) {
+                comment = commentRepository.create(comData)
                 await commentRepository.save(comment)
                 console.log(`Added comment to card ${comData.card.title}`)
-                comments.push(comment)
             }
+            comments.push(comment)
         }
 
         // 11. Create Notifications
         const notificationsData = [
             {
-                user: user1,
-                actor: user2,
-                actorId: user2.id,
-                type: NotificationType.CARD_ASSIGNED,
-                entityType: EntityType.CARD,
-                entityId: cards[0].id,
-                message: `${user2.fullName} assigned you to the card: ${cards[0].title}`,
-                isRead: false,
-                data: { boardId: board.id, workspaceId: workspace.id }
-            },
-            {
-                user: user1,
-                actor: user2,
-                actorId: user2.id,
-                type: NotificationType.CARD_COMMENT,
+                user: adminUser,
+                actor: memberUser,
+                type: EventType.COMMENT_CREATED as any,
                 entityType: EntityType.COMMENT,
-                entityId: (comments.length > 1 ? comments[1].id : cards[0].id),
-                message: `${user2.fullName} commented on card: ${cards[0].title}`,
+                entityId: comments[1].id,
+                message: `${memberUser.fullName} commented on card: ${cards[1].title}`,
                 isRead: false,
-                data: { cardId: cards[0].id, boardId: board.id }
+                payload: { cardId: cards[1].id, content: comments[1].content },
+                actionUrl: `/boards/${board.id}/cards/${cards[1].id}`
             },
             {
-                user: user2,
-                actor: user1,
-                actorId: user1.id,
-                type: NotificationType.BOARD_INVITE,
-                entityType: EntityType.BOARD,
-                entityId: board.id,
-                message: `${user1.fullName} invited you to board: ${board.title}`,
-                isRead: true,
-                data: { workspaceId: workspace.id }
+                user: memberUser,
+                actor: adminUser,
+                type: EventType.CARD_MEMBER_ASSIGNED as any,
+                entityType: EntityType.CARD,
+                entityId: cards[1].id,
+                message: `${adminUser.fullName} assigned you to card: ${cards[1].title}`,
+                isRead: false,
+                payload: { cardId: cards[1].id },
+                actionUrl: `/boards/${board.id}/cards/${cards[1].id}`
             }
         ]
 
         for (const notifData of notificationsData) {
             const exists = await notificationRepository.findOneBy({
                 user: { id: notifData.user.id },
-                actorId: notifData.actorId,
+                actor: { id: notifData.actor.id },
                 type: notifData.type,
                 entityId: notifData.entityId
             })
@@ -268,6 +257,39 @@ export class SeedData {
                 const notification = notificationRepository.create(notifData)
                 await notificationRepository.save(notification)
                 console.log(`Created notification for ${notifData.user.email}`)
+            }
+        }
+
+        // 12. Create Activities
+        const activitiesData = [
+            {
+                eventId: crypto.randomUUID(),
+                boardId: board.id,
+                cardId: cards[0].id,
+                actorId: adminUser.id,
+                type: EventType.CARD_CREATED as any,
+                message: `Admin created card "${cards[0].title}"`,
+                payload: { title: cards[0].title }
+            },
+            {
+                eventId: crypto.randomUUID(),
+                boardId: board.id,
+                cardId: cards[1].id,
+                actorId: memberUser.id,
+                type: EventType.COMMENT_CREATED as any,
+                message: `Member commented on "${cards[1].title}"`,
+                payload: { content: comments[1].content }
+            }
+        ]
+
+        for (const actData of activitiesData) {
+            const exists = await activityRepository.findOneBy({
+                eventId: actData.eventId
+            })
+            if (!exists) {
+                const activity = activityRepository.create(actData)
+                await activityRepository.save(activity)
+                console.log(`Created activity for event: ${actData.type}`)
             }
         }
 

@@ -15,22 +15,30 @@ import morgan from 'morgan'
 import { ActivitySubscriber } from './apis/activity/activity.subscriber'
 import { Activity } from './entities/activity.entity'
 import { ActivityRepository } from './apis/activity/activity.repository'
+import { NotificationSubscriber } from './apis/notification/notification.subscriber'
 
 // Create Express app
 
 const app = express()
 const PORT = 3000
 
-let subscriber: ActivitySubscriber | null = null
+let activitySubscriber: ActivitySubscriber | null = null
+let notificationSubscriber: NotificationSubscriber | null = null
+
 AppDataSource.initialize()
-    .then(() => {
+    .then(async () => {
         console.log('Data Source has been initialized!')
+
+        // Setup Activity Subscriber
         const activityRepo = new ActivityRepository(AppDataSource.getRepository(Activity))
-        subscriber = new ActivitySubscriber(activityRepo)
-        return subscriber.init()
-    })
-    .then(() => {
+        activitySubscriber = new ActivitySubscriber(activityRepo)
+        await activitySubscriber.init()
         console.log('Activity subscriber registered')
+
+        // Setup Notification Subscriber
+        notificationSubscriber = new NotificationSubscriber()
+        await notificationSubscriber.init()
+        console.log('Notification subscriber registered')
     })
     .catch((err) => {
         console.error('Error during Data Source initialization or subscriber setup:', err)

@@ -2,8 +2,8 @@ import { DataSource } from 'typeorm'
 import { Permission } from '../src/entities/permission.entity'
 import { Role } from '../src/entities/role.entity'
 
-export class seedAuthorization {
-    constructor(private dataSource: DataSource) {}
+export class SeedAuthorization {
+    constructor(private dataSource: DataSource) { }
 
     async init() {
         const roleRepository = this.dataSource.getRepository(Role)
