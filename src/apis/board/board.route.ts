@@ -29,7 +29,7 @@ route.get('/template', verifyAccessToken, boardController.getAllTemplates)
 route.get('/join', verifyAccessToken, boardController.joinBoard)
 
 route.delete(
-    '/revoke-link',
+    '/:boardId/share-link',
     verifyAccessToken,
     authorizeBoardPermission(Permissions.REVOKE_LINK),
     boardController.revokeShareLink

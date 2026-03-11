@@ -51,7 +51,7 @@ class BoardController {
             if (!updatedBoard) {
                 return next(errorResponse(Status.NOT_FOUND, 'Board not found'))
             }
-            
+
             // Publish board updated event for activity logging
             const event: DomainEvent = {
                 eventId: crypto.randomUUID(),
@@ -61,7 +61,7 @@ class BoardController {
                 payload: { title: updatedBoard.title, changes: data }
             }
             EventBus.publish(event)
-            
+
             return res.status(Status.OK).json({
                 status: Status.OK,
                 message: 'Board updated successfully',
@@ -76,7 +76,7 @@ class BoardController {
         try {
             const { boardId } = req.params
             const userId = req.user?.id
-            
+
             const board = await BoardRepository.getBoardById(boardId)
             if (!board) {
                 return next(errorResponse(Status.NOT_FOUND, 'Board not found'))
@@ -85,7 +85,7 @@ class BoardController {
                 return next(errorResponse(Status.BAD_REQUEST, 'Board is already archived'))
             }
             const updatedBoard = await BoardRepository.updateBoard(boardId, { isArchived: true })
-            
+
             const event: DomainEvent = {
                 eventId: crypto.randomUUID(),
                 type: EventType.BOARD_ARCHIVED,
@@ -94,7 +94,7 @@ class BoardController {
                 payload: { title: board.title }
             }
             EventBus.publish(event)
-            
+
             return res.status(Status.OK).json({
                 status: Status.OK,
                 message: 'Board archived successfully'
@@ -108,7 +108,7 @@ class BoardController {
         try {
             const { boardId } = req.params
             const userId = req.user?.id
-            
+
             const board = await BoardRepository.getBoardById(boardId)
             if (!board) {
                 return next(errorResponse(Status.NOT_FOUND, 'Board not found'))
@@ -117,7 +117,7 @@ class BoardController {
                 return next(errorResponse(Status.BAD_REQUEST, 'Board is not archived'))
             }
             const updatedBoard = await BoardRepository.updateBoard(boardId, { isArchived: false })
-            
+
             // Publish board restored event for activity logging
             const event: DomainEvent = {
                 eventId: crypto.randomUUID(),
@@ -127,7 +127,7 @@ class BoardController {
                 payload: { title: board.title }
             }
             EventBus.publish(event)
-            
+
             return res.status(Status.OK).json({
                 status: Status.OK,
                 message: 'Board reopened successfully'
@@ -141,14 +141,14 @@ class BoardController {
         try {
             const { boardId } = req.params
             const userId = req.user?.id
-            
+
             const board = await BoardRepository.getBoardById(boardId)
             if (!board) {
                 return next(errorResponse(Status.NOT_FOUND, 'Board not found'))
             }
-            
+
             await BoardRepository.deleteBoard(boardId)
-            
+
             const event: DomainEvent = {
                 eventId: crypto.randomUUID(),
                 type: EventType.BOARD_DELETED,
@@ -157,7 +157,7 @@ class BoardController {
                 payload: { title: board.title }
             }
             EventBus.publish(event)
-            
+
             return res.status(Status.OK).json({
                 status: Status.OK,
                 message: 'Board deleted permanently'
@@ -263,7 +263,6 @@ class BoardController {
     async joinBoard(req: AuthRequest, res: Response, next: NextFunction) {
         try {
             const { token } = req.query
-            console.log(token)
             let dataStr = await redisClient.get(`invite:${token}`)
             let type = 'invite'
 
@@ -275,14 +274,13 @@ class BoardController {
             if (!dataStr) {
                 return next(errorResponse(Status.BAD_REQUEST, 'Invalid or expired token'))
             }
-
             const { boardId, role = 'board_member' } = JSON.parse(dataStr)
 
             const userId = req.user!.id
 
             const isMember = await BoardRepository.findMemberByUserId(boardId, userId)
             if (isMember) {
-                return res.status(Status.OK).json(successResponse(Status.OK, 'Already a member of the board'))
+                return res.status(Status.OK).json(successResponse(Status.OK, 'Already a member of the board', { boardId }))
             }
 
             await BoardRepository.addMemberToBoard(boardId, userId, role)
@@ -291,7 +289,7 @@ class BoardController {
                 await redisClient.del(`invite:${token}`)
             }
 
-            return res.status(Status.OK).json(successResponse(Status.OK, 'Successfully joined the board'))
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Successfully joined the board', { boardId }))
         } catch (err) {
             next(err)
         }
@@ -299,9 +297,7 @@ class BoardController {
 
     async createShareLink(req: AuthRequest, res: Response, next: NextFunction) {
         const user = req.user
-        if (!user) {
-            return next(errorResponse(Status.NOT_FOUND, 'User not found'))
-        }
+
         const boardId = req.params.boardId
         const board = BoardRepository.getBoardById(boardId)
         if (!board) {
@@ -318,12 +314,18 @@ class BoardController {
             return next(errorResponse(Status.NOT_FOUND, 'Membership not found'))
         }
 
+        const oldToken = await redisClient.get(`shareBoardToken:${boardId}`)
+        if (oldToken) {
+            await redisClient.del(`shareLink:${oldToken}`)
+        }
+
         const token = crypto.randomUUID()
 
         const payload = {
             boardId
         }
 
+        await redisClient.setEx(`shareBoardToken:${boardId}`, 7 * 24 * 60 * 60, token)
         await redisClient.setEx(`shareLink:${token}`, 7 * 24 * 60 * 60, JSON.stringify(payload))
 
         const link = `${Config.baseUrl}/api/boards/join?token=${token}`
@@ -331,9 +333,17 @@ class BoardController {
     }
 
     revokeShareLink = async (req: AuthRequest, res: Response, next: NextFunction) => {
-        const { token } = req.query
-        await redisClient.del(`shareLink:${token}`)
-        return res.status(Status.OK).json(successResponse(Status.OK, 'Share link revoked'))
+        try {
+            const boardId = req.params.boardId
+            const token = await redisClient.get(`shareBoardToken:${boardId}`)
+            if (token) {
+                await redisClient.del(`shareLink:${token}`)
+                await redisClient.del(`shareBoardToken:${boardId}`)
+            }
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Share link revoked'))
+        } catch (err) {
+            return next(err)
+        }
     }
 
     updateMemberRole = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -374,7 +384,7 @@ class BoardController {
             }
 
             await BoardRepository.changeOwner(boardId, currentOwnerId, newOwnerId)
-            
+
             // Publish board owner changed event for activity logging
             const event: DomainEvent = {
                 eventId: crypto.randomUUID(),
@@ -630,7 +640,7 @@ class BoardController {
                 payload: { title: templateBoard.title, isTemplate: true }
             }
             EventBus.publish(event)
-            
+
             return res.status(Status.CREATED).json(
                 successResponse(
                     Status.CREATED,

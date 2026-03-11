@@ -78,18 +78,19 @@ class CardController {
 
             const newMember = await cardRepository.addMemberToCard(cardId, memberId)
 
-            await notificationService.create({
-                user: { id: memberId } as User,
-                message: 'You have been added to a card',
-                type: NotificationType.CARD_ASSIGNED,
-                actionUrl: `/card/${cardId}`,
-                actor: { id: req.user?.id } as User,
-                entityType: EntityType.CARD,
-                entityId: cardId,
-            })
+            // await notificationService.create({
+            //     user: { id: memberId } as User,
+            //     message: 'You have been added to a card',
+            //     type: NotificationType.CARD_ASSIGNED,
+            //     actionUrl: `/card/${cardId}`,
+            //     actor: { id: req.user?.id } as User,
+            //     entityType: EntityType.CARD,
+            //     entityId: cardId,
+            // })
 
             return res.status(Status.CREATED).json(successResponse(Status.CREATED, 'Member added to card successfully', newMember))
         } catch (err: any) {
+            console.log(err)
             next(err)
         }
     }

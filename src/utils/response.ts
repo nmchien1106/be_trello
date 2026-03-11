@@ -11,11 +11,13 @@ export function successResponse<T>(status: Status = Status.OK, message: string, 
 export function errorResponse(
     status: Status = Status.INTERNAL_SERVER_ERROR,
     message: string,
-    error?: any
+    error?: any,
+    error_code?: string
 ): ApiErrorResponse {
     return {
         status,
         message,
-        error
+        error,
+        error_code
     }
 }

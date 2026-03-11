@@ -38,7 +38,7 @@ export const validateHandle = (schema: ZodSchema) => (req: Request, res: Respons
 
             return res
                 .status(Status.BAD_REQUEST)
-                .json(errorResponse(Status.BAD_REQUEST, 'Validate error: One or more fields are invalid', error))
+                .json(errorResponse(Status.BAD_REQUEST, 'Validate error: One or more fields are invalid', error, 'VALIDATE_ERROR'))
         }
 
         next(err)
