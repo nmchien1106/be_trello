@@ -20,6 +20,14 @@ const route = Router()
 
 boardsRegisterPath()
 
+// Get All Lists on Board
+route.get(
+    '/:boardId/lists',
+    verifyAccessToken,
+    authorizeBoardPermission(Permissions.UPDATE_BOARD),
+    boardController.getAllListOnBoard
+)
+
 // Get Public Boards
 route.get('/public', boardController.getPublicBoards)
 
@@ -28,12 +36,6 @@ route.get('/template', verifyAccessToken, boardController.getAllTemplates)
 
 route.get('/join', verifyAccessToken, boardController.joinBoard)
 
-route.delete(
-    '/:boardId/share-link',
-    verifyAccessToken,
-    authorizeBoardPermission(Permissions.REVOKE_LINK),
-    boardController.revokeShareLink
-)
 
 // Create Board & Get All Boards
 route.post(
@@ -61,6 +63,14 @@ route.post(
     verifyAccessToken,
     // authorizeBoardPermission(Permissions.ADD_MEMBER_TO_BOARD),
     boardController.createShareLink
+)
+
+// Revoke Share Link
+route.delete(
+    '/:boardId/share-link',
+    verifyAccessToken,
+    authorizeBoardPermission(Permissions.REVOKE_LINK),
+    boardController.revokeShareLink
 )
 
 // Change Owner
@@ -165,11 +175,5 @@ route.post(
     boardController.createBoardTemplate
 )
 
-route.get(
-    '/:boardId/lists',
-    verifyAccessToken,
-    authorizeBoardPermission(Permissions.UPDATE_BOARD),
-    boardController.getAllListOnBoard
-)
 
 export default route

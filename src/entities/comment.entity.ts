@@ -12,9 +12,9 @@ export class Comment extends DateTimeEntity {
     @Column({ type: 'text' })
     content: string
 
-    @ManyToOne(() => Card, (card) => card.comments)
+    @ManyToOne(() => Card, (card) => card.comments, { onDelete: 'CASCADE' })
     card: Card
 
-    @ManyToOne(() => User, (user) => user.comments)
+    @ManyToOne(() => User, (user) => user.comments, { onDelete: 'SET NULL' })
     user: User
 }

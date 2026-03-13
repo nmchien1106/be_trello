@@ -11,7 +11,7 @@ class ListRepository {
 
     async getAllListsInBoard(boardId: string): Promise<List[]> {
         return await this.repo.find({
-            where: { board: { id: boardId } },
+            where: { board: { id: boardId }, isArchived: false },
             order: { position: 'ASC' }
         })
     }

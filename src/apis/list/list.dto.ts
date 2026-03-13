@@ -42,4 +42,5 @@ export class CreateListDto {
 export class UpdateListDto {
   title?: string
   isArchived?: boolean
+  position?: number
 }

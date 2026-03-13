@@ -40,7 +40,7 @@ class BoardRepository {
         if (!boardId) {
             throw new Error('Board ID is required for delete')
         }
-        
+
         try {
             await AppDataSource.transaction(async (manager) => {
                 const listRepo = manager.getRepository(List)
@@ -50,18 +50,18 @@ class BoardRepository {
                 const activityRepo = manager.getRepository(Activity)
 
                 await activityRepo.update({ boardId: boardId }, { boardId: null })
-                
+
                 const lists = await listRepo.find({ where: { board: { id: boardId } } })
-                
+
                 if (lists.length > 0) {
                     const listIds = lists.map(l => l.id)
                     await cardRepo.delete({ list: { id: In(listIds) } })
                 }
 
                 await listRepo.delete({ board: { id: boardId } })
- 
+
                 await boardMemberRepo.delete({ board: { id: boardId } })
-                
+
                 const result = await boardRepo.delete({ id: boardId })
                 if (result.affected === 0) {
                     throw new Error('Board not found or already deleted')
@@ -355,7 +355,7 @@ class BoardRepository {
             relations: ['lists'],
             order: { lists: { position: 'ASC' } }
         })
-        return board?.lists || []
+        return board?.lists.filter(list => !list.isArchived) || []
     }
 
 }

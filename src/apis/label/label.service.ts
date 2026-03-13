@@ -3,7 +3,6 @@ import { Card } from '@/entities/card.entity'
 import { Label } from '@/entities/label.entity'
 import { CardLabel } from '@/entities/card-label.entity'
 import { LabelColor } from '@/enums/label.enum'
-import { errorResponse } from '@/utils/response'
 
 const labelRepository = AppDataSource.getRepository(Label)
 const cardLabelRepo = AppDataSource.getRepository(CardLabel)
@@ -51,13 +50,7 @@ class LabelService {
             label: { id: savedLabel.id }
         })
 
-        return {
-            id: savedLabel.id,
-            name: savedLabel.name,
-            color: savedLabel.color,
-            createdAt: savedLabel.createdAt,
-            updatedAt: savedLabel.updatedAt
-        }
+        return savedLabel;
     }
 
     async updateLabel(labelId: string, color?: LabelColor, name?: string) {

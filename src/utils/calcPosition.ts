@@ -42,7 +42,7 @@ export async function calcPosition(
 export async function rebalanceListPositions(boardId: string) {
     return await DataSource.transaction(async (manager) => {
         const lists = await manager.find(List, {
-            where: { board: { id: boardId } },
+            where: { board: { id: boardId }, isArchived: false },
             order: { position: 'ASC' },
         })
 

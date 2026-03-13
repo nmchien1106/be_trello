@@ -13,7 +13,7 @@ export class List extends DateTimeEntity {
     @Column({ type: 'varchar', length: 255 })
     title: string
 
-    @Column({ type: 'int', default: 0 })
+    @Column({ type: 'float', default: 0 })
     position: number
 
     @Column({ type: 'uuid' })

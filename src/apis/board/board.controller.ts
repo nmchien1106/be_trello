@@ -243,7 +243,7 @@ class BoardController {
             JSON.stringify({ boardId, email, role })
         )
 
-        const inviteLink = `${Config.corsOrigin}join-board?token=${token}`
+        const inviteLink = `${Config.corsOrigin}/join-board?token=${token}`
 
         const mailOptions = {
             from: Config.emailUser,
@@ -328,7 +328,7 @@ class BoardController {
         await redisClient.setEx(`shareBoardToken:${boardId}`, 7 * 24 * 60 * 60, token)
         await redisClient.setEx(`shareLink:${token}`, 7 * 24 * 60 * 60, JSON.stringify(payload))
 
-        const link = `${Config.baseUrl}/api/boards/join?token=${token}`
+        const link = `${Config.corsOrigin}/join-board?token=${token}`
         return res.status(Status.OK).json(successResponse(Status.OK, 'Share link created', { link }))
     }
 
