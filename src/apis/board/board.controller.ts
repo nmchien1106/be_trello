@@ -80,6 +80,13 @@ class BoardController {
             if (!board) {
                 return next(errorResponse(Status.NOT_FOUND, 'Board not found'))
             }
+
+            // Check permission: Must be board member with manage permission, board owner, or workspace admin
+            const hasAccess = await this.canManageBoard(userId, boardId, board)
+            if (!hasAccess) {
+                return next(errorResponse(Status.FORBIDDEN, 'You do not have permission to archive this board'))
+            }
+
             if (board.isArchived) {
                 return next(errorResponse(Status.BAD_REQUEST, 'Board is already archived'))
             }
@@ -112,6 +119,12 @@ class BoardController {
             if (!board) {
                 return next(errorResponse(Status.NOT_FOUND, 'Board not found'))
             }
+
+            const hasAccess = await this.canManageBoard(userId, boardId, board)
+            if (!hasAccess) {
+                return next(errorResponse(Status.FORBIDDEN, 'You do not have permission to reopen this board'))
+            }
+
             if (!board.isArchived) {
                 return next(errorResponse(Status.BAD_REQUEST, 'Board is not archived'))
             }
@@ -134,6 +147,32 @@ class BoardController {
         } catch (err) {
             next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to reopen board', err))
         }
+    }
+
+    private canManageBoard = async (userId: string, boardId: string, _board: any): Promise<boolean> => {
+        // Load board with owner and workspace
+        const boardWithOwner = await boardRepo.findOne({ where: { id: boardId }, relations: ['owner', 'workspace'] })
+        if (!boardWithOwner) return false
+
+        // 1. Board owner can always manage
+        if (boardWithOwner.owner?.id === userId) return true
+
+        // 2. Any board member can manage (board_admin has board:manage)
+        const boardMembership = await boardMemberRepo.findOne({
+            where: { board: { id: boardId }, user: { id: userId } },
+            relations: ['role']
+        })
+        if (boardMembership) return true
+
+        // 3. Any workspace member can manage boards in their workspace
+        if (boardWithOwner.workspace?.id) {
+            const wsMember = await AppDataSource.getRepository(WorkspaceMembers).findOne({
+                where: { workspace: { id: boardWithOwner.workspace.id }, user: { id: userId } }
+            })
+            if (wsMember) return true
+        }
+
+        return false
     }
 
     deleteBoardPerrmanently = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -458,6 +497,21 @@ class BoardController {
 
             const result = await boardService.getAllBoards(userId)
             return res.status(result.status).json(successResponse(result.status, result.message, result.data))
+        } catch (err) {
+            next(err)
+        }
+    }
+
+    getArchivedBoards = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            if (!req.user || !req.user.id) {
+                return next(errorResponse(Status.UNAUTHORIZED, 'User information not found'))
+            }
+            const userId = req.user.id
+            const boards = await BoardRepository.getArchivedBoardsForUser(userId)
+            return res
+                .status(Status.OK)
+                .json(successResponse(Status.OK, 'Archived boards fetched successfully', boards))
         } catch (err) {
             next(err)
         }

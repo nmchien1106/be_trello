@@ -205,6 +205,14 @@ class CardRepository {
         })
         return card?.list || null
     }
+
+    getCardsByBoardId = async (boardId: string) => {
+        return await this.repo.find({
+            where: { list: { board: { id: boardId } } },
+            relations: ['list', 'list.board', 'cardMembers', 'cardMembers.user'],
+            order: { position: 'ASC' }
+        })
+    }
 }
 
 export default new CardRepository()

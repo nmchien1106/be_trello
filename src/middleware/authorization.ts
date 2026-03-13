@@ -194,7 +194,10 @@ export const authorizeCardPermission = (requiredPermission: string | string[]) =
     return async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const user = req.user
-            const cardId = req.params.cardId || req.params.id || req.body.cardId || req.query.cardId
+            const cardId = req.params.id || req.params.cardId || req.body.cardId || req.query.cardId
+            if (!cardId) {
+                return next(errorResponse(Status.NOT_FOUND, 'Card not found'))
+            }
 
             const cardRepository = AppDataSource.getRepository(Card)
             const card = await cardRepository.findOne({

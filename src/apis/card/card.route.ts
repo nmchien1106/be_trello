@@ -9,7 +9,8 @@ import {
     DuplicateCardSchema,
     MoveCardToBoardSchema,
     AddMemberToCard,
-    UpdateCardSchema
+    UpdateCardSchema,
+    GetAssignedCardsSchema
 } from './card.schema'
 import { Permissions } from './../../enums/permissions.enum'
 import {
@@ -21,6 +22,11 @@ import multer from 'multer'
 import { AttachmentUpload, CardBackgroundUpload } from '@/middleware/upload'
 
 const route = Router()
+route.get('/due-soon', verifyAccessToken, cardController.getCardsDueSoon) // SCRUM-164
+route.get('/assigned', verifyAccessToken, validateHandle(GetAssignedCardsSchema), cardController.getAssignedCards) // SCRUM-163
+route.get('/search', verifyAccessToken, cardController.globalSearch) // SCRUM-165
+route.get('/board/:boardId', verifyAccessToken, cardController.getCardsInBoard) // SCRUM-162
+
 // Create a new card
 route.post(
     '/',

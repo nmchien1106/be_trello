@@ -439,43 +439,118 @@ export class CardService {
     }
 
     async getCardsDueSoon(userId: string) {
-        const today = new Date()
         const nextWeek = new Date()
-        nextWeek.setDate(today.getDate() + 7)
+        nextWeek.setDate(nextWeek.getDate() + 7)
 
-        return await cardRepo.find({
-            where: {
-                cardMembers: { user: { id: userId } },
-                isArchived: false,
-                dueDate: Between(today, nextWeek)
-            },
-            relations: ['list', 'list.board'],
-            order: { dueDate: 'ASC' }
-        })
+        return await cardRepo
+            .createQueryBuilder('card')
+            .leftJoinAndSelect('card.list', 'list')
+            .leftJoinAndSelect('list.board', 'board')
+            .leftJoin('board.boardMembers', 'boardMember')
+            .where('(board.owner = :userId OR boardMember.user = :userId)', { userId }) // Changed ownerId/userId to owner/user
+            .andWhere('card.isArchived = :isArchived', { isArchived: false })
+            .andWhere('card.dueDate <= :nextWeek', { nextWeek })
+            .orderBy('card.dueDate', 'ASC')
+            .getMany()
     }
 
     async getAssignedCards(userId: string, query: any) {
-        return await cardRepo.find({
-            where: {
-                cardMembers: { user: { id: userId } },
-                isArchived: false
-            },
-            relations: ['list', 'list.board'],
-            order: { createdAt: 'DESC' },
-            take: 20
-        })
+        const { boardId, status, page, limit } = query
+        const p = Number(page) || 1
+        const l = Number(limit) || 10
+        const skip = (p - 1) * l
+        const take = l
+
+        const queryBuilder = cardRepo
+            .createQueryBuilder('card')
+            .leftJoinAndSelect('card.list', 'list')
+            .leftJoinAndSelect('list.board', 'board')
+            .innerJoin('card.cardMembers', 'cardMember')
+            .innerJoin('cardMember.user', 'assignedUser')
+            .where('assignedUser.id = :userId', { userId })
+
+        if (boardId && boardId !== '') {
+            queryBuilder.andWhere('board.id = :boardId', { boardId })
+        }
+
+        if (status === 'archived') {
+            queryBuilder.andWhere('card.isArchived = :isArchived', { isArchived: true })
+        } else if (status === 'active') {
+            queryBuilder.andWhere('card.isArchived = :isArchived', { isArchived: false })
+        }
+
+        return await queryBuilder.orderBy('card.createdAt', 'DESC').skip(skip).take(take).getMany()
     }
 
     async globalSearch(userId: string, keyword: string) {
         if (!keyword) return []
-        return await cardRepo.find({
-            where: [
-                { title: Like(`%${keyword}%`), cardMembers: { user: { id: userId } }, isArchived: false },
-                { description: Like(`%${keyword}%`), cardMembers: { user: { id: userId } }, isArchived: false }
-            ],
-            relations: ['list', 'list.board'],
-            take: 10
-        })
+
+        return await cardRepo
+            .createQueryBuilder('card')
+            .leftJoinAndSelect('card.list', 'list')
+            .leftJoinAndSelect('list.board', 'board')
+            .leftJoin('board.boardMembers', 'boardMember')
+            .where('(board.ownerId = :userId OR boardMember.userId = :userId)', { userId })
+            .andWhere('card.isArchived = :isArchived', { isArchived: false })
+            .andWhere('(card.title ILIKE :keyword OR card.description ILIKE :keyword)', { keyword: `%${keyword}%` })
+            .orderBy('card.createdAt', 'DESC')
+            .take(10)
+            .getMany()
+    }
+
+    async getCardsInBoard(userId: string, boardId: string) {
+        await this.checkPermission(userId, boardId, Permissions.READ_BOARD)
+        return await CardRepository.getCardsByBoardId(boardId)
+    }
+
+    addMemberToCard = async (userId: string, cardId: string, memberId: string) => {
+        const boardId: string = await cardRepository.getBoardIdFromCard(cardId)
+        const isMemberOfBoard = await boardRepository.findMemberByUserId(boardId, memberId)
+
+        if (!isMemberOfBoard) {
+            throw { status: Status.BAD_REQUEST, message: 'User is not a member of the board' }
+        }
+
+        const result = await cardRepository.findMemberById(cardId, memberId)
+        if (result) {
+            throw { status: Status.BAD_REQUEST, message: 'Member already added to card' }
+        }
+        const newMember = await cardRepository.addMemberToCard(cardId, memberId)
+
+        // EventBus
+        const updateEvent: DomainEvent = {
+            eventId: crypto.randomUUID(),
+            type: EventType.CARD_MEMBER_ASSIGNED,
+            boardId: boardId,
+            cardId: cardId,
+            actorId: userId,
+            payload: { memberId: memberId }
+        }
+        EventBus.publish(updateEvent)
+
+        return {
+            status: Status.CREATED,
+            message: 'Member added to card successfully',
+            data: newMember
+        }
+    }
+
+    getUnassignedMembers = async (cardId: string) => {
+        const boardId: string = await cardRepository.getBoardIdFromCard(cardId)
+        const members = await boardRepository.findMemberByBoardId(boardId)
+        const cardMembers = await cardRepository.getMembersOfCard(cardId)
+        const cardMemberIds = cardMembers.map((cm) => cm.user.id)
+        const result = members
+            .filter((m) => !cardMemberIds.includes(m.user.id))
+            .map((m) => ({
+                userId: m.user.id,
+                username: m.user.username,
+                email: m.user.email,
+                avatarUrl: m.user.avatarUrl,
+                role: m.role.name || 'card_member',
+                fullName: m.user.fullName
+            }))
+        return result
     }
 
     addMemberToCard = async (userId: string, cardId: string, memberId: string) => {

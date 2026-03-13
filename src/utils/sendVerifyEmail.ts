@@ -5,9 +5,11 @@ import emailTransporter from '@/config/email.config'
 import { User } from "@/entities/user.entity";
 
 export default async function sendVerifyEmail(user: User) {
+    console.log(`[Email] Generating OTP for user: ${user.email}`);
     const code = generateNumericOTP(6);
     // 5 minutes
-    redisClient.setEx(`verify-${user.id}`, 60 * 5, code);
+    await redisClient.setEx(`verify-${user.id}`, 60 * 5, code);
+    console.log(`[Email] OTP saved to Redis for user: ${user.id}`);
 
     const mailOptions = {
         from: Config.emailUser,
@@ -15,8 +17,16 @@ export default async function sendVerifyEmail(user: User) {
         subject: 'Verify your email',
         html: verifyEmailHTML(code)
     }
-    await emailTransporter.sendMail(mailOptions)
-
+    
+    try {
+        console.log(`[Email] Attempting to send email to: ${user.email}`);
+        const info = await emailTransporter.sendMail(mailOptions);
+        console.log(`[Email] Email sent successfully: ${info.messageId}`);
+    } catch (error) {
+        console.error(`[Email] Failed to send email to: ${user.email}`);
+        console.error(error);
+        throw error;
+    }
 }
 
 function verifyEmailHTML(code: string) {

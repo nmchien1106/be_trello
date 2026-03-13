@@ -6,7 +6,7 @@ const optionalNullableString = z.string().min(1).optional().nullable()
 
 export const CreateCardSchema = z.object({
     title: z.string().min(1, 'Title is required'),
-    listId: z.string().uuid('Invalid List ID'),
+    listId: z.string().min(1, 'Invalid List ID'),
     description: optionalNullableString,
     coverUrl: z.string().url('Invalid URL').optional().nullable(),
     dueDate: z
@@ -30,7 +30,7 @@ export const UpdateCardSchema = z.object({
 })
 
 export const CreateAttachmentParamsSchema = z.object({
-    id: z.string().uuid('Invalid card ID')
+    id: z.string().min(1, 'Invalid card ID')
 })
 
 
@@ -42,7 +42,7 @@ export const CreateAttachmentBodySchema = z.object({
 
 export const CreateAttachmentSchema = z.object({
     params: z.object({
-        cardId: z.string().uuid('Invalid card ID')
+        cardId: z.string().min(1, 'Invalid card ID')
     })
 })
 
@@ -64,17 +64,24 @@ export const ReorderCardSchema = z.object({
 })
 
 export const MoveCardToBoardSchema = z.object({
-    targetBoardId: z.string().uuid().describe('ID của Board đích'),
-    targetListId: z.string().uuid().describe('ID của List đích thuộc Board đích'),
+    targetBoardId: z.string().min(1).describe('ID của Board đích'),
+    targetListId: z.string().min(1).describe('ID của List đích thuộc Board đích'),
     beforeId: z.string().nullable().optional().describe('ID card đứng trước (để tính vị trí)'),
     afterId: z.string().nullable().optional().describe('ID card đứng sau (để tính vị trí)')
 })
 
 export const DuplicateCardSchema = z.object({
-    targetListId: z.string().uuid().optional().describe('ID của List đích (mặc định list hiện tại)'),
+    targetListId: z.string().min(1).optional().describe('ID của List đích (mặc định list hiện tại)'),
     title: z.string().min(1).optional().describe('Tên thẻ mới (nếu muốn đổi)')
 })
 
 export const AddMemberToCard = z.object({
-    memberId: z.string().uuid().describe('ID của thành viên cần thêm vào thẻ')
+    memberId: z.string().min(1).or(z.literal('')).optional().describe('ID của thành viên cần thêm vào thẻ')
+})
+
+export const GetAssignedCardsSchema = z.object({
+    boardId: z.string().min(1).or(z.literal('')).optional(),
+    status: z.enum(['active', 'archived', 'all']).optional().default('active'),
+    page: z.coerce.number().int().min(1).optional().default(1),
+    limit: z.coerce.number().int().min(1).optional().default(10)
 })

@@ -37,7 +37,7 @@ class AuthController {
 
             await useRepo.save(newUser)
 
-            this.sendVerifyEmail({ body: { email } } as Request, res, next)
+            await sendVerifyEmail(newUser)
 
             return res.status(201).json(successResponse(Status.CREATED, 'Register successfully'))
         } catch (err) {

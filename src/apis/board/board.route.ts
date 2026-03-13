@@ -48,6 +48,9 @@ route.post(
 // Get All Boards
 route.get('/', verifyAccessToken, boardController.getAllBoards)
 
+// Get Archived Boards for current user
+route.get('/archived', verifyAccessToken, boardController.getArchivedBoards)
+
 // Invite via email
 route.post(
     '/:boardId/invite/email',
@@ -126,7 +129,6 @@ route.patch(
 route.post(
     '/:boardId/archive',
     verifyAccessToken,
-    authorizeBoardPermission(Permissions.MANAGE_BOARD),
     boardController.archiveBoard
 )
 
@@ -134,7 +136,6 @@ route.post(
 route.post(
     '/:boardId/reopen',
     verifyAccessToken,
-    authorizeBoardPermission(Permissions.MANAGE_BOARD),
     boardController.reopenBoard
 )
 

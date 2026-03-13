@@ -2,7 +2,7 @@ import { Permissions } from './../../enums/permissions.enum'
 import WorkspaceController from './workspace.controller'
 import { Router } from 'express'
 import { verifyAccessToken } from '@/utils/jwt'
-import { InvitationResponseSchema, WorkspaceSchema, AddWorkspaceMemberRequestSchema } from './workspace.schema'
+import { InvitationResponseSchema, WorkspaceSchema, AddWorkspaceMemberRequestSchema, UpdateWorkspaceRequestSchema } from './workspace.schema'
 import { validateHandle } from '@/middleware/validate-handle'
 import { authorizePermissionWorkspace } from '@/middleware/authorization'
 import { registerPath } from './workspace.swagger'
@@ -51,8 +51,8 @@ router
     )
     .put(
         verifyAccessToken,
-        validateHandle(WorkspaceSchema),
         authorizePermissionWorkspace(Permissions.UPDATE_WORKSPACE),
+        validateHandle(UpdateWorkspaceRequestSchema),
         WorkspaceController.updateWorkspace
     )
     .get(

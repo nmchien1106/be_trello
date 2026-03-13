@@ -20,13 +20,19 @@ export const validateHandle = (schema: ZodSchema) => (req: Request, res: Respons
             throw parseResult.error
         }
 
-        if (req.method !== 'GET') {
+        if (req.method === 'GET') {
+            req.query = parseResult.data as any
+        } else {
             req.body = parseResult.data
         }
 
         next()
     } catch (err) {
         if (err instanceof ZodError) {
+            console.error('Validation failed for:', req.method, req.url);
+            console.error('Input data:', req.method === 'GET' ? req.query : req.body);
+            console.error('Zod Error Issues:', JSON.stringify(err.issues, null, 2));
+
             const error: Record<string, string> = {}
 
             err.issues.forEach((issue) => {

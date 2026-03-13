@@ -12,6 +12,7 @@ import CommentRoute from '@/apis/comment/comment.route'
 import LabelRoute from '@/apis/label/label.route'
 import ActivityRoute from '@/apis/activity/activity.route'
 import NotificationRoute from '@/apis/notification/notification.route'
+import SearchRoute from '@/apis/search/search.route'
 
 const route = Router()
 

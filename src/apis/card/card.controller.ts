@@ -67,6 +67,12 @@ class CardController {
             }
 
             const boardId: string = await cardRepository.getBoardIdFromCard(cardId)
+            if (!boardId) {
+                return res
+                    .status(Status.NOT_FOUND)
+                    .json(errorResponse(Status.NOT_FOUND, 'Board not found for this card'))
+            }
+            const board = await boardRepository.getBoardById(boardId)
             const isMemberOfBoard = await boardRepository.findMemberByUserId(boardId, memberId)
 
             if (!isMemberOfBoard) {
@@ -346,6 +352,26 @@ class CardController {
             return res.status(Status.OK).json(successResponse(Status.OK, 'Get unassigned members successfully', result))
         } catch (err: any) {
             next(errorResponse(err.status || Status.INTERNAL_SERVER_ERROR, err.message))
+        }
+    }
+
+    getCardsInBoard = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+            const result = await cardService.getCardsInBoard(req.user.id, req.params.boardId)
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Get cards in board successfully', result))
+        } catch (err: any) {
+            next(errorResponse(err.status || 500, err.message))
+        }
+    }
+
+    getCardsInBoard = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+            const result = await cardService.getCardsInBoard(req.user.id, req.params.boardId)
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Get cards in board successfully', result))
+        } catch (err: any) {
+            next(errorResponse(err.status || 500, err.message))
         }
     }
 }

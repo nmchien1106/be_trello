@@ -22,7 +22,7 @@ class BoardRepository {
     }
 
     getBoardById = async (boardId: string): Promise<Board | null> => {
-        return this.repo.findOne({ where: { id: boardId } })
+        return this.repo.findOne({ where: { id: boardId }, relations: ['owner'] })
     }
     updateBoard = async (boardId: string, updateData: Partial<Board>): Promise<Board | null> => {
         if (!boardId) {
@@ -249,6 +249,31 @@ class BoardRepository {
                 workspace: { id: true, title: true }
             },
             order: { createdAt: 'DESC' }
+        })
+    }
+
+    async getArchivedBoardsForUser(userId: string) {
+        return this.repo.find({
+            where: [
+                { isArchived: true, owner: { id: userId } },
+                { isArchived: true, boardMembers: { user: { id: userId } } },
+                {
+                    isArchived: true,
+                    workspace: { workspaceMembers: { user: { id: userId } } }
+                }
+            ],
+            relations: ['workspace'],
+            select: {
+                id: true,
+                title: true,
+                description: true,
+                permissionLevel: true,
+                backgroundPath: true,
+                createdAt: true,
+                updatedAt: true,
+                workspace: { id: true, title: true }
+            },
+            order: { updatedAt: 'DESC' }
         })
     }
     async getBoardDetail(boardId: string, userId: string) {
