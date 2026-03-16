@@ -52,7 +52,12 @@ class ListController {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
 
-            const highestPosition = await listRepository.getHighestPositionInBoard(req.body.boardId)
+            const list = await listRepository.findById(req.params.id)
+            if (!list) {
+                return next(errorResponse(Status.NOT_FOUND, 'List not found'))
+            }
+
+            const highestPosition = await listRepository.getHighestPositionInBoard(list.board.id)
             const position = highestPosition ? highestPosition + 100 : 100
 
             const result = await listService.updateList(req.params.id, { isArchived: false, position }, req.user.id)

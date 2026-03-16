@@ -3,17 +3,22 @@ import cardController from './card.controller'
 import { verifyAccessToken } from '@/utils/jwt'
 import { validateHandle } from '@/middleware/validate-handle'
 import {
-    CreateCardSchema, CreateAttachmentSchema,
+    CreateCardSchema,
+    CreateAttachmentSchema,
     ReorderCardSchema,
     DuplicateCardSchema,
     MoveCardToBoardSchema,
-    AddMemberToCard, UpdateCardSchema
+    AddMemberToCard,
+    UpdateCardSchema
 } from './card.schema'
-import { Permissions } from './../../enums/permissions.enum';
-import { authorizeCardPermission, authorizeAttachmentPermission, authorizeListPermission } from '@/middleware/authorization';
+import { Permissions } from './../../enums/permissions.enum'
+import {
+    authorizeCardPermission,
+    authorizeAttachmentPermission,
+    authorizeListPermission
+} from '@/middleware/authorization'
 import multer from 'multer'
-import { AttachmentUpload, CardBackgroundUpload } from '@/middleware/upload';
-
+import { AttachmentUpload, CardBackgroundUpload } from '@/middleware/upload'
 
 const route = Router()
 // Create a new card
@@ -110,28 +115,32 @@ route.patch(
     cardController.unarchiveCard
 )
 
-
-route.post('/:id/presigned-url',
+route.post(
+    '/:id/presigned-url',
     verifyAccessToken,
     authorizeCardPermission(Permissions.UPDATE_CARD),
-    cardController.getPresignedUrl)
+    cardController.getPresignedUrl
+)
 
-
-route.post('/:id/presigned-url',
+route.post(
+    '/:id/presigned-url',
     verifyAccessToken,
     authorizeCardPermission(Permissions.UPDATE_CARD),
-    cardController.getPresignedUrl)
+    cardController.getPresignedUrl
+)
 
 //Create attachment on card
-route.post('/:id/attachments',
+route.post(
+    '/:id/attachments',
     verifyAccessToken,
     authorizeCardPermission(Permissions.UPDATE_CARD),
     validateHandle(CreateAttachmentSchema),
-    cardController.createAttachment);
-
+    cardController.createAttachment
+)
 
 //Get attachments on card
-route.get('/:id/attachments',
+route.get(
+    '/:id/attachments',
     verifyAccessToken,
     authorizeCardPermission(Permissions.READ_CARD),
     cardController.getAttachmentsByCard
@@ -143,11 +152,10 @@ route.delete(
     verifyAccessToken,
     authorizeAttachmentPermission(Permissions.UPDATE_CARD),
     cardController.deleteAttachment
-);
+)
 
-// Upload or update card background
 route.post(
-    '/:id/background',
+    '/:cardId/background',
     verifyAccessToken,
     authorizeCardPermission(Permissions.UPDATE_CARD),
     CardBackgroundUpload.single('file'),
@@ -156,7 +164,7 @@ route.post(
 
 // Get unassigned members of a card
 route.get(
-    '/:id/unassigned-members',
+    '/:cardId/unassigned-members',
     verifyAccessToken,
     authorizeCardPermission(Permissions.READ_CARD),
     cardController.getUnassignedMembers

@@ -42,7 +42,7 @@ export const authorizePermissionWorkspace = (requiredPermission: string | string
 
             next()
         } catch (err) {
-            console.log(err);
+            console.log(err)
             return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
         }
     }
@@ -99,7 +99,6 @@ export const authorizeRoleWorkspace = (requiredRoles: string | string[]) => {
     }
 }
 
-
 export const authorizeBoardPermission = (requiredPermission: string | string[]) => {
     return async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
@@ -108,7 +107,6 @@ export const authorizeBoardPermission = (requiredPermission: string | string[]) 
                 return next(errorResponse(Status.NOT_FOUND, 'User not found'))
             }
             const boardId = req.params.boardId || req.body.boardId || req.query.boardId || req.params.id
-
             const boardMemberRepository = AppDataSource.getRepository(BoardMembers)
 
             const membership = await boardMemberRepository.findOne({
@@ -136,7 +134,7 @@ export const authorizeBoardPermission = (requiredPermission: string | string[]) 
             }
             next()
         } catch (err) {
-            console.log(err);
+            console.log(err)
             return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
         }
     }
@@ -196,7 +194,7 @@ export const authorizeCardPermission = (requiredPermission: string | string[]) =
     return async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const user = req.user
-            const cardId = req.params.id || req.params.cardId || req.body.cardId || req.query.cardId
+            const cardId = req.params.cardId || req.params.id || req.body.cardId || req.query.cardId
 
             const cardRepository = AppDataSource.getRepository(Card)
             const card = await cardRepository.findOne({
@@ -216,7 +214,6 @@ export const authorizeCardPermission = (requiredPermission: string | string[]) =
                 },
                 relations: ['role', 'role.permissions']
             })
-
 
             if (!membership) {
                 return next(errorResponse(Status.NOT_FOUND, 'You are not a member of this board'))

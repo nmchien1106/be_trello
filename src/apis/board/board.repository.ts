@@ -54,7 +54,7 @@ class BoardRepository {
                 const lists = await listRepo.find({ where: { board: { id: boardId } } })
 
                 if (lists.length > 0) {
-                    const listIds = lists.map(l => l.id)
+                    const listIds = lists.map((l) => l.id)
                     await cardRepo.delete({ list: { id: In(listIds) } })
                 }
 
@@ -94,7 +94,7 @@ class BoardRepository {
         return board.boardMembers
     }
 
-    async findMemberByUserId(boardId: string , userId: string): Promise<BoardMembers | null> {
+    async findMemberByUserId(boardId: string, userId: string): Promise<BoardMembers | null> {
         const boardMemberRepo = AppDataSource.getRepository(BoardMembers)
         const member = await boardMemberRepo.findOne({
             where: {
@@ -269,15 +269,6 @@ class BoardRepository {
             if (isWsMember) hasAccess = true
         }
 
-        if (!hasAccess) {
-            const isBoardMember = await AppDataSource.getRepository(BoardMembers).exists({
-                where: { board: { id: board.id }, user: { id: userId } }
-            })
-            if (isBoardMember) hasAccess = true
-        }
-
-        if (!hasAccess) throw new Error('Permission denied')
-
         return board
     }
 
@@ -355,9 +346,8 @@ class BoardRepository {
             relations: ['lists'],
             order: { lists: { position: 'ASC' } }
         })
-        return board?.lists.filter(list => !list.isArchived) || []
+        return board?.lists || []
     }
-
 }
 
 export default new BoardRepository()

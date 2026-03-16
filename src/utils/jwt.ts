@@ -56,6 +56,34 @@ export const verifyAccessToken = async (req: AuthRequest, res: Response, next: N
     }
 }
 
+export const verifyAccessTokenSSE = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const authHeader = req.headers['authorization']
+        const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : undefined
+        const queryToken = typeof req.query.token === 'string' ? req.query.token : undefined
+        const token = bearerToken || queryToken
+
+        if (!token) {
+            return next(errorResponse(Status.UNAUTHORIZED, 'Unauthorized!'))
+        }
+
+        const payload = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!) as { id: string }
+        req.user = payload
+
+        const redisToken = await redisClient.get(`${req.user.id}-access`)
+        if (redisToken !== token) {
+            return next(errorResponse(Status.UNAUTHORIZED, 'Invalid Access Token'))
+        }
+
+        next()
+    } catch (err: any) {
+        if (err.name === 'TokenExpiredError') {
+            return next(errorResponse(Status.UNAUTHORIZED, 'Access Token Expired'))
+        }
+        return next(errorResponse(Status.UNAUTHORIZED, 'Invalid Access Token'))
+    }
+}
+
 export const verifyRefreshToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const token = req.cookies.refresh

@@ -12,15 +12,12 @@ export class NotificationSubscriber {
     }
 
     private async handleEvent(event: DomainEvent) {
-        console.log('Notification event received:', event.type)
-
         try {
             switch (event.type) {
                 case EventType.COMMENT_CREATED:
                     await this.handleCommentCreated(event)
                     break
                 case EventType.CARD_MEMBER_ASSIGNED:
-                    console.log('Card member assigned event received:', event)
                     await this.handleCardMemberAssigned(event)
                     break
                 case EventType.CARD_MOVED:

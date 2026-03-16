@@ -6,7 +6,6 @@ const redisClient = createClient({
         connectTimeout: 5000,
         reconnectStrategy: (retries) => {
             if (retries > 10) {
-                console.error('Redis reconnect failed after 10 attempts')
                 return new Error('Redis reconnect failed')
             }
             return Math.min(retries * 500, 2000)
@@ -25,13 +24,12 @@ redisClient.on('connect', () => {
 redisClient.on('ready', () => {
     console.log('Redis Client Ready')
 })
-
-    ; (async () => {
-        try {
-            await redisClient.connect()
-        } catch (err) {
-            console.error('Initial Redis connection failed:', err)
-        }
-    })()
+;(async () => {
+    try {
+        await redisClient.connect()
+    } catch (err) {
+        console.error('Initial Redis connection failed:', err)
+    }
+})()
 
 export default redisClient

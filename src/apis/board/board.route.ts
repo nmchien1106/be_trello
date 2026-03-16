@@ -36,8 +36,7 @@ route.get('/template', verifyAccessToken, boardController.getAllTemplates)
 
 route.get('/join', verifyAccessToken, boardController.joinBoard)
 
-
-// Create Board & Get All Boards
+// Create Board
 route.post(
     '/',
     verifyAccessToken,
@@ -46,6 +45,7 @@ route.post(
     boardController.createBoard
 )
 
+// Get All Boards
 route.get('/', verifyAccessToken, boardController.getAllBoards)
 
 // Invite via email
@@ -61,7 +61,7 @@ route.post(
 route.post(
     '/:boardId/invite/link',
     verifyAccessToken,
-    // authorizeBoardPermission(Permissions.ADD_MEMBER_TO_BOARD),
+    authorizeBoardPermission(Permissions.ADD_MEMBER_TO_BOARD),
     boardController.createShareLink
 )
 
@@ -79,6 +79,22 @@ route.patch(
     verifyAccessToken,
     authorizeBoardPermission(Permissions.UPDATE_BOARD_MEMBER_ROLE),
     boardController.changeOwner
+)
+
+// Get Board Detail
+route.get(
+    '/:boardId',
+    verifyAccessToken,
+    // authorizeBoardPermission(Permissions.READ_BOARD),
+    boardController.getBoardById
+)
+
+// Get Members
+route.get(
+    '/:boardId/members',
+    verifyAccessToken,
+    // authorizeBoardPermission(Permissions.READ_BOARD),
+    boardController.getAllMembers
 )
 
 // Update Member Role
@@ -147,17 +163,6 @@ route.post(
     boardController.leaveBoard
 )
 
-// Get Board Detail
-route.get('/:id', verifyAccessToken, boardController.getBoardById)
-
-// Get Members
-route.get(
-    '/:boardId/members',
-    verifyAccessToken,
-    authorizeBoardPermission(Permissions.UPDATE_BOARD),
-    boardController.getAllMembers
-)
-
 //Create board from template
 route.post(
     '/template/:templateId',
@@ -174,6 +179,5 @@ route.post(
     // validateHandle(CreateTemplateSchema),
     boardController.createBoardTemplate
 )
-
 
 export default route

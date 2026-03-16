@@ -40,7 +40,6 @@ const cardMemberRepo = AppDataSource.getRepository(CardMembers)
 const boardService = new BoardService()
 
 class BoardController {
-
     updateBoard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const { boardId } = req.params
@@ -163,7 +162,6 @@ class BoardController {
                 message: 'Board deleted permanently'
             })
         } catch (err: any) {
-            console.error('Delete board error:', err.message || err)
             next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to delete board', err))
         }
     }
@@ -210,38 +208,26 @@ class BoardController {
 
             const user = await userRepository.findByEmailAsync(email)
             if (!user) {
-                return res
-                    .status(Status.FORBIDDEN)
-                    .json(errorResponse(Status.FORBIDDEN, 'User not found'))
+                return res.status(Status.FORBIDDEN).json(errorResponse(Status.FORBIDDEN, 'User not found'))
             }
 
             const isMember = await BoardRepository.findMemberByEmail(boardId, email)
             if (isMember) {
-                return res
-                    .status(Status.FORBIDDEN)
-                    .json(errorResponse(Status.FORBIDDEN, 'Already a member'))
+                return res.status(Status.FORBIDDEN).json(errorResponse(Status.FORBIDDEN, 'Already a member'))
             }
 
             const token = await this.sendInvitationEmail(boardId, email, isExistRole.name)
 
-            return res
-                .status(Status.OK)
-                .json(successResponse(Status.OK, 'Invitation sent successfully', { token }))
-
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Invitation sent successfully', { token }))
         } catch (err) {
             return next(err)
         }
     }
 
-
     sendInvitationEmail = async (boardId: string, email: string, role: string) => {
         const token = crypto.randomUUID()
 
-        redisClient.setEx(
-            `invite:${token}`,
-            7 * 24 * 60 * 60,
-            JSON.stringify({ boardId, email, role })
-        )
+        redisClient.setEx(`invite:${token}`, 7 * 24 * 60 * 60, JSON.stringify({ boardId, email, role }))
 
         const inviteLink = `${Config.corsOrigin}/join-board?token=${token}`
 
@@ -258,7 +244,6 @@ class BoardController {
         emailTransporter.sendMail(mailOptions)
         return token
     }
-
 
     async joinBoard(req: AuthRequest, res: Response, next: NextFunction) {
         try {
@@ -280,7 +265,9 @@ class BoardController {
 
             const isMember = await BoardRepository.findMemberByUserId(boardId, userId)
             if (isMember) {
-                return res.status(Status.OK).json(successResponse(Status.OK, 'Already a member of the board', { boardId }))
+                return res
+                    .status(Status.OK)
+                    .json(successResponse(Status.OK, 'Already a member of the board', { boardId }))
             }
 
             await BoardRepository.addMemberToBoard(boardId, userId, role)
@@ -522,9 +509,8 @@ class BoardController {
 
     getAllMembers = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
-            const { id } = req.params
-            const members = await BoardRepository.findMemberByBoardId(id)
-
+            const { boardId } = req.params
+            const members = await BoardRepository.findMemberByBoardId(boardId)
             const result = members.map((m) => ({
                 userId: m.user.id,
                 username: m.user.username,
@@ -542,8 +528,6 @@ class BoardController {
 
     getAllTemplates = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
-            console.log('Get All Template')
-
             const templates = await BoardRepository.findTemplates()
 
             return res.status(Status.OK).json({
@@ -552,7 +536,6 @@ class BoardController {
                 data: templates
             })
         } catch (err) {
-            console.error('ERROR GET TEMPLATE: ', err)
             next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to get templates', err))
         }
     }
@@ -595,7 +578,7 @@ class BoardController {
                     })
                 )
 
-                const listsToCreate = board.lists.map(list =>
+                const listsToCreate = board.lists.map((list) =>
                     manager.create(List, {
                         title: list.title,
                         position: list.position,
@@ -612,18 +595,19 @@ class BoardController {
                     listMap.set(oldList.id, savedLists[index])
                 })
 
-                const cardsToCreate = board.lists.flatMap(list =>
-                    list.cards?.map(card =>
-                        manager.create(Card, {
-                            title: card.title,
-                            description: card.description,
-                            position: card.position,
-                            priority: card.priority,
-                            dueDate: card.dueDate,
-                            list: listMap.get(list.id)!,
-                            createdBy: { id: userId }
-                        })
-                    ) ?? []
+                const cardsToCreate = board.lists.flatMap(
+                    (list) =>
+                        list.cards?.map((card) =>
+                            manager.create(Card, {
+                                title: card.title,
+                                description: card.description,
+                                position: card.position,
+                                priority: card.priority,
+                                dueDate: card.dueDate,
+                                list: listMap.get(list.id)!,
+                                createdBy: { id: userId }
+                            })
+                        ) ?? []
                 )
 
                 if (cardsToCreate.length > 0) {
@@ -642,18 +626,13 @@ class BoardController {
             EventBus.publish(event)
 
             return res.status(Status.CREATED).json(
-                successResponse(
-                    Status.CREATED,
-                    'Board template created from board successfully',
-                    {
-                        id: templateBoard.id,
-                        title: templateBoard.title,
-                        isTemplate: true
-                    }
-                )
+                successResponse(Status.CREATED, 'Board template created from board successfully', {
+                    id: templateBoard.id,
+                    title: templateBoard.title,
+                    isTemplate: true
+                })
             )
         } catch (err) {
-            console.error(err)
             next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to create board template', err))
         }
     }
@@ -671,9 +650,7 @@ class BoardController {
             const workspace = await workspaceRepo.findOne({ where: { id: workspaceId } })
             if (!workspace) return next(errorResponse(Status.NOT_FOUND, 'Workspace not found'))
 
-            const [boardAdminRole] = await Promise.all([
-                roleRepo.findOne({ where: { name: 'board_admin' } }),
-            ])
+            const [boardAdminRole] = await Promise.all([roleRepo.findOne({ where: { name: 'board_admin' } })])
 
             if (!boardAdminRole) {
                 return next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Role not found'))
@@ -697,7 +674,7 @@ class BoardController {
                     })
                 )
 
-                const listsToCreate = template.lists.map(list =>
+                const listsToCreate = template.lists.map((list) =>
                     manager.create(List, {
                         title: list.title,
                         position: list.position,
@@ -713,17 +690,18 @@ class BoardController {
                 })
 
                 if (copyCard) {
-                    const cardsToCreate = template.lists.flatMap(list =>
-                        list.cards?.map(card =>
-                            manager.create(Card, {
-                                title: card.title,
-                                description: card.description,
-                                position: card.position,
-                                priority: card.priority,
-                                dueDate: card.dueDate,
-                                list: listMap.get(list.id)!
-                            })
-                        ) ?? []
+                    const cardsToCreate = template.lists.flatMap(
+                        (list) =>
+                            list.cards?.map((card) =>
+                                manager.create(Card, {
+                                    title: card.title,
+                                    description: card.description,
+                                    position: card.position,
+                                    priority: card.priority,
+                                    dueDate: card.dueDate,
+                                    list: listMap.get(list.id)!
+                                })
+                            ) ?? []
                     )
 
                     savedCards = await manager.save(cardsToCreate)
@@ -753,11 +731,10 @@ class BoardController {
                     ownerId: userId,
                     workspaceId,
                     createdAt: savedBoard!.createdAt,
-                    updatedAt: savedBoard!.updatedAt,
+                    updatedAt: savedBoard!.updatedAt
                 }
             })
         } catch (err) {
-            console.error(err)
             next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to create board from template', err))
         }
     }
@@ -767,12 +744,10 @@ class BoardController {
             const { boardId } = req.params
             const lists = await boardRepository.getAllListsOnBoard(boardId)
             return res.status(Status.OK).json(successResponse(Status.OK, 'Lists fetched successfully', lists))
-        }
-        catch (err) {
+        } catch (err) {
             next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to get lists on board', err))
         }
     }
-
 }
 
 export default new BoardController()

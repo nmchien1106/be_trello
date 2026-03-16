@@ -18,7 +18,6 @@ import { DomainEvent } from '@/events/interface'
 const repo = new WorkspaceRepository()
 
 class WorkspaceController {
-
     getAllUserWorkspaces = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const user = req.user
@@ -29,8 +28,7 @@ class WorkspaceController {
             const data = await repo.findAllByUserId(user.id)
 
             return res.status(Status.OK).json(successResponse(Status.OK, 'Get all user workspaces', data))
-        }
-        catch (err) {
+        } catch (err) {
             next(err)
         }
     }
@@ -120,7 +118,7 @@ class WorkspaceController {
             await repo.deleteWorkspace(req.params.workspaceId)
             const event: DomainEvent = {
                 eventId: crypto.randomUUID(),
-                type: EventType.WORKSPACE_DELETED,
+                type: EventType.WORKSPACE_DELETE,
                 workspaceId: req.params.workspaceId,
                 actorId: user.id
             }
@@ -128,11 +126,9 @@ class WorkspaceController {
             EventBus.publish(event)
             return res.status(Status.OK).json(successResponse(Status.OK, 'Deleted workspace'))
         } catch (err) {
-            console.error(err)
             next(err)
         }
     }
-
 
     archiveWorkspace = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
@@ -241,9 +237,7 @@ class WorkspaceController {
             if (!user) {
                 return next(errorResponse(Status.UNAUTHORIZED, 'Authentication required'))
             }
-            console.log(req.params.workspaceId)
             const workspace = await repo.findWithMembersById(req.params.workspaceId)
-            console.log(workspace)
             if (!workspace) {
                 return res.status(Status.NOT_FOUND).json(errorResponse(Status.NOT_FOUND, 'Workspace not found'))
             }
@@ -326,7 +320,7 @@ class WorkspaceController {
         const { email } = req.body
         const workspaceId = req.params.workspaceId
 
-        if(!email){
+        if (!email) {
             return next(errorResponse(Status.BAD_REQUEST, 'Email is required'))
         }
 
@@ -340,21 +334,21 @@ class WorkspaceController {
             return next(errorResponse(Status.BAD_REQUEST, 'Cannot invite yourself'))
         }
 
-        try{
+        try {
             const user = await UserRepository.findByEmailAsync(email)
-            if(!user){
+            if (!user) {
                 return res.status(Status.FORBIDDEN).json(errorResponse(Status.FORBIDDEN, 'User not found'))
             }
 
             const isMember = await repo.findMemberByEmail(workspaceId, email)
-            if(isMember){
+            if (isMember) {
                 return res.status(Status.FORBIDDEN).json(errorResponse(Status.FORBIDDEN, 'Already a member'))
             }
 
             const token = await this.sendInvitationEmail(workspaceId, email)
 
             return res.status(Status.OK).json(successResponse(Status.OK, 'Invitation sent successfully', { token }))
-        }catch(err){
+        } catch (err) {
             return next(err)
         }
     }
@@ -362,11 +356,7 @@ class WorkspaceController {
     sendInvitationEmail = async (workspaceId: string, email: string) => {
         const token = crypto.randomUUID()
 
-        redisClient.setEx(
-            `workspaceInvite:${token}`,
-            7 * 24 * 60 * 60,
-            JSON.stringify({ workspaceId, email })
-        )
+        redisClient.setEx(`workspaceInvite:${token}`, 7 * 24 * 60 * 60, JSON.stringify({ workspaceId, email }))
 
         const inviteLink = `${Config.corsOrigin}/react-app/workspace/join?token=${token}`
         const mailOptions = {
@@ -383,35 +373,35 @@ class WorkspaceController {
         return token
     }
 
-    createShareLink = async(req: AuthRequest, res: Response, next: NextFunction) => {
+    createShareLink = async (req: AuthRequest, res: Response, next: NextFunction) => {
         const workspaceId = req.params.workspaceId
         const workspace = repo.findById(workspaceId)
-        if(!workspace){
+        if (!workspace) {
             return next(errorResponse(Status.NOT_FOUND, 'Workspace not found'))
         }
         const token = crypto.randomUUID()
-        const payload = {workspaceId}
+        const payload = { workspaceId }
         await redisClient.setEx(`workspaceShareLink:${token}`, 7 * 24 * 60 * 60, JSON.stringify(payload))
         const link = `${Config.corsOrigin}/react-app/workspace/join?token=${token}`
         return res.status(Status.OK).json(successResponse(Status.OK, 'Share link created', { link }))
     }
 
-    joinWorkspace = async(req: AuthRequest, res: Response, next: NextFunction) => {
-        try{
+    joinWorkspace = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
             const { token } = req.query
-            
+
             let dataStr = await redisClient.get(`workspaceInvite:${token}`)
             let type = 'invite'
 
-            if(!dataStr){
+            if (!dataStr) {
                 dataStr = await redisClient.get(`workspaceShareLink:${token}`)
                 type = 'shareLink'
             }
-            
+
             if (!dataStr) {
                 return next(errorResponse(Status.BAD_REQUEST, 'Invalid or expired token'))
             }
-            const {workspaceId} = JSON.parse(dataStr)
+            const { workspaceId } = JSON.parse(dataStr)
 
             const userId = req.user!.id
             const isMember = await repo.findMemberByUserId(workspaceId, userId)
@@ -419,12 +409,7 @@ class WorkspaceController {
                 return res.status(Status.OK).json(successResponse(Status.OK, 'Already a member of the board'))
             }
 
-            await repo.addMemberToWorkspace(
-                userId,
-                workspaceId,
-                Roles.WORKSPACE_MEMBER,
-                'accepted'
-            )
+            await repo.addMemberToWorkspace(userId, workspaceId, Roles.WORKSPACE_MEMBER, 'accepted')
 
             EventBus.publish({
                 eventId: crypto.randomUUID(),
@@ -442,7 +427,7 @@ class WorkspaceController {
                     workspaceId
                 })
             )
-        }catch(err){
+        } catch (err) {
             next(err)
         }
     }

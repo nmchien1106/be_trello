@@ -1,12 +1,11 @@
-import { AuthRequest } from "@/types/auth-request";
-import { Status } from "@/types/response";
-import { errorResponse } from "@/utils/response";
-import { NextFunction, Request, Response } from "express";
-import notificationService from "./notification.service";
-import { notificationSSEService } from "./SSE/notification-sse.service";
+import { AuthRequest } from '@/types/auth-request'
+import { Status } from '@/types/response'
+import { errorResponse } from '@/utils/response'
+import { NextFunction, Request, Response } from 'express'
+import notificationService from './notification.service'
+import { notificationSSEService } from './SSE/notification-sse.service'
 
 export class NotificationController {
-
     /**
      * GET /api/notifications
      * Get user notifications
@@ -24,14 +23,11 @@ export class NotificationController {
 
             return res.status(Status.OK).json({
                 status: Status.OK,
-                message: "User notifications fetched successfully",
+                message: 'User notifications fetched successfully',
                 data: result
             })
-
-        }
-        catch (err) {
-            console.log(err);
-            next(errorResponse(Status.INTERNAL_SERVER_ERROR, "Failed to get user notifications", err))
+        } catch (err) {
+            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to get user notifications', err))
         }
     }
 
@@ -47,13 +43,11 @@ export class NotificationController {
 
             return res.status(Status.OK).json({
                 status: Status.OK,
-                message: "Notification marked as read successfully",
+                message: 'Notification marked as read successfully',
                 data: result
             })
-
-        }
-        catch (err) {
-            next(errorResponse(Status.INTERNAL_SERVER_ERROR, "Failed to mark notification as read", err))
+        } catch (err) {
+            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to mark notification as read', err))
         }
     }
 
@@ -69,13 +63,11 @@ export class NotificationController {
 
             return res.status(Status.OK).json({
                 status: Status.OK,
-                message: "All notifications marked as read successfully",
+                message: 'All notifications marked as read successfully',
                 data: result
             })
-
-        }
-        catch (err) {
-            next(errorResponse(Status.INTERNAL_SERVER_ERROR, "Failed to mark all notifications as read", err))
+        } catch (err) {
+            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to mark all notifications as read', err))
         }
     }
 
@@ -91,13 +83,11 @@ export class NotificationController {
 
             return res.status(Status.OK).json({
                 status: Status.OK,
-                message: "Notification deleted successfully",
+                message: 'Notification deleted successfully',
                 data: result
             })
-
-        }
-        catch (err) {
-            next(errorResponse(Status.INTERNAL_SERVER_ERROR, "Failed to delete notification", err))
+        } catch (err) {
+            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to delete notification', err))
         }
     }
 
@@ -113,16 +103,13 @@ export class NotificationController {
 
             return res.status(Status.OK).json({
                 status: Status.OK,
-                message: "Unread notification count fetched successfully",
+                message: 'Unread notification count fetched successfully',
                 data: result
             })
-
-        }
-        catch (err) {
-            next(errorResponse(Status.INTERNAL_SERVER_ERROR, "Failed to get unread notification count", err))
+        } catch (err) {
+            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to get unread notification count', err))
         }
     }
-
 
     /**
      *  GET api/notifications/stream
@@ -140,11 +127,8 @@ export class NotificationController {
             res.write(`event: connected\ndata: ${JSON.stringify({ userId })}\n\n`)
 
             notificationSSEService.addConnection(userId!, res)
-            console.log(`SSE connection established for user ${userId}`)
-
-        }
-        catch (err) {
-            next(errorResponse(Status.INTERNAL_SERVER_ERROR, "Failed to stream notifications", err))
+        } catch (err) {
+            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to stream notifications', err))
         }
     }
 }

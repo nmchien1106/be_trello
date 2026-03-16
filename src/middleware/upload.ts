@@ -2,7 +2,6 @@ import multer from 'multer'
 import cloudinary from '@/config/cloundinary'
 import CloudinaryStorage from 'multer-storage-cloudinary'
 
-
 const AvatarStorage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: async (req, file) => {
@@ -19,7 +18,7 @@ const AvatarStorage = new CloudinaryStorage({
 })
 
 const BoardCoverStorage = new CloudinaryStorage({
-    cloudinary: cloudinary,
+    cloudinary: multer.memoryStorage(),
     params: async (req, file) => {
         const { boardId } = req.params
         const publicId = `board_${boardId}_cover`
@@ -66,7 +65,7 @@ const AttachmentStorage = new CloudinaryStorage({
         return {
             folder: 'attachments',
             public_id: `card_${id}_${timestamp}`,
-            resource_type: 'auto',
+            resource_type: 'auto'
         }
     }
 })
@@ -79,28 +78,15 @@ export const AttachmentUpload = multer({
     }
 })
 
-const CardBackgroundStorage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: async (req, file) => {
-        const { id } = req.params;
-        const timestamp = Date.now();
-        return {
-            folder: 'card-backgrounds',
-            public_id: `card_${id}_background_${timestamp}`,
-            allowed_formats: ['jpg', 'jpeg', 'png'],
-            transformation: [{ width: 1500, height: 500, crop: 'limit' }]
-        };
-    }
-});
-
 export const CardBackgroundUpload = multer({
-    storage: CardBackgroundStorage,
+    // Use memory storage and upload in service to avoid hanging requests from CloudinaryStorage middleware.
+    storage: multer.memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
         if (['image/jpeg', 'image/png'].includes(file.mimetype)) {
-            cb(null, true);
+            cb(null, true)
         } else {
-            cb(new Error('Only .jpg and .png format allowed!'));
+            cb(new Error('Only .jpg and .png format allowed!'))
         }
     }
-});
+})

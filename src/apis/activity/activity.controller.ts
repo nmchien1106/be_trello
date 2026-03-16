@@ -45,7 +45,6 @@ class ActivityController {
             const result = await activityService.getByUser(userId, page, size)
             return res.status(result.status).json(result)
         } catch (err) {
-            console.error(err)
             next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to fetch activities', err))
         }
     }

@@ -26,7 +26,6 @@ class CommentService {
 
     getCommentsOnCard = async (cardId: string) => {
         const comments = await CommentRepository.findCommentsOnCard(cardId)
-        console.log(comments)
         return comments.map((comment) => new CommentDTO(comment))
     }
 
@@ -70,7 +69,6 @@ class CommentService {
         if (!comment) {
             throw new Error('Comment not found')
         }
-        console.log(new CommentDTO(comment))
         return new CommentDTO(comment)
     }
 }

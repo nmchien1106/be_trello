@@ -88,17 +88,17 @@ export class CardService {
 
         if (!card) throw { status: Status.NOT_FOUND, message: 'Card not found' }
         await this.checkPermission(userId, card.list.board.id, Permissions.UPDATE_CARD)
-        if (data.title !== undefined) card.title = data.title;
-        if (data.description !== undefined) card.description = data.description;
+        if (data.title !== undefined) card.title = data.title
+        if (data.description !== undefined) card.description = data.description
         if (data.dueDate !== undefined) {
-            card.dueDate = data.dueDate ? new Date(data.dueDate) : null as any;
+            card.dueDate = data.dueDate ? new Date(data.dueDate) : (null as any)
         }
         if (data.labels !== undefined) {
-            card.labels = data.labels;
+            card.labels = data.labels
         }
-        if (data.priority !== undefined) card.priority = data.priority;
-        if (data.isArchived !== undefined) card.isArchived = data.isArchived;
-        const updated = await cardRepo.save(card);
+        if (data.priority !== undefined) card.priority = data.priority
+        if (data.isArchived !== undefined) card.isArchived = data.isArchived
+        const updated = await cardRepo.save(card)
 
         const updateEvent: DomainEvent = {
             eventId: crypto.randomUUID(),
@@ -302,10 +302,47 @@ export class CardService {
 
     async uploadCardBackground(cardId: string, file: Express.Multer.File) {
         const card = await CardRepository.findById(cardId)
-        if (!card) throw new Error('Card not found')
-        const cloudFile = file as any
-        card.backgroundUrl = cloudFile.path
-        card.backgroundPublicId = cloudFile.filename
+        if (!card) throw { status: Status.NOT_FOUND, message: 'Card not found' }
+        if (!file?.buffer) {
+            throw {
+                status: Status.BAD_REQUEST,
+                message: 'Invalid file payload. Please upload multipart/form-data file.'
+            }
+        }
+
+        const timestamp = Date.now()
+        const publicId = `card_${cardId}_background_${timestamp}`
+
+        const uploadResult = await new Promise<any>((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                reject({ status: Status.GATEWAY_TIMEOUT, message: 'Background upload timed out. Please try again.' })
+            }, 30000)
+
+            const stream = cloudinary.uploader.upload_stream(
+                {
+                    folder: 'card-backgrounds',
+                    public_id: publicId,
+                    resource_type: 'image',
+                    transformation: [{ width: 1500, height: 500, crop: 'limit' }]
+                },
+                (error, result) => {
+                    clearTimeout(timeout)
+                    if (error) {
+                        return reject(error)
+                    }
+                    resolve(result)
+                }
+            )
+
+            stream.end(file.buffer)
+        })
+
+        if (card.backgroundPublicId) {
+            await cloudinary.uploader.destroy(card.backgroundPublicId).catch(() => null)
+        }
+
+        card.backgroundUrl = uploadResult.secure_url || uploadResult.url
+        card.backgroundPublicId = uploadResult.public_id
         return await CardRepository.updateCard(cardId, {
             backgroundUrl: card.backgroundUrl,
             backgroundPublicId: card.backgroundPublicId
@@ -478,14 +515,16 @@ export class CardService {
         const members = await boardRepository.findMemberByBoardId(boardId)
         const cardMembers = await cardRepository.getMembersOfCard(cardId)
         const cardMemberIds = cardMembers.map((cm) => cm.user.id)
-        const result = members.filter((m) => !cardMemberIds.includes(m.user.id)).map((m) => ({
-            userId: m.user.id,
-            username: m.user.username,
-            email: m.user.email,
-            avatarUrl: m.user.avatarUrl,
-            role: m.role.name || 'card_member',
-            fullName: m.user.fullName
-        }))
+        const result = members
+            .filter((m) => !cardMemberIds.includes(m.user.id))
+            .map((m) => ({
+                userId: m.user.id,
+                username: m.user.username,
+                email: m.user.email,
+                avatarUrl: m.user.avatarUrl,
+                role: m.role.name || 'card_member',
+                fullName: m.user.fullName
+            }))
         return result
     }
 }

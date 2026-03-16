@@ -53,27 +53,33 @@ class CardController {
 
     addMemberToCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
-            const cardId = req.params.id;
+            const cardId = req.params.id
 
-            let memberId = req.body.memberId;
-            if (!memberId || memberId === "") {
-                memberId = req.user?.id;
+            let memberId = req.body.memberId
+            if (!memberId || memberId === '') {
+                memberId = req.user?.id
             }
 
             if (!memberId) {
-                return next(errorResponse(Status.BAD_REQUEST, 'Không lấy được ID người dùng từ Token. Hãy đăng nhập lại!'));
+                return next(
+                    errorResponse(Status.BAD_REQUEST, 'Không lấy được ID người dùng từ Token. Hãy đăng nhập lại!')
+                )
             }
 
             const boardId: string = await cardRepository.getBoardIdFromCard(cardId)
             const isMemberOfBoard = await boardRepository.findMemberByUserId(boardId, memberId)
 
             if (!isMemberOfBoard) {
-                return res.status(Status.BAD_REQUEST).json(errorResponse(Status.BAD_REQUEST, 'User is not a member of the board'))
+                return res
+                    .status(Status.BAD_REQUEST)
+                    .json(errorResponse(Status.BAD_REQUEST, 'User is not a member of the board'))
             }
 
             const result = await cardRepository.findMemberById(cardId, memberId)
             if (result) {
-                return res.status(Status.BAD_REQUEST).json(errorResponse(Status.BAD_REQUEST, 'Member already added to card'))
+                return res
+                    .status(Status.BAD_REQUEST)
+                    .json(errorResponse(Status.BAD_REQUEST, 'Member already added to card'))
             }
 
             const newMember = await cardRepository.addMemberToCard(cardId, memberId)
@@ -88,9 +94,10 @@ class CardController {
             //     entityId: cardId,
             // })
 
-            return res.status(Status.CREATED).json(successResponse(Status.CREATED, 'Member added to card successfully', newMember))
+            return res
+                .status(Status.CREATED)
+                .json(successResponse(Status.CREATED, 'Member added to card successfully', newMember))
         } catch (err: any) {
-            console.log(err)
             next(err)
         }
     }
@@ -105,7 +112,7 @@ class CardController {
                     username: m.user.username,
                     avatarUrl: m.user.avatarUrl,
                     fullName: m.user.fullName,
-                    email: m.user.email,
+                    email: m.user.email
                 }
             })
             return res.status(Status.OK).json(successResponse(Status.OK, 'Get card members successfully', result))
@@ -120,12 +127,13 @@ class CardController {
             const memberId = req.body?.memberId
             const existingMember = await cardRepository.findMemberById(cardId, memberId)
             if (!existingMember) {
-                return res.status(Status.NOT_FOUND).json(errorResponse(Status.NOT_FOUND, 'User is not member of the card'))
+                return res
+                    .status(Status.NOT_FOUND)
+                    .json(errorResponse(Status.NOT_FOUND, 'User is not member of the card'))
             }
             await cardRepository.removeMemberFromCard(cardId, memberId)
             return res.status(Status.OK).json(successResponse(Status.OK, 'Member removed from card successfully'))
         } catch (err: any) {
-            console.log(err)
             next(err)
         }
     }
@@ -175,8 +183,7 @@ class CardController {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
             const result = await cardService.moveCardToAnotherList(req.user.id, req.params.id, req.body)
             return res.status(result.status).json(successResponse(result.status, result.message, result.data))
-        }
-        catch (err: any) {
+        } catch (err: any) {
             next(errorResponse(err.status || 500, err.message))
         }
     }
@@ -199,28 +206,33 @@ class CardController {
 
     uploadCardBackground = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
-            const { id } = req.params;
-            if (!req.file) {
-                return next(errorResponse(Status.BAD_REQUEST, 'No file uploaded'));
+            const cardId = req.params.cardId || req.params.id
+            if (!cardId) {
+                return next(errorResponse(Status.BAD_REQUEST, 'Card ID is required'))
             }
-            const updatedCard = await cardService.uploadCardBackground(id, req.file)
+            if (!req.file) {
+                return next(errorResponse(Status.BAD_REQUEST, 'No file uploaded'))
+            }
+            const updatedCard = await cardService.uploadCardBackground(cardId, req.file as Express.Multer.File)
             return res.status(Status.OK).json({
                 status: Status.OK,
                 message: 'Card background updated successfully',
                 data: updatedCard
             })
         } catch (err) {
-            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to upload card background', err))
+            const status = (err as any)?.status || Status.INTERNAL_SERVER_ERROR
+            const message = (err as any)?.message || 'Failed to upload card background'
+            next(errorResponse(status, message, err))
         }
     }
 
     getPresignedUrl = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
-            const { fileName, fileType, fileSize } = req.body;
+            const { fileName, fileType, fileSize } = req.body
             if (!fileName || !fileType || !fileSize) {
-                return next(errorResponse(Status.BAD_REQUEST, 'Missing required fields'));
+                return next(errorResponse(Status.BAD_REQUEST, 'Missing required fields'))
             }
-            const presignedUrl = await cardService.generatePresignedUrl(fileName, fileType, fileSize);
+            const presignedUrl = await cardService.generatePresignedUrl(fileName, fileType, fileSize)
             return res.status(Status.OK).json({
                 status: Status.OK,
                 message: 'Presigned URL generated successfully',
@@ -233,12 +245,12 @@ class CardController {
 
     createAttachment = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
-            const { id } = req.params;
-            const { fileUrl, fileName, publicId } = req.body;
+            const { id } = req.params
+            const { fileUrl, fileName, publicId } = req.body
             if (!fileUrl || !fileName) {
-                return next(errorResponse(Status.BAD_REQUEST, 'Missing required fields'));
+                return next(errorResponse(Status.BAD_REQUEST, 'Missing required fields'))
             }
-            const attachment = await cardService.uploadAttachmentFromUrl(id, fileUrl, fileName, req.user!.id, publicId);
+            const attachment = await cardService.uploadAttachmentFromUrl(id, fileUrl, fileName, req.user!.id, publicId)
             return res.status(Status.OK).json({
                 status: Status.OK,
                 message: 'Attachment uploaded successfully',
@@ -250,37 +262,37 @@ class CardController {
                     uploadedBy: attachment.uploadedBy.id,
                     createdAt: attachment.createdAt
                 }
-            });
+            })
         } catch (err) {
-            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to upload attachment', err));
+            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to upload attachment', err))
         }
     }
 
     getAttachmentsByCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
-            const { cardId } = req.params;
-            const attachments = await cardService.getAttachmentsByCard(cardId);
+            const { cardId } = req.params
+            const attachments = await cardService.getAttachmentsByCard(cardId)
             return res.status(Status.OK).json({
                 status: Status.OK,
                 message: 'Get attachments successfully',
                 data: attachments
-            });
+            })
         } catch (err) {
-            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to get attachments', err));
+            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to get attachments', err))
         }
-    };
+    }
 
     deleteAttachment = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
-            const { id } = req.params;
-            if (!req.user?.id) throw { status: Status.UNAUTHORIZED, message: 'User info required' };
-            await cardService.deleteAttachment(id);
+            const { id } = req.params
+            if (!req.user?.id) throw { status: Status.UNAUTHORIZED, message: 'User info required' }
+            await cardService.deleteAttachment(id)
             return res.status(Status.OK).json({
                 status: Status.OK,
                 message: 'Attachment deleted successfully'
-            });
+            })
         } catch (err) {
-            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to get attachments', err));
+            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to get attachments', err))
         }
     }
 
@@ -299,7 +311,9 @@ class CardController {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
             const result = await cardService.getCardsDueSoon(req.user.id)
             return res.status(Status.OK).json(successResponse(Status.OK, 'Get due soon cards successfully', result))
-        } catch (err: any) { next(errorResponse(err.status || 500, err.message)) }
+        } catch (err: any) {
+            next(errorResponse(err.status || 500, err.message))
+        }
     }
 
     getAssignedCards = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -307,7 +321,9 @@ class CardController {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
             const result = await cardService.getAssignedCards(req.user.id, req.query)
             return res.status(Status.OK).json(successResponse(Status.OK, 'Get assigned cards successfully', result))
-        } catch (err: any) { next(errorResponse(err.status || 500, err.message)) }
+        } catch (err: any) {
+            next(errorResponse(err.status || 500, err.message))
+        }
     }
 
     globalSearch = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -316,7 +332,9 @@ class CardController {
             const keyword = req.query.keyword as string
             const result = await cardService.globalSearch(req.user.id, keyword)
             return res.status(Status.OK).json(successResponse(Status.OK, 'Search cards successfully', result))
-        } catch (err: any) { next(errorResponse(err.status || 500, err.message)) }
+        } catch (err: any) {
+            next(errorResponse(err.status || 500, err.message))
+        }
     }
 
     getUnassignedMembers = async (req: AuthRequest, res: Response, next: NextFunction) => {
