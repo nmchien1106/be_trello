@@ -1,6 +1,6 @@
-import { Router } from "express";
-import { verifyAccessToken, verifyAccessTokenSSE } from "@/utils/jwt";
-import notificationController from "./notification.controller";
+import { Router } from 'express'
+import { verifyAccessToken, verifyAccessTokenSSE } from '@/utils/jwt'
+import notificationController from './notification.controller'
 
 const router = Router()
 

@@ -49,10 +49,10 @@ export const verifyAccessToken = async (req: AuthRequest, res: Response, next: N
         }
         next()
     } catch (err: any) {
-        if (err.name === "TokenExpiredError") {
+        if (err.name === 'TokenExpiredError') {
             return next(errorResponse(Status.UNAUTHORIZED, 'Access Token Expired'))
         }
-        return next(errorResponse(Status.UNAUTHORIZED, "Invalid Access Token"))
+        return next(errorResponse(Status.UNAUTHORIZED, 'Invalid Access Token'))
     }
 }
 
