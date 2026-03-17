@@ -34,6 +34,8 @@ route.get('/public', boardController.getPublicBoards)
 //Get Template
 route.get('/template', verifyAccessToken, boardController.getAllTemplates)
 
+route.post('/seed-templates', verifyAccessToken, boardController.seedTemplates)
+
 route.get('/join', verifyAccessToken, boardController.joinBoard)
 
 // Create Board
@@ -126,18 +128,10 @@ route.patch(
 )
 
 // Archive
-route.post(
-    '/:boardId/archive',
-    verifyAccessToken,
-    boardController.archiveBoard
-)
+route.post('/:boardId/archive', verifyAccessToken, boardController.archiveBoard)
 
 // Reopen
-route.post(
-    '/:boardId/reopen',
-    verifyAccessToken,
-    boardController.reopenBoard
-)
+route.post('/:boardId/reopen', verifyAccessToken, boardController.reopenBoard)
 
 // Upload Background
 route.post(

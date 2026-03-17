@@ -12,29 +12,37 @@ export async function calcPosition(
     type: ResourceType = 'list'
 ): Promise<number> {
     let newPosition: number = Config.defaultGap
+    const before = (beforePosition !== null && !isNaN(beforePosition)) ? beforePosition : null
+    const after = (afterPosition !== null && !isNaN(afterPosition)) ? afterPosition : null
 
-    if (beforePosition === null && afterPosition !== null) {
-        newPosition = afterPosition / 2
+    if (before === null && after === null) {
+        return Config.defaultGap
     }
 
-    if (beforePosition !== null && afterPosition === null) {
-        newPosition = beforePosition + Config.defaultGap
+    if (before === null && after !== null) {
+        newPosition = after / 2
     }
 
-    if (beforePosition !== null && afterPosition !== null) {
-        const gap = afterPosition - beforePosition
+    if (before !== null && after === null) {
+        newPosition = before + Config.defaultGap
+    }
 
-        if (gap <= 10) {
+    if (before !== null && after !== null) {
+        const gap = after - before
+
+        if (gap <= 1) { // Thắt chặt hơn để tránh số lẻ quá nhỏ
             if (type === 'list') {
-                await rebalanceListPositions(contextId) // contextId ở đây là boardId
+                await rebalanceListPositions(contextId)
             } else {
-                await rebalanceCardPositions(contextId) // contextId ở đây là listId
+                await rebalanceCardPositions(contextId)
             }
-            return calcPosition(beforePosition, afterPosition, contextId, type)
+            return calcPosition(before, after, contextId, type)
         }
 
-        newPosition = (beforePosition + afterPosition) / 2
+        newPosition = (before + after) / 2
     }
+
+    if (isNaN(newPosition)) return Config.defaultGap
 
     return newPosition
 }

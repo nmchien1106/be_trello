@@ -330,7 +330,8 @@ class BoardRepository {
 
     async findTemplates() {
         return this.repo.find({
-            where: { isTemplate: true }
+            where: { isTemplate: true },
+            select: ['id', 'title', 'description', 'permissionLevel', 'backgroundPath', 'backgroundPublicId', 'category', 'createdAt']
         })
     }
 

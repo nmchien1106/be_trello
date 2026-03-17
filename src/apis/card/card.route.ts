@@ -31,7 +31,7 @@ route.get('/board/:boardId', verifyAccessToken, cardController.getCardsInBoard) 
 route.post(
     '/',
     verifyAccessToken,
-    authorizeListPermission(Permissions.UPDATE_LIST),
+    authorizeListPermission(Permissions.CREATE_CARD),
     validateHandle(CreateCardSchema),
     cardController.createCard
 )

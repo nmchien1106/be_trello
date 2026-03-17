@@ -54,6 +54,8 @@ class CardRepository {
             where: { id: cardId },
             relations: ['list'],
             select: {
+                id: true,
+                position: true,
                 list: {
                     id: true
                 }
@@ -84,7 +86,7 @@ class CardRepository {
     }
 
     updateCard = async (id: string, data: any) => {
-        await this.repo.update(id, data)
+        await this.repo.save({ id, ...data })
         return this.repo.findOneBy({ id })
     }
 

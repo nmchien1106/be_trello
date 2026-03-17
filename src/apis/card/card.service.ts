@@ -206,13 +206,16 @@ export class CardService {
     async moveCardToAnotherList(
         userId: string,
         cardId: string,
-        data: { targetListId: string; beforeId?: string | null; afterId?: string | null; targetBoardId?: string }
+        data: { targetListId?: string; listId?: string; beforeId?: string | null; afterId?: string | null; targetBoardId?: string }
     ) {
         const card = await CardRepository.findCardWithBoard(cardId)
         if (!card) throw { status: Status.NOT_FOUND, message: 'Card not found' }
         const sourceBoardId = card.list.board.id
 
-        const targetList = await ListRepository.findById(data.targetListId)
+        const finalTargetListId = data.targetListId || data.listId
+        if (!finalTargetListId) throw { status: Status.BAD_REQUEST, message: 'Target list ID is required' }
+
+        const targetList = await ListRepository.findById(finalTargetListId)
         if (!targetList) throw { status: Status.NOT_FOUND, message: 'Target list not found' }
 
         const realTargetBoardId = targetList.board.id

@@ -1,10 +1,12 @@
-import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
 import { DateTimeEntity } from './base/DateTimeEntity'
 import { CardMembers } from './card-member.entity'
+import { CardLabel } from './card-label.entity'
 import { Comment } from './comment.entity'
 import { List } from './list.entity'
 import { Checklist } from './checklist.entity'
 import { Attachment } from './attachment.entity'
+import { User } from './user.entity'
 
 @Entity('cards')
 export class Card extends DateTimeEntity {
@@ -41,8 +43,15 @@ export class Card extends DateTimeEntity {
     @ManyToOne(() => List, (list) => list.cards, { onDelete: 'CASCADE' })
     list: List
 
+    @ManyToOne(() => User, { nullable: true })
+    @JoinColumn({ name: 'created_by' })
+    public createdBy?: User
+
     @OneToMany(() => CardMembers, (cardMember) => cardMember.card)
     public cardMembers: CardMembers[]
+
+    @OneToMany(() => CardLabel, (cardLabel) => cardLabel.card)
+    public cardLabels: CardLabel[]
 
     @OneToMany(() => Comment, (comment) => comment.card)
     public comments: Comment[]
