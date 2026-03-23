@@ -2,7 +2,12 @@ import { Permissions } from './../../enums/permissions.enum'
 import WorkspaceController from './workspace.controller'
 import { Router } from 'express'
 import { verifyAccessToken } from '@/utils/jwt'
-import { InvitationResponseSchema, WorkspaceSchema, AddWorkspaceMemberRequestSchema, UpdateWorkspaceRequestSchema } from './workspace.schema'
+import {
+    InvitationResponseSchema,
+    WorkspaceSchema,
+    AddWorkspaceMemberRequestSchema,
+    UpdateWorkspaceRequestSchema
+} from './workspace.schema'
 import { validateHandle } from '@/middleware/validate-handle'
 import { authorizePermissionWorkspace } from '@/middleware/authorization'
 import { registerPath } from './workspace.swagger'
@@ -11,33 +16,32 @@ const router = Router()
 
 registerPath()
 
-
 // Get all user workspaces
-router
-    .route('/')
-    .get(verifyAccessToken,
-        // authorizePermissionWorkspace(Permissions.READ_WORKSPACE),
-        WorkspaceController.getAllUserWorkspaces)
+router.route('/').get(
+    verifyAccessToken,
+    // authorizePermissionWorkspace(Permissions.READ_WORKSPACE),
+    WorkspaceController.getAllUserWorkspaces
+)
+
+// Get archived workspaces
+router.route('/archived').get(
+    verifyAccessToken,
+    // authorizePermissionWorkspace(Permissions.READ_WORKSPACE),
+    WorkspaceController.getArchivedWorkspaces
+)
 
 // Create Workspace
-router
-    .route('/')
-    .post(
-        verifyAccessToken,
-        // authorizePermissionWorkspace(Permissions.CREATE_WORKSPACE),
-        validateHandle(WorkspaceSchema),
-        WorkspaceController.createWorkspace
-    )
+router.route('/').post(
+    verifyAccessToken,
+    // authorizePermissionWorkspace(Permissions.CREATE_WORKSPACE),
+    validateHandle(WorkspaceSchema),
+    WorkspaceController.createWorkspace
+)
 
 // Workspace Invitations
 router.route('/invitations').get(verifyAccessToken, WorkspaceController.getAllInvitations)
 
-router
-    .route('/join')
-    .get(
-        verifyAccessToken,
-        WorkspaceController.joinWorkspace
-    )
+router.route('/join').get(verifyAccessToken, WorkspaceController.joinWorkspace)
 router
     .route('/invitations/:workspaceId')
     .post(verifyAccessToken, validateHandle(InvitationResponseSchema), WorkspaceController.respondToInvitation)
@@ -120,7 +124,6 @@ router
         authorizePermissionWorkspace(Permissions.MANAGE_WORKSPACE_PERMISSIONS),
         WorkspaceController.createShareLink
     )
-
 
 router
     .route('/share-link/revoke')

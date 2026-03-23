@@ -10,6 +10,18 @@ export const CreateLabelParamSchema = z.object({
     })
 })
 
+export const BoardLabelParamSchema = z.object({
+    boardId: z.string().uuid().openapi({
+        description: 'Board ID'
+    })
+})
+
+export const AssignExistingLabelBodySchema = z.object({
+    labelId: z.string().uuid().openapi({
+        description: 'Existing label ID to assign'
+    })
+})
+
 export const CreateLabelBodySchema = z.object({
     color: z.nativeEnum(LabelColor).openapi({
         description: 'Label color'
@@ -31,11 +43,11 @@ export const UpdateLabelBodySchema = z.object({
 })
 
 export const LabelSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string().nullable(),
-  color: z.nativeEnum(LabelColor),
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime()
+    id: z.string().uuid(),
+    name: z.string().nullable(),
+    color: z.nativeEnum(LabelColor),
+    createdAt: z.string().datetime(),
+    updatedAt: z.string().datetime()
 })
 
 export const GetLabelsOnCardResponseSchema = z.array(LabelSchema)

@@ -26,8 +26,22 @@ class WorkspaceController {
             }
 
             const data = await repo.findAllByUserId(user.id)
+            const workspaces = data.filter((ws) => !ws.isArchived)
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Get all user workspaces', workspaces))
+        } catch (err) {
+            next(err)
+        }
+    }
 
-            return res.status(Status.OK).json(successResponse(Status.OK, 'Get all user workspaces', data))
+    getArchivedWorkspaces = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            const user = req.user
+            if (!user) {
+                return next(errorResponse(Status.UNAUTHORIZED, 'Authentication required'))
+            }
+            const workspaces = await repo.findAllByUserId(user.id)
+            const archivedWorkspaces = workspaces.filter((ws) => ws.isArchived)
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Get archived workspaces', archivedWorkspaces))
         } catch (err) {
             next(err)
         }

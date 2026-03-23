@@ -3,7 +3,7 @@ import { DataSource } from 'typeorm'
 import { SeedTemplates } from './templates.seeder'
 import AppDataSource from '../src/config/typeorm.config'
 
-async function runSeeder() {
+async function runSeederTemplates() {
     try {
         const dataSource: DataSource = await AppDataSource.initialize()
         const seeder = new SeedTemplates(dataSource)
@@ -17,4 +17,4 @@ async function runSeeder() {
     }
 }
 
-runSeeder()
+runSeederTemplates()

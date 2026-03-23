@@ -1,9 +1,9 @@
-import { WorkspaceMembers } from '@/entities/workspace-member.entity';
+import { WorkspaceMembers } from '@/entities/workspace-member.entity'
 import { Workspace } from '../../entities/workspace.entity'
 import { User } from '@/entities/user.entity'
 import { Role } from '@/entities/role.entity'
 import AppDataSource from '@/config/typeorm.config'
-import { Board } from '@/entities/board.entity';
+import { Board } from '@/entities/board.entity'
 
 export class WorkspaceRepository {
     private workspaceRepo = AppDataSource.getRepository(Workspace)
@@ -20,11 +20,11 @@ export class WorkspaceRepository {
             where: { user: { id: userId }, status: 'accepted' },
             relations: ['workspace']
         })
-        return memberships.map(membership => membership.workspace)
+        return memberships.map((membership) => membership.workspace)
     }
 
     async findById(id: string): Promise<Workspace | null> {
-        return this.workspaceRepo.findOne({ where: { id }, relations : ["workspaceMembers"] })
+        return this.workspaceRepo.findOne({ where: { id }, relations: ['workspaceMembers'] })
     }
 
     async findWithMembersById(id: string): Promise<Workspace | null> {
@@ -103,12 +103,12 @@ export class WorkspaceRepository {
         const result = await this.workspaceMemberRepo.find({
             where: { user: { id: userId }, status: 'pending' },
             relations: ['workspace'],
-            select : {
+            select: {
                 id: true,
-                workspace: { id: true, title: true},
+                workspace: { id: true, title: true },
                 createdAt: true,
                 updatedAt: true,
-                status: true,
+                status: true
             }
         })
         return result
@@ -141,11 +141,11 @@ export class WorkspaceRepository {
         })
     }
 
-    async findMemberByEmail(workspaceId: string, email){
+    async findMemberByEmail(workspaceId: string, email) {
         return this.workspaceMemberRepo.findOne({
             where: {
-                workspace: { id: workspaceId},
-                user: { email: email}
+                workspace: { id: workspaceId },
+                user: { email: email }
             }
         })
     }

@@ -50,7 +50,7 @@ class LabelService {
             label: { id: savedLabel.id }
         })
 
-        return savedLabel;
+        return savedLabel
     }
 
     async updateLabel(labelId: string, color?: LabelColor, name?: string) {
@@ -90,27 +90,100 @@ class LabelService {
     }
 
     async getAllLabelsOnCard(cardId: string) {
-        const card = await cardRepo.findOne({ where: { id: cardId }})
+        const card = await cardRepo.findOne({ where: { id: cardId } })
 
         if (!card) {
-          throw new Error('Card not found')
+            throw new Error('Card not found')
         }
 
         const cardLabels = await cardLabelRepo.find({
-          where: { card: { id: cardId }},
-          relations: { label: true },
+            where: { card: { id: cardId } },
+            relations: { label: true }
         })
 
-        return cardLabels.map(cl => ({
-          id: cl.label.id,
-          name: cl.label.name,
-          color: cl.label.color,
-          createdAt: cl.label.createdAt,
-          updatedAt: cl.label.updatedAt
+        return cardLabels.map((cl) => ({
+            id: cl.label.id,
+            name: cl.label.name,
+            color: cl.label.color,
+            createdAt: cl.label.createdAt,
+            updatedAt: cl.label.updatedAt
         }))
     }
 
-    async getLabel(labelId: string){
+    async getAllLabelsOnBoard(boardId: string) {
+        const labels = await labelRepository.find({
+            where: { board: { id: boardId } },
+            order: { createdAt: 'DESC' }
+        })
+
+        return labels.map((label) => ({
+            id: label.id,
+            name: label.name,
+            color: label.color,
+            createdAt: label.createdAt,
+            updatedAt: label.updatedAt
+        }))
+    }
+
+    async assignExistingLabelToCard(cardId: string, labelId: string) {
+        const card = await cardRepo.findOne({
+            where: { id: cardId },
+            relations: {
+                list: {
+                    board: true
+                }
+            }
+        })
+
+        if (!card) {
+            throw new Error('Card not found')
+        }
+
+        const label = await labelRepository.findOne({
+            where: { id: labelId },
+            relations: { board: true }
+        })
+
+        if (!label) {
+            throw new Error('Label not found')
+        }
+
+        if (label.board.id !== card.list.board.id) {
+            throw new Error('Label must belong to the same board')
+        }
+
+        const existed = await cardLabelRepo.findOne({
+            where: {
+                card: { id: cardId },
+                label: { id: labelId }
+            }
+        })
+
+        if (existed) {
+            return {
+                id: label.id,
+                name: label.name,
+                color: label.color,
+                createdAt: label.createdAt,
+                updatedAt: label.updatedAt
+            }
+        }
+
+        await cardLabelRepo.save({
+            card: { id: cardId },
+            label: { id: labelId }
+        })
+
+        return {
+            id: label.id,
+            name: label.name,
+            color: label.color,
+            createdAt: label.createdAt,
+            updatedAt: label.updatedAt
+        }
+    }
+
+    async getLabel(labelId: string) {
         const label = await labelRepository.findOne({ where: { id: labelId } })
 
         if (!label) {
@@ -125,14 +198,14 @@ class LabelService {
         }
     }
 
-    async deleteLabel(labelId: string){
-        const label = await labelRepository.findOne({ where: { id: labelId }})
-        if(!label){
+    async deleteLabel(labelId: string) {
+        const label = await labelRepository.findOne({ where: { id: labelId } })
+        if (!label) {
             throw new Error('Label not found')
         }
 
         await cardLabelRepo.delete({
-            label: { id: labelId}
+            label: { id: labelId }
         })
 
         await labelRepository.delete(labelId)

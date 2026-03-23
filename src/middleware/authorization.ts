@@ -141,7 +141,6 @@ export const authorizeBoardPermission = (requiredPermission: string | string[]) 
                 }
             }
 
-            // 3. Check Workspace Membership (if board is in a workspace and user is ws admin or has ws perms)
             if (board.workspace?.id) {
                 const workspaceMemberRepository = AppDataSource.getRepository(WorkspaceMembers)
                 const wsMembership = await workspaceMemberRepository.findOne({
@@ -153,12 +152,8 @@ export const authorizeBoardPermission = (requiredPermission: string | string[]) 
                 })
 
                 if (wsMembership) {
-                    // Workspace admins can do everything with boards in their workspace
                     if (wsMembership.role.name === 'workspace_admin') return next()
 
-                    // Or if they have the specific workspace permission (though usually we map ws perms to board perms)
-                    // For now, let's assume ws admin or direct board member.
-                    // To be safer, if it's a READ permission, we can allow it if they are ws members and board is workspace-level.
                     const isReadRequest = Array.isArray(requiredPermission)
                         ? requiredPermission.every((p) => p.includes(':read'))
                         : (requiredPermission as string).includes(':read')

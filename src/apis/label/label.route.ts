@@ -1,10 +1,10 @@
 import { Router } from 'express'
 import LabelController from './label.controller'
 import { verifyAccessToken } from '@/utils/jwt'
-import { authorizeCardPermission, authorizeLabelPermission } from '@/middleware/authorization'
+import { authorizeBoardPermission, authorizeCardPermission, authorizeLabelPermission } from '@/middleware/authorization'
 import { Permissions } from '@/enums/permissions.enum'
 import { validateHandle } from '@/middleware/validate-handle'
-import { CreateLabelBodySchema, UpdateLabelBodySchema } from '@/apis/label/label.schema'
+import { AssignExistingLabelBodySchema, CreateLabelBodySchema, UpdateLabelBodySchema } from '@/apis/label/label.schema'
 const router = Router()
 
 //Create label
@@ -27,26 +27,33 @@ router.patch(
 
 //Get all label on card
 router.get(
-  '/cards/:cardId',
-  verifyAccessToken,
-  authorizeCardPermission(Permissions.READ_CARD),
-  LabelController.getAllLabelsOnCard
+    '/cards/:cardId',
+    verifyAccessToken,
+    authorizeCardPermission(Permissions.READ_CARD),
+    LabelController.getAllLabelsOnCard
+)
+
+//Get all labels on board
+router.get(
+    '/boards/:boardId',
+    verifyAccessToken,
+    authorizeBoardPermission(Permissions.READ_BOARD),
+    LabelController.getAllLabelsOnBoard
+)
+
+//Assign existing label to card
+router.post(
+    '/cards/:cardId/assign',
+    verifyAccessToken,
+    authorizeCardPermission(Permissions.UPDATE_CARD),
+    validateHandle(AssignExistingLabelBodySchema),
+    LabelController.assignExistingLabelToCard
 )
 
 //Get label
-router.get(
-  '/:id',
-  verifyAccessToken,
-  authorizeLabelPermission(Permissions.READ_CARD),
-  LabelController.getLabel
-)
+router.get('/:id', verifyAccessToken, authorizeLabelPermission(Permissions.READ_CARD), LabelController.getLabel)
 
 //Delete label
-router.delete(
-  '/:id',
-  verifyAccessToken,
-  authorizeLabelPermission(Permissions.UPDATE_CARD),
-  LabelController.deleteLabel
-)
+router.delete('/:id', verifyAccessToken, authorizeLabelPermission(Permissions.UPDATE_CARD), LabelController.deleteLabel)
 
 export default router

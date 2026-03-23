@@ -41,8 +41,8 @@ class LabelController {
     }
 
     getAllLabelsOnCard = async (req: Request, res: Response, next: NextFunction) => {
-        try{
-            if (!req.user?.id){
+        try {
+            if (!req.user?.id) {
                 return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
             }
 
@@ -51,13 +51,48 @@ class LabelController {
             const result = await LabelService.getAllLabelsOnCard(cardId)
 
             return res.status(Status.OK).json(successResponse(Status.OK, 'Get all labels on card successfullt', result))
-        }catch(err){
+        } catch (err) {
+            next(err)
+        }
+    }
+
+    getAllLabelsOnBoard = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            if (!req.user?.id) {
+                return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+            }
+
+            const { boardId } = req.params
+
+            const result = await LabelService.getAllLabelsOnBoard(boardId)
+
+            return res
+                .status(Status.OK)
+                .json(successResponse(Status.OK, 'Get all labels on board successfully', result))
+        } catch (err) {
+            next(err)
+        }
+    }
+
+    assignExistingLabelToCard = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            if (!req.user?.id) {
+                return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+            }
+
+            const { cardId } = req.params
+            const { labelId } = req.body
+
+            const result = await LabelService.assignExistingLabelToCard(cardId, labelId)
+
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Label assigned to card successfully', result))
+        } catch (err) {
             next(err)
         }
     }
 
     getLabel = async (req: Request, res: Response, next: NextFunction) => {
-        try{
+        try {
             if (!req.user?.id) {
                 return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
             }
@@ -67,23 +102,23 @@ class LabelController {
             const result = await LabelService.getLabel(id)
 
             return res.status(Status.OK).json(successResponse(Status.OK, 'Get label successfully', result))
-        }catch(err){
+        } catch (err) {
             next(err)
         }
     }
 
     deleteLabel = async (req: Request, res: Response, next: NextFunction) => {
-        try{
+        try {
             if (!req.user?.id) {
-                return next(errorResponse(Status.UNAUTHORIZED, 'User info missing',))
+                return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
             }
 
             const { id } = req.params
-            
+
             const result = await LabelService.deleteLabel(id)
 
             return res.status(Status.OK).json(successResponse(Status.OK, 'Delete label successfully'))
-        }catch(err){
+        } catch (err) {
             next(err)
         }
     }
