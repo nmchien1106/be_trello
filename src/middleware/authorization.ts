@@ -10,6 +10,78 @@ import { Card } from '@/entities/card.entity'
 import { List } from '@/entities/list.entity'
 import { Attachment } from '@/entities/attachment.entity'
 import { Label } from '@/entities/label.entity'
+import { Role } from '@/entities/role.entity'
+import { Checklist } from '@/entities/checklist.entity'
+import { ChecklistItem } from '@/entities/checklist-item.entity'
+
+const normalizePermissions = (requiredPermission: string | string[]) =>
+    Array.isArray(requiredPermission) ? requiredPermission : [requiredPermission]
+
+const hasAllPermissions = (granted: string[], requiredPermission: string | string[]) => {
+    const required = normalizePermissions(requiredPermission)
+    return required.every((perm) => granted.includes(perm))
+}
+
+const rolePermissionCache = new Map<string, string[]>()
+
+const getRolePermissions = async (roleName: string) => {
+    if (rolePermissionCache.has(roleName)) {
+        return rolePermissionCache.get(roleName)!
+    }
+
+    const role = await AppDataSource.getRepository(Role).findOne({
+        where: { name: roleName },
+        relations: ['permissions']
+    })
+
+    const permissions = role?.permissions?.map((permission) => permission.name) ?? []
+    rolePermissionCache.set(roleName, permissions)
+    return permissions
+}
+
+const canAccessBoardByMembership = async (params: {
+    userId: string
+    board: Board
+    requiredPermission: string | string[]
+}) => {
+    const { userId, board, requiredPermission } = params
+
+    if (board.owner?.id === userId) return true
+
+    const boardMemberRepository = AppDataSource.getRepository(BoardMembers)
+    const boardMembership = await boardMemberRepository.findOne({
+        where: {
+            board: { id: board.id },
+            user: { id: userId }
+        },
+        relations: ['role', 'role.permissions']
+    })
+
+    if (boardMembership?.role) {
+        const boardPermissions = boardMembership.role.permissions?.map((p) => p.name) ?? []
+        if (hasAllPermissions(boardPermissions, requiredPermission)) {
+            return true
+        }
+    }
+
+    if (!board.workspace?.id) return false
+
+    const workspaceMemberRepository = AppDataSource.getRepository(WorkspaceMembers)
+    const wsMembership = await workspaceMemberRepository.findOne({
+        where: {
+            workspace: { id: board.workspace.id },
+            user: { id: userId }
+        },
+        relations: ['role']
+    })
+
+    if (!wsMembership) return false
+
+    const effectiveBoardRole = wsMembership.role?.name === 'workspace_admin' ? 'board_admin' : 'board_member'
+    const effectivePermissions = await getRolePermissions(effectiveBoardRole)
+
+    return hasAllPermissions(effectivePermissions, requiredPermission)
+}
 
 export const authorizePermissionWorkspace = (requiredPermission: string | string[]) => {
     return async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -29,7 +101,6 @@ export const authorizePermissionWorkspace = (requiredPermission: string | string
                 },
                 relations: ['role', 'role.permissions']
             })
-            console.log(membership)
             if (!membership) {
                 return next(errorResponse(Status.NOT_FOUND, 'Membership not found'))
             }
@@ -118,60 +189,16 @@ export const authorizeBoardPermission = (requiredPermission: string | string[]) 
                 return next(errorResponse(Status.NOT_FOUND, 'Board not found'))
             }
 
-            // 1. Owner always has access
-            if (board.owner?.id === user.id) return next()
-
-            // 2. Check Board Membership
-            const boardMemberRepository = AppDataSource.getRepository(BoardMembers)
-            const membership = await boardMemberRepository.findOne({
-                where: {
-                    board: { id: boardId },
-                    user: { id: user.id }
-                },
-                relations: ['role', 'role.permissions']
+            const allowed = await canAccessBoardByMembership({
+                userId: user.id,
+                board,
+                requiredPermission
             })
 
-            if (membership) {
-                const permissions = membership.role.permissions?.map((p) => p.name) ?? []
-                const requiredPermissions = Array.isArray(requiredPermission)
-                    ? requiredPermission
-                    : [requiredPermission]
-                if (requiredPermissions.every((p) => permissions.includes(p))) {
-                    return next()
-                }
-            }
-
-            if (board.workspace?.id) {
-                const workspaceMemberRepository = AppDataSource.getRepository(WorkspaceMembers)
-                const wsMembership = await workspaceMemberRepository.findOne({
-                    where: {
-                        workspace: { id: board.workspace.id },
-                        user: { id: user.id }
-                    },
-                    relations: ['role', 'role.permissions']
-                })
-
-                if (wsMembership) {
-                    if (wsMembership.role.name === 'workspace_admin') return next()
-
-                    const isReadRequest = Array.isArray(requiredPermission)
-                        ? requiredPermission.every((p) => p.includes(':read'))
-                        : (requiredPermission as string).includes(':read')
-
-                    if (isReadRequest && board.permissionLevel !== 'private') return next()
-                }
-            }
-
-            // 4. Public access
-            const isReadRequest = Array.isArray(requiredPermission)
-                ? requiredPermission.every((p) => p.includes(':read'))
-                : (requiredPermission as string).includes(':read')
-
-            if (isReadRequest && board.permissionLevel === 'public') return next()
+            if (allowed) return next()
 
             return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
         } catch (err) {
-            console.log(err)
             return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
         }
     }
@@ -195,48 +222,17 @@ export const authorizeListPermission = (requiredPermission: string | string[]) =
                 return next(errorResponse(Status.NOT_FOUND, 'List not found'))
             }
 
-            const board = list.board
-            if (board.owner?.id === user.id) return next()
-
-            const boardMemberRepository = AppDataSource.getRepository(BoardMembers)
-            const membership = await boardMemberRepository.findOne({
-                where: {
-                    board: { id: board.id },
-                    user: { id: user.id }
-                },
-                relations: ['role', 'role.permissions']
+            const allowed = await canAccessBoardByMembership({
+                userId: user.id,
+                board: list.board,
+                requiredPermission
             })
 
-            if (membership) {
-                const permissions = membership.role.permissions?.map((p) => p.name) ?? []
-                const requiredPermissions = Array.isArray(requiredPermission)
-                    ? requiredPermission
-                    : [requiredPermission]
-                if (requiredPermissions.every((p) => permissions.includes(p))) {
-                    return next()
-                }
-            }
-
-            if (board.workspace?.id) {
-                const workspaceMemberRepository = AppDataSource.getRepository(WorkspaceMembers)
-                const wsMembership = await workspaceMemberRepository.findOne({
-                    where: {
-                        workspace: { id: board.workspace.id },
-                        user: { id: user.id }
-                    },
-                    relations: ['role']
-                })
-                if (wsMembership && wsMembership.role.name === 'workspace_admin') return next()
-            }
-
-            const isReadRequest = Array.isArray(requiredPermission)
-                ? requiredPermission.every((p) => p.includes(':read'))
-                : (requiredPermission as string).includes(':read')
-
-            if (isReadRequest && board.permissionLevel === 'public') return next()
+            if (allowed) return next()
 
             return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
         } catch (err) {
+            console.log(err)
             return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
         }
     }
@@ -264,63 +260,13 @@ export const authorizeCardPermission = (requiredPermission: string | string[]) =
 
             const board = card.list.board
 
-            // 1. Owner always has access
-            if (board.owner?.id === user.id) return next()
-
-            // 2. Check Board Membership
-            const boardMemberRepository = AppDataSource.getRepository(BoardMembers)
-            const membership = await boardMemberRepository.findOne({
-                where: {
-                    board: { id: board.id },
-                    user: { id: user.id }
-                },
-                relations: ['role', 'role.permissions']
+            const allowed = await canAccessBoardByMembership({
+                userId: user.id,
+                board,
+                requiredPermission
             })
 
-            if (!membership) {
-                return next(errorResponse(Status.NOT_FOUND, 'You are not a member of this board'))
-            }
-
-            const role = membership.role
-            if (!role) {
-                return next(errorResponse(Status.NOT_FOUND, 'Role not found'))
-            }
-
-            const permissions = role.permissions?.map((p) => p.name) ?? []
-            const requiredPermissions = Array.isArray(requiredPermission) ? requiredPermission : [requiredPermission]
-            const hasPermission = requiredPermissions.some((p) => permissions.includes(p))
-
-            if (membership) {
-                const permissions = membership.role.permissions?.map((p) => p.name) ?? []
-                const requiredPermissions = Array.isArray(requiredPermission)
-                    ? requiredPermission
-                    : [requiredPermission]
-                // For cards, we usually check board-level permissions like UPDATE_BOARD or specific card perms if they exist
-                // However, the original code used some(p) which is more permissive. Let's keep it robust.
-                if (requiredPermissions.some((p) => permissions.includes(p))) {
-                    return next()
-                }
-            }
-
-            // 3. Workspace Membership
-            if (board.workspace?.id) {
-                const workspaceMemberRepository = AppDataSource.getRepository(WorkspaceMembers)
-                const wsMembership = await workspaceMemberRepository.findOne({
-                    where: {
-                        workspace: { id: board.workspace.id },
-                        user: { id: user.id }
-                    },
-                    relations: ['role']
-                })
-                if (wsMembership && wsMembership.role.name === 'workspace_admin') return next()
-            }
-
-            // 4. Public Access
-            const isReadRequest = Array.isArray(requiredPermission)
-                ? requiredPermission.every((p) => p.includes(':read'))
-                : (requiredPermission as string).includes(':read')
-
-            if (isReadRequest && board.permissionLevel === 'public') return next()
+            if (allowed) return next()
 
             return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
         } catch (err) {
@@ -330,10 +276,102 @@ export const authorizeCardPermission = (requiredPermission: string | string[]) =
     }
 }
 
+export const authorizeChecklistPermission = (requiredPermission: string | string[]) => {
+    return async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            const user = req.user
+            if (!user) return next(errorResponse(Status.NOT_FOUND, 'User not found'))
+
+            const checklistId = req.params.id || req.body.checklistId
+            if (!checklistId) {
+                return next(errorResponse(Status.BAD_REQUEST, 'Checklist id is required'))
+            }
+
+            const checklistRepo = AppDataSource.getRepository(Checklist)
+            const checklist = await checklistRepo.findOne({
+                where: { id: checklistId },
+                relations: [
+                    'card',
+                    'card.list',
+                    'card.list.board',
+                    'card.list.board.workspace',
+                    'card.list.board.owner'
+                ]
+            })
+
+            if (!checklist) {
+                return next(errorResponse(Status.NOT_FOUND, 'Checklist not found'))
+            }
+
+            const allowed = await canAccessBoardByMembership({
+                userId: user.id,
+                board: checklist.card.list.board,
+                requiredPermission
+            })
+
+            if (!allowed) {
+                return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
+            }
+
+            next()
+        } catch (err) {
+            return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
+        }
+    }
+}
+
+export const authorizeChecklistItemPermission = (requiredPermission: string | string[]) => {
+    return async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            const user = req.user
+            if (!user) return next(errorResponse(Status.NOT_FOUND, 'User not found'))
+
+            const itemId = req.params.itemId
+            if (!itemId) {
+                return next(errorResponse(Status.BAD_REQUEST, 'Checklist item id is required'))
+            }
+
+            const checklistItemRepo = AppDataSource.getRepository(ChecklistItem)
+            const item = await checklistItemRepo.findOne({
+                where: { id: itemId },
+                relations: [
+                    'checklist',
+                    'checklist.card',
+                    'checklist.card.list',
+                    'checklist.card.list.board',
+                    'checklist.card.list.board.workspace',
+                    'checklist.card.list.board.owner'
+                ]
+            })
+
+            if (!item) {
+                return next(errorResponse(Status.NOT_FOUND, 'Checklist item not found'))
+            }
+
+            const allowed = await canAccessBoardByMembership({
+                userId: user.id,
+                board: item.checklist.card.list.board,
+                requiredPermission
+            })
+
+            if (!allowed) {
+                return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
+            }
+
+            next()
+        } catch (err) {
+            return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
+        }
+    }
+}
+
 export const authorizeAttachmentPermission = (requiredPermission: string | string[]) => {
     return async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const user = req.user
+            if (!user) {
+                return next(errorResponse(Status.NOT_FOUND, 'User not found'))
+            }
             const attachmentId = req.params.id || req.body.attachmentId
 
             const attachmentRepo = AppDataSource.getRepository(Attachment)
@@ -346,31 +384,23 @@ export const authorizeAttachmentPermission = (requiredPermission: string | strin
                 return next(errorResponse(Status.NOT_FOUND, 'Attachment not found'))
             }
 
-            const boardId = attachment.card.list.board.id
-
-            const boardMemberRepo = AppDataSource.getRepository(BoardMembers)
-            const membership = await boardMemberRepo.findOne({
-                where: {
-                    board: { id: boardId },
-                    user: { id: user?.id }
-                },
-                relations: ['role', 'role.permissions']
+            const boardRepo = AppDataSource.getRepository(Board)
+            const board = await boardRepo.findOne({
+                where: { id: attachment.card.list.board.id },
+                relations: ['workspace', 'owner']
             })
 
-            if (!membership) {
-                return next(errorResponse(Status.NOT_FOUND, 'You are not a member of this board'))
+            if (!board) {
+                return next(errorResponse(Status.NOT_FOUND, 'Board not found'))
             }
 
-            const role = membership.role
-            if (!role) {
-                return next(errorResponse(Status.NOT_FOUND, 'Role not found'))
-            }
+            const allowed = await canAccessBoardByMembership({
+                userId: user.id,
+                board,
+                requiredPermission
+            })
 
-            const permissions = role.permissions?.map((p) => p.name) ?? []
-            const requiredPermissions = Array.isArray(requiredPermission) ? requiredPermission : [requiredPermission]
-            const hasPermission = requiredPermissions.every((p) => permissions.includes(p))
-
-            if (!hasPermission) {
+            if (!allowed) {
                 return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
             }
 
@@ -434,26 +464,23 @@ export const authorizeLabelPermission = (requiredPermission: string | string[]) 
 
             const boardId = label.board.id
 
-            const boardMemberRepo = AppDataSource.getRepository(BoardMembers)
-
-            const membership = await boardMemberRepo.findOne({
-                where: {
-                    board: { id: boardId },
-                    user: { id: user.id }
-                },
-                relations: ['role', 'role.permissions']
+            const boardRepo = AppDataSource.getRepository(Board)
+            const board = await boardRepo.findOne({
+                where: { id: boardId },
+                relations: ['workspace', 'owner']
             })
 
-            if (!membership) {
-                return next(errorResponse(Status.FORBIDDEN, 'You are not a member of this board'))
+            if (!board) {
+                return next(errorResponse(Status.NOT_FOUND, 'Board not found'))
             }
 
-            const permissions = membership.role.permissions?.map((p) => p.name) ?? []
-            const requiredPermissions = Array.isArray(requiredPermission) ? requiredPermission : [requiredPermission]
+            const allowed = await canAccessBoardByMembership({
+                userId: user.id,
+                board,
+                requiredPermission
+            })
 
-            const hasPermission = requiredPermissions.every((p) => permissions.includes(p))
-
-            if (!hasPermission) {
+            if (!allowed) {
                 return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
             }
 

@@ -19,7 +19,7 @@ class ListController {
     getListById = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
-            const result = await listService.getListById(req.params.id, req.user.id)
+            const result = await listService.getListById(req.params.listId, req.user.id)
             return res.status(result.status).json(successResponse(result.status, result.message, result.data))
         } catch (err: any) {
             next(errorResponse(err.status || Status.INTERNAL_SERVER_ERROR, err.message || 'Server error'))
@@ -29,7 +29,7 @@ class ListController {
     updateList = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
-            const result = await listService.updateList(req.params.id, req.body, req.user.id)
+            const result = await listService.updateList(req.params.listId, req.body, req.user.id)
             return res.status(result.status).json(successResponse(result.status, result.message, result.data))
         } catch (err: any) {
             next(errorResponse(err.status || Status.INTERNAL_SERVER_ERROR, err.message || 'Server error'))
@@ -39,7 +39,11 @@ class ListController {
     archiveList = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
-            const result = await listService.updateList(req.params.id, { isArchived: true, position: -1 }, req.user.id)
+            const result = await listService.updateList(
+                req.params.listId,
+                { isArchived: true, position: -1 },
+                req.user.id
+            )
             return res
                 .status(result.status)
                 .json(successResponse(result.status, 'List archived successfully', result.data))
@@ -52,7 +56,7 @@ class ListController {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
 
-            const list = await listRepository.findById(req.params.id)
+            const list = await listRepository.findById(req.params.listId)
             if (!list) {
                 return next(errorResponse(Status.NOT_FOUND, 'List not found'))
             }
@@ -60,7 +64,7 @@ class ListController {
             const highestPosition = await listRepository.getHighestPositionInBoard(list.board.id)
             const position = highestPosition ? highestPosition + 100 : 100
 
-            const result = await listService.updateList(req.params.id, { isArchived: false, position }, req.user.id)
+            const result = await listService.updateList(req.params.listId, { isArchived: false, position }, req.user.id)
             return res
                 .status(result.status)
                 .json(successResponse(result.status, 'List unarchived successfully', result.data))
@@ -72,7 +76,7 @@ class ListController {
     deleteList = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
-            const result = await listService.deleteList(req.params.id, req.user.id)
+            const result = await listService.deleteList(req.params.listId, req.user.id)
             return res.status(result.status).json(successResponse(result.status, result.message))
         } catch (err: any) {
             next(errorResponse(err.status || Status.INTERNAL_SERVER_ERROR, err.message || 'Server error'))
@@ -132,7 +136,7 @@ class ListController {
     getAllCardsInList = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
-            const result = await listRepository.getAllCardsInList(req.params.id, req.user.id)
+            const result = await listRepository.getAllCardsInList(req.params.listId, req.user.id)
             return res.status(Status.OK).json(successResponse(Status.OK, 'Cards retrieved successfully', result))
         } catch (err: any) {
             next(errorResponse(err.status || Status.INTERNAL_SERVER_ERROR, err.message || 'Server error'))

@@ -49,7 +49,7 @@ class ListRepository {
                 throw e
             }
 
-            const hightestPosition = await this.getHighestPositionInBoard(data.boardId) || Config.defaultGap
+            const hightestPosition = (await this.getHighestPositionInBoard(data.boardId)) || Config.defaultGap
             const newList = manager.create(List, {
                 title: data.title,
                 position: hightestPosition + Config.defaultGap,
@@ -139,7 +139,7 @@ class ListRepository {
 
             if (sourceList.cards?.length > 0) {
                 for (const card of sourceList.cards) {
-                    if (card.isArchived) continue; // Bỏ qua card đã archive (tùy chọn)
+                    if (card.isArchived) continue // Bỏ qua card đã archive (tùy chọn)
 
                     const newCard = manager.create(Card, {
                         title: card.title,
@@ -155,7 +155,7 @@ class ListRepository {
                     const savedCard = await manager.save(newCard)
 
                     if (card.cardMembers?.length > 0) {
-                        const newMembers = card.cardMembers.map(cm =>
+                        const newMembers = card.cardMembers.map((cm) =>
                             manager.create(CardMembers, {
                                 card: savedCard,
                                 user: cm.user
@@ -172,25 +172,9 @@ class ListRepository {
 
     async getAllCardsInList(listId: string, userId: string) {
         const list = await this.repo.findOne({
-            where: { id: listId },
+            where: { id: listId, isArchived: false },
             relations: ['cards', 'cards.list'],
-            select: {
-                id: true,
-                cards: {
-                    id: true,
-                    title: true,
-                    position: true,
-                    backgroundUrl: true,
-                    priority: true,
-                    dueDate: true,
-                    description: true,
-                    isArchived: true,
-                    createdAt: true,
-                    updatedAt: true,
-                    list: { id: true},
-                    labels: true
-                }
-            },
+
             order: { cards: { position: 'ASC' } }
         })
 
@@ -199,6 +183,13 @@ class ListRepository {
         }
 
         return list.cards
+    }
+
+    async getArchivedListsByBoardId(boardId: string): Promise<List[]> {
+        return await this.repo.find({
+            where: { board: { id: boardId }, isArchived: true },
+            order: { position: 'ASC' }
+        })
     }
 }
 

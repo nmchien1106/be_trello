@@ -6,7 +6,6 @@ import { BoardMembers } from '@/entities/board-member.entity'
 import { Workspace } from '@/entities/workspace.entity'
 import { WorkspaceMembers } from '@/entities/workspace-member.entity'
 import { Brackets, Repository, In } from 'typeorm'
-import { Permissions } from '@/enums/permissions.enum'
 import { List } from '@/entities/list.entity'
 import { Card } from '@/entities/card.entity'
 import { Activity } from '@/entities/activity.entity'
@@ -228,26 +227,8 @@ class BoardRepository {
 
     async getAllBoardsForUser(userId: string) {
         return this.repo.find({
-            where: [
-                { permissionLevel: 'public', isArchived: false },
-                { isArchived: false, boardMembers: { user: { id: userId } } },
-                {
-                    permissionLevel: 'workspace',
-                    isArchived: false,
-                    workspace: { workspaceMembers: { user: { id: userId } } }
-                }
-            ],
-            relations: ['workspace'],
-            select: {
-                id: true,
-                title: true,
-                description: true,
-                permissionLevel: true,
-                backgroundPath: true,
-                createdAt: true,
-                updatedAt: true,
-                workspace: { id: true, title: true }
-            },
+            where: [{ boardMembers: { user: { id: userId } }, isArchived: false }],
+            relations: ['workspace', 'boardMembers', 'boardMembers.user'],
             order: { createdAt: 'DESC' }
         })
     }
@@ -259,10 +240,11 @@ class BoardRepository {
                 { isArchived: true, boardMembers: { user: { id: userId } } },
                 {
                     isArchived: true,
+                    permissionLevel: In(['workspace', 'public']),
                     workspace: { workspaceMembers: { user: { id: userId } } }
                 }
             ],
-            relations: ['workspace'],
+            relations: ['', 'workspace.workspaceMembers', 'workspace.workspaceMembers.user'],
             select: {
                 id: true,
                 title: true,
@@ -271,7 +253,7 @@ class BoardRepository {
                 backgroundPath: true,
                 createdAt: true,
                 updatedAt: true,
-                workspace: { id: true, title: true }
+                workspace: { id: true, title: true, workspaceMembers: { user: { id: true } } }
             },
             order: { updatedAt: 'DESC' }
         })
@@ -281,18 +263,6 @@ class BoardRepository {
             where: { id: boardId, isArchived: false },
             relations: ['workspace', 'owner']
         })
-
-        if (!board) return null
-
-        let hasAccess = false
-
-        if (board.permissionLevel === 'public') hasAccess = true
-        else if (board.permissionLevel === 'workspace') {
-            const isWsMember = await AppDataSource.getRepository(WorkspaceMembers).exists({
-                where: { workspace: { id: board.workspace.id }, user: { id: userId } }
-            })
-            if (isWsMember) hasAccess = true
-        }
 
         return board
     }
@@ -331,7 +301,16 @@ class BoardRepository {
     async findTemplates() {
         return this.repo.find({
             where: { isTemplate: true },
-            select: ['id', 'title', 'description', 'permissionLevel', 'backgroundPath', 'backgroundPublicId', 'category', 'createdAt']
+            select: [
+                'id',
+                'title',
+                'description',
+                'permissionLevel',
+                'backgroundPath',
+                'backgroundPublicId',
+                'category',
+                'createdAt'
+            ]
         })
     }
 
@@ -347,23 +326,6 @@ class BoardRepository {
             where: { id: templateId, isTemplate: true },
             relations: copyCard ? ['lists', 'lists.cards'] : ['lists']
         })
-    }
-
-    // Permission helper (kept from new branch)
-    async hasPermission(userId: string, boardId: string, requiredPermission: string): Promise<boolean> {
-        const board = await this.repo.findOne({ where: { id: boardId }, relations: ['owner'] })
-        if (!board) return false
-
-        if (board.owner?.id === userId) return true
-        const member = await this.boardMembersRepository.findOne({
-            where: { board: { id: boardId }, user: { id: userId } },
-            relations: ['role', 'role.permissions']
-        })
-
-        if (!member || !member.role) return false
-
-        const perms = member.role.permissions ?? []
-        return perms.some((p: any) => p.name === requiredPermission)
     }
 
     async getAllListsOnBoard(boardId: string) {

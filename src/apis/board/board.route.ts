@@ -53,6 +53,22 @@ route.get('/', verifyAccessToken, boardController.getAllBoards)
 // Get Archived Boards for current user
 route.get('/archived', verifyAccessToken, boardController.getArchivedBoards)
 
+// Get Archived Lists in a Board
+route.get(
+    '/:boardId/archived/lists',
+    verifyAccessToken,
+    authorizeBoardPermission(Permissions.READ_BOARD),
+    boardController.getArchivedListsInBoard
+)
+
+// Get Archived Cards in a Board
+route.get(
+    '/:boardId/archived/cards',
+    verifyAccessToken,
+    authorizeBoardPermission(Permissions.READ_BOARD),
+    boardController.getArchivedCardsInBoard
+)
+
 // Invite via email
 route.post(
     '/:boardId/invite/email',
@@ -90,7 +106,7 @@ route.patch(
 route.get(
     '/:boardId',
     verifyAccessToken,
-    // authorizeBoardPermission(Permissions.READ_BOARD),
+    authorizeBoardPermission(Permissions.READ_BOARD),
     boardController.getBoardById
 )
 
@@ -128,10 +144,20 @@ route.patch(
 )
 
 // Archive
-route.post('/:boardId/archive', verifyAccessToken, boardController.archiveBoard)
+route.post(
+    '/:boardId/archive',
+    verifyAccessToken,
+    authorizeBoardPermission(Permissions.UPDATE_BOARD),
+    boardController.archiveBoard
+)
 
 // Reopen
-route.post('/:boardId/reopen', verifyAccessToken, boardController.reopenBoard)
+route.post(
+    '/:boardId/reopen',
+    verifyAccessToken,
+    authorizeBoardPermission(Permissions.UPDATE_BOARD),
+    boardController.reopenBoard
+)
 
 // Upload Background
 route.post(

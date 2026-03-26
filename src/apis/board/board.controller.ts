@@ -179,12 +179,6 @@ class BoardController {
                 return next(errorResponse(Status.NOT_FOUND, 'Board not found'))
             }
 
-            // Check permission: Must be board member with manage permission, board owner, or workspace admin
-            const hasAccess = await this.canManageBoard(userId, boardId, board)
-            if (!hasAccess) {
-                return next(errorResponse(Status.FORBIDDEN, 'You do not have permission to archive this board'))
-            }
-
             if (board.isArchived) {
                 return next(errorResponse(Status.BAD_REQUEST, 'Board is already archived'))
             }
@@ -216,11 +210,6 @@ class BoardController {
             const board = await BoardRepository.getBoardById(boardId)
             if (!board) {
                 return next(errorResponse(Status.NOT_FOUND, 'Board not found'))
-            }
-
-            const hasAccess = await this.canManageBoard(userId, boardId, board)
-            if (!hasAccess) {
-                return next(errorResponse(Status.FORBIDDEN, 'You do not have permission to reopen this board'))
             }
 
             if (!board.isArchived) {
@@ -262,8 +251,8 @@ class BoardController {
         })
         if (boardMembership) return true
 
-        // 3. Any workspace member can manage boards in their workspace
-        if (boardWithOwner.workspace?.id) {
+        // 3. Workspace member can manage non-private boards in their workspace
+        if (boardWithOwner.workspace?.id && boardWithOwner.permissionLevel !== 'private') {
             const wsMember = await AppDataSource.getRepository(WorkspaceMembers).findOne({
                 where: { workspace: { id: boardWithOwner.workspace.id }, user: { id: userId } }
             })
@@ -614,6 +603,47 @@ class BoardController {
             next(err)
         }
     }
+
+    getArchivedListsInBoard = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            const { boardId } = req.params
+            if (!boardId) {
+                return next(errorResponse(Status.BAD_REQUEST, 'Board ID is required'))
+            }
+            const lists = await AppDataSource.getRepository(List).find({
+                where: { board: { id: boardId }, isArchived: true },
+                order: { position: 'ASC' }
+            })
+            console.log(lists)
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Archived lists fetched successfully', lists))
+        } catch (err) {
+            next(err)
+        }
+    }
+
+    getArchivedCardsInBoard = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            const { boardId } = req.params
+            if (!boardId) {
+                return next(errorResponse(Status.BAD_REQUEST, 'Board ID is required'))
+            }
+            const cards = await AppDataSource.getRepository(Card).find({
+                where: {
+                    list: {
+                        board: { id: boardId }
+                    },
+                    isArchived: true
+                },
+                relations: ['list'],
+                order: { position: 'ASC' }
+            })
+            console.log(cards)
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Archived cards fetched successfully', cards))
+        } catch (err) {
+            next(err)
+        }
+    }
+
     getBoardById = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             if (!req.user || !req.user.id) {

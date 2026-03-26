@@ -41,11 +41,15 @@ router.route('/').post(
 // Workspace Invitations
 router.route('/invitations').get(verifyAccessToken, WorkspaceController.getAllInvitations)
 
+// Join workspace via shareable link
 router.route('/join').get(verifyAccessToken, WorkspaceController.joinWorkspace)
+
+// Respond to invitation
 router
     .route('/invitations/:workspaceId')
     .post(verifyAccessToken, validateHandle(InvitationResponseSchema), WorkspaceController.respondToInvitation)
 
+// Workspace management
 router
     .route('/:workspaceId')
     .delete(
@@ -65,6 +69,7 @@ router
         WorkspaceController.getWorkspaceByID
     )
 
+// Archive workspace
 router
     .route('/:workspaceId/archive')
     .post(
@@ -73,6 +78,7 @@ router
         WorkspaceController.archiveWorkspace
     )
 
+// Reopen archived workspace
 router
     .route('/:workspaceId/unarchive')
     .post(
@@ -81,6 +87,7 @@ router
         WorkspaceController.reopenWorkspace
     )
 
+// Manage workspace members
 router
     .route('/:workspaceId/members')
     .get(
@@ -100,6 +107,7 @@ router
         WorkspaceController.removeMemberFromWorkspace
     )
 
+// Get all boards in a workspace
 router
     .route('/:workspaceId/boards')
     .get(
@@ -108,6 +116,7 @@ router
         WorkspaceController.getAllBoardsInWorkspace
     )
 
+// Invite by email
 router
     .route('/:workspaceId/invite')
     .post(
@@ -117,6 +126,7 @@ router
         WorkspaceController.inviteByEmail
     )
 
+// Generate shareable link
 router
     .route('/:workspaceId/share-link')
     .post(
@@ -125,6 +135,7 @@ router
         WorkspaceController.createShareLink
     )
 
+// Revoke shareable link
 router
     .route('/share-link/revoke')
     .post(

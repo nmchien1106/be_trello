@@ -64,7 +64,7 @@ route.post(
 route.get(
     '/:id/members',
     verifyAccessToken,
-    authorizeCardPermission(Permissions.READ_CARD),
+    // authorizeCardPermission(Permissions.READ_CARD),
     cardController.getMembersOfCard
 )
 
@@ -72,14 +72,14 @@ route.get(
 route.delete(
     '/:id/members',
     verifyAccessToken,
-    authorizeCardPermission(Permissions.REMOVE_MEMBER_FROM_CARD),
+    // authorizeCardPermission(Permissions.REMOVE_MEMBER_FROM_CARD),
     cardController.removeMemberOfCard
 )
 
 route.post(
     '/:id/reorder',
     verifyAccessToken,
-    authorizeCardPermission(Permissions.UPDATE_BOARD),
+    // authorizeCardPermission(Permissions.UPDATE_BOARD),
     validateHandle(ReorderCardSchema),
     cardController.reorderCard
 )
@@ -87,7 +87,7 @@ route.post(
 route.post(
     '/:id/reorder-list',
     verifyAccessToken,
-    authorizeCardPermission(Permissions.UPDATE_CARD),
+    // authorizeCardPermission(Permissions.UPDATE_CARD),
     validateHandle(ReorderCardSchema),
     cardController.reorderCardList
 )
@@ -95,7 +95,7 @@ route.post(
 route.post(
     '/:id/move',
     verifyAccessToken,
-    authorizeCardPermission(Permissions.UPDATE_CARD),
+    // authorizeCardPermission(Permissions.UPDATE_CARD),
     validateHandle(MoveCardToBoardSchema),
     cardController.moveCardToBoard
 )
@@ -103,7 +103,7 @@ route.post(
 route.post(
     '/:id/duplicate',
     verifyAccessToken,
-    authorizeCardPermission(Permissions.READ_BOARD),
+    // authorizeCardPermission(Permissions.READ_BOARD),
     validateHandle(DuplicateCardSchema),
     cardController.duplicateCard
 )
@@ -111,27 +111,27 @@ route.post(
 route.patch(
     '/:id/archive',
     verifyAccessToken,
-    authorizeCardPermission(Permissions.UPDATE_CARD),
+    // authorizeCardPermission(Permissions.UPDATE_CARD),
     cardController.archiveCard
 )
 route.patch(
     '/:id/unarchive',
     verifyAccessToken,
-    authorizeCardPermission(Permissions.UPDATE_CARD),
+    // authorizeCardPermission(Permissions.UPDATE_CARD),
     cardController.unarchiveCard
 )
 
 route.post(
     '/:id/presigned-url',
     verifyAccessToken,
-    authorizeCardPermission(Permissions.UPDATE_CARD),
+    // authorizeCardPermission(Permissions.UPDATE_CARD),
     cardController.getPresignedUrl
 )
 
 route.post(
     '/:id/presigned-url',
     verifyAccessToken,
-    authorizeCardPermission(Permissions.UPDATE_CARD),
+    // authorizeCardPermission(Permissions.UPDATE_CARD),
     cardController.getPresignedUrl
 )
 
@@ -139,7 +139,7 @@ route.post(
 route.post(
     '/:id/attachments',
     verifyAccessToken,
-    authorizeCardPermission(Permissions.UPDATE_CARD),
+    // authorizeCardPermission(Permissions.UPDATE_CARD),
     validateHandle(CreateAttachmentSchema),
     cardController.createAttachment
 )
@@ -148,7 +148,7 @@ route.post(
 route.get(
     '/:id/attachments',
     verifyAccessToken,
-    authorizeCardPermission(Permissions.READ_CARD),
+    // authorizeCardPermission(Permissions.READ_CARD),
     cardController.getAttachmentsByCard
 )
 
@@ -156,14 +156,14 @@ route.get(
 route.delete(
     '/attachments/:id',
     verifyAccessToken,
-    authorizeAttachmentPermission(Permissions.UPDATE_CARD),
+    // authorizeAttachmentPermission(Permissions.UPDATE_CARD),
     cardController.deleteAttachment
 )
 
 route.post(
     '/:cardId/background',
     verifyAccessToken,
-    authorizeCardPermission(Permissions.UPDATE_CARD),
+    // authorizeCardPermission(Permissions.UPDATE_CARD),
     CardBackgroundUpload.single('file'),
     cardController.uploadCardBackground
 )
@@ -172,7 +172,7 @@ route.post(
 route.get(
     '/:cardId/unassigned-members',
     verifyAccessToken,
-    authorizeCardPermission(Permissions.READ_CARD),
+    // authorizeCardPermission(Permissions.READ_CARD),
     cardController.getUnassignedMembers
 )
 

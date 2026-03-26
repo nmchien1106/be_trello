@@ -43,7 +43,7 @@ class CardRepository {
                 backgroundUrl: data.coverUrl ?? null,
                 dueDate: dueDateVal,
                 priority: data.priority ?? 'medium'
-            }as DeepPartial<Card>)
+            } as DeepPartial<Card>)
 
             return await manager.save(newCard)
         })
@@ -176,7 +176,7 @@ class CardRepository {
             const savedCard = await manager.save(newCard)
 
             if (sourceCard.cardMembers && sourceCard.cardMembers.length > 0) {
-                const newMembers = sourceCard.cardMembers.map(cm =>
+                const newMembers = sourceCard.cardMembers.map((cm) =>
                     manager.create(CardMembers, {
                         card: savedCard,
                         user: cm.user
@@ -186,6 +186,19 @@ class CardRepository {
             }
 
             return savedCard
+        })
+    }
+
+    async getArchivedCardsByBoardId(boardId: string) {
+        return await this.repo.find({
+            where: {
+                list: {
+                    board: { id: boardId }
+                },
+                isArchived: true
+            },
+            relations: ['list'],
+            order: { position: 'ASC' }
         })
     }
 

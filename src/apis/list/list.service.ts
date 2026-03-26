@@ -3,22 +3,13 @@ import ListRepository from './list.repository'
 import BoardRepository from '../board/board.repository'
 import { CreateListDto, UpdateListDto } from './list.dto'
 import { Status } from '@/types/response'
-import { Permissions } from '@/enums/permissions.enum'
 import { List } from '@/entities/list.entity'
 import { Config } from '@/config/config'
 import { calcPosition } from '@/utils/calcPosition'
 
 export class ListService {
-
-    private async checkPermission(userId: string, boardId: string, permission: string) {
-        const hasPerm = await BoardRepository.hasPermission(userId, boardId, permission)
-        if (!hasPerm) throw { status: Status.FORBIDDEN, message: `Permission denied: ${permission}` }
-    }
-
     async createList(data: CreateListDto, userId: string) {
         if (!userId) throw { status: Status.UNAUTHORIZED, message: 'User info missing' }
-
-        await this.checkPermission(userId, data.boardId, Permissions.CREATE_LIST)
 
         try {
             return await AppDataSource.transaction(async (manager) => {
@@ -36,7 +27,7 @@ export class ListService {
                 const newList = manager.create(List, {
                     title: data.title,
                     board: board,
-                    position: newPosition,
+                    position: newPosition
                 })
 
                 const savedList = await manager.save(newList)
@@ -57,16 +48,12 @@ export class ListService {
         const list = await ListRepository.findById(id)
         if (!list) throw { status: Status.NOT_FOUND, message: 'List not found' }
 
-        await this.checkPermission(userId, list.board.id, Permissions.READ_BOARD)
-
         return { status: Status.OK, message: 'Get list successfully', data: list }
     }
 
     async updateList(id: string, data: UpdateListDto, userId: string) {
         const list = await ListRepository.findById(id)
         if (!list) throw { status: Status.NOT_FOUND, message: 'List not found' }
-
-        await this.checkPermission(userId, list.board.id, Permissions.UPDATE_LIST)
 
         const updated = await ListRepository.updateList(id, data)
         return { status: Status.OK, message: 'List updated successfully', data: updated }
@@ -76,21 +63,21 @@ export class ListService {
         const list = await ListRepository.findById(id)
         if (!list) throw { status: Status.NOT_FOUND, message: 'List not found' }
 
-        await this.checkPermission(userId, list.board.id, Permissions.DELETE_LIST)
-
         await ListRepository.deleteList(id)
         return { status: Status.OK, message: 'List deleted permanently' }
     }
 
-    async reorderList(userId: string, listId: string, data: { beforeId: string | null, afterId: string | null, boardId: string }) {
+    async reorderList(
+        userId: string,
+        listId: string,
+        data: { beforeId: string | null; afterId: string | null; boardId: string }
+    ) {
         const list = await ListRepository.findListById(listId)
         if (!list) throw { status: Status.NOT_FOUND, message: 'List not found' }
 
         if (list.boardId !== data.boardId) {
-             throw { status: Status.BAD_REQUEST, message: 'List does not belong to the specified board' }
+            throw { status: Status.BAD_REQUEST, message: 'List does not belong to the specified board' }
         }
-
-        await this.checkPermission(userId, data.boardId, Permissions.UPDATE_BOARD)
 
         const beforeList = data.beforeId ? await ListRepository.findListById(data.beforeId) : null
         const afterList = data.afterId ? await ListRepository.findListById(data.afterId) : null
@@ -110,17 +97,11 @@ export class ListService {
     async moveListToAnotherBoard(
         userId: string,
         listId: string,
-        data: { targetBoardId: string, beforeId?: string | null, afterId?: string | null }
+        data: { targetBoardId: string; beforeId?: string | null; afterId?: string | null }
     ) {
         const list = await ListRepository.findById(listId)
         if (!list) throw { status: Status.NOT_FOUND, message: 'List not found' }
         const sourceBoardId = list.board.id
-
-        await this.checkPermission(userId, sourceBoardId, Permissions.UPDATE_BOARD)
-
-        if (sourceBoardId !== data.targetBoardId) {
-            await this.checkPermission(userId, data.targetBoardId, Permissions.UPDATE_BOARD)
-        }
 
         let newPosition: number
 
@@ -150,10 +131,6 @@ export class ListService {
     async duplicateList(userId: string, listId: string, targetBoardId: string, title?: string) {
         const sourceList = await ListRepository.findById(listId)
         if (!sourceList) throw { status: Status.NOT_FOUND, message: 'Source list not found' }
-
-        await this.checkPermission(userId, sourceList.board.id, Permissions.READ_BOARD)
-
-        await this.checkPermission(userId, targetBoardId, Permissions.CREATE_LIST)
 
         const newList = await ListRepository.duplicateList(listId, targetBoardId, title, userId)
 

@@ -124,7 +124,7 @@ export class WorkspaceRepository {
     async getBoardsInWorkspace(workspaceId: string): Promise<Board[]> {
         const workspace = await this.workspaceRepo.findOne({
             where: { id: workspaceId },
-            relations: ['boards']
+            relations: ['boards', 'boards.workspace']
         })
         if (!workspace) {
             throw new Error('Workspace not found')

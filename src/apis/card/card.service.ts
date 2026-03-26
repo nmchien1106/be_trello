@@ -1,14 +1,12 @@
 import AppDataSource from '@/config/typeorm.config'
 import CardRepository from './card.repository'
 import ListRepository from '../list/list.repository'
-import BoardRepository from '../board/board.repository'
 import { EventBus } from '@/events/event-bus'
 import { DomainEvent } from '@/events/interface'
 import { EventType } from '@/enums/event-type.enum'
 import crypto from 'crypto'
 import { CreateCardDto } from './card.dto'
 import { Status } from '@/types/response'
-import { Permissions } from '@/enums/permissions.enum'
 import { Card } from '@/entities/card.entity'
 import { Config } from '@/config/config'
 import { calcPosition } from '@/utils/calcPosition'
@@ -26,18 +24,11 @@ const attachmentRepo = AppDataSource.getRepository(Attachment)
 const cardRepo = AppDataSource.getRepository(Card)
 
 export class CardService {
-    private async checkPermission(userId: string, boardId: string, permission: string) {
-        const hasPerm = await BoardRepository.hasPermission(userId, boardId, permission)
-        if (!hasPerm) throw { status: Status.FORBIDDEN, message: `Permission denied: ${permission}` }
-    }
-
     async createCard(data: CreateCardDto, userId: string) {
         if (!userId) throw { status: Status.UNAUTHORIZED, message: 'User info missing' }
 
         const list = await ListRepository.findById(data.listId)
         if (!list) throw { status: Status.NOT_FOUND, message: 'List not found' }
-
-        await this.checkPermission(userId, list.board.id, Permissions.CREATE_CARD)
 
         try {
             const savedCard = await AppDataSource.transaction(async (manager) => {
@@ -87,7 +78,6 @@ export class CardService {
         })
 
         if (!card) throw { status: Status.NOT_FOUND, message: 'Card not found' }
-        await this.checkPermission(userId, card.list.board.id, Permissions.UPDATE_CARD)
         if (data.title !== undefined) card.title = data.title
         if (data.description !== undefined) card.description = data.description
         if (data.dueDate !== undefined) {
@@ -116,8 +106,6 @@ export class CardService {
         const card = await CardRepository.findCardWithBoard(cardId)
         if (!card) throw { status: Status.NOT_FOUND, message: 'Card not found' }
 
-        await this.checkPermission(userId, card.list.board.id, Permissions.DELETE_CARD)
-
         await CardRepository.deleteCard(cardId)
         return
     }
@@ -125,8 +113,6 @@ export class CardService {
     async toggleArchiveCard(userId: string, cardId: string, isArchived: boolean) {
         const card = await CardRepository.findCardWithBoard(cardId)
         if (!card) throw { status: Status.NOT_FOUND, message: 'Card not found' }
-
-        await this.checkPermission(userId, card.list.board.id, Permissions.UPDATE_CARD)
 
         let updateData: any = { isArchived }
 
@@ -162,8 +148,6 @@ export class CardService {
     ) {
         const card = await CardRepository.findCardWithBoard(cardId)
         if (!card) throw { status: Status.NOT_FOUND, message: 'Card not found' }
-
-        await this.checkPermission(userId, card.list.board.id, Permissions.UPDATE_BOARD)
 
         const targetList = await ListRepository.findById(data.targetListId)
         if (!targetList) throw { status: Status.NOT_FOUND, message: 'Target list not found' }
@@ -206,7 +190,13 @@ export class CardService {
     async moveCardToAnotherList(
         userId: string,
         cardId: string,
-        data: { targetListId?: string; listId?: string; beforeId?: string | null; afterId?: string | null; targetBoardId?: string }
+        data: {
+            targetListId?: string
+            listId?: string
+            beforeId?: string | null
+            afterId?: string | null
+            targetBoardId?: string
+        }
     ) {
         const card = await CardRepository.findCardWithBoard(cardId)
         if (!card) throw { status: Status.NOT_FOUND, message: 'Card not found' }
@@ -225,12 +215,6 @@ export class CardService {
                 status: Status.BAD_REQUEST,
                 message: `Target List does not belong to Target Board`
             }
-        }
-
-        await this.checkPermission(userId, sourceBoardId, Permissions.UPDATE_CARD)
-
-        if (sourceBoardId !== realTargetBoardId) {
-            await this.checkPermission(userId, realTargetBoardId, Permissions.CREATE_CARD)
         }
 
         let newPosition: number
@@ -290,13 +274,10 @@ export class CardService {
         const sourceCard = await CardRepository.findCardForDuplicate(cardId)
         if (!sourceCard) throw { status: Status.NOT_FOUND, message: 'Source card not found' }
 
-        await this.checkPermission(userId, sourceCard.list.board.id, Permissions.READ_BOARD)
-
         const listId = data.targetListId || sourceCard.list.id
 
         const targetList = await ListRepository.findById(listId)
         if (!targetList) throw { status: Status.NOT_FOUND, message: 'Target list not found' }
-        await this.checkPermission(userId, targetList.board.id, Permissions.CREATE_CARD)
 
         const newCard = await CardRepository.duplicateCard(sourceCard, listId, data.title)
 
@@ -502,7 +483,6 @@ export class CardService {
     }
 
     async getCardsInBoard(userId: string, boardId: string) {
-        await this.checkPermission(userId, boardId, Permissions.READ_BOARD)
         return await CardRepository.getCardsByBoardId(boardId)
     }
 

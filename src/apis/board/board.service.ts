@@ -18,6 +18,7 @@ export class BoardService {
 
     async getAllBoards(userId: string) {
         const boards = await BoardRepository.getAllBoardsForUser(userId)
+        console.log(boards)
         return {
             status: Status.OK,
             message: 'Boards retrieved successfully',
