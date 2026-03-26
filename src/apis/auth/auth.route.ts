@@ -3,13 +3,7 @@ import { Router } from 'express'
 import { verifyAccessToken, verifyRefreshToken } from '@/utils/jwt'
 import { validateHandle } from '@/middleware/validate-handle'
 import { rateLimiter } from '@/config/rateLimiter.config'
-import {
-    RegisterSchema,
-    LoginSchema,
-    forgotPasswordSchema,
-    resetPasswordSchema,
-    sendEmailSchema
-} from './auth.schema'
+import { RegisterSchema, LoginSchema, forgotPasswordSchema, resetPasswordSchema, sendEmailSchema } from './auth.schema'
 import passport from 'passport'
 import { AuthRegisterPath } from './auth.swagger'
 

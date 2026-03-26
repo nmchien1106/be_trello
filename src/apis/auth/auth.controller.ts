@@ -16,16 +16,26 @@ import generateNumericOTP from '@/utils/generateOTP'
 import emailTransporter from '@/config/email.config'
 import { generateEmailToken } from '@/utils/jwt'
 import sendVerifyEmail from '@/utils/sendVerifyEmail'
+import { AuthErrorCode } from '@/enums/Errors/Auth'
 
 const useRepo = AppDataSource.getRepository(User)
 
 class AuthController {
+    private getOAuthRedirectUrl = (token: string | null) => {
+        const normalizedOrigin = Config.corsOrigin.replace(/\/+$/, '')
+        const hasReactBase = /\/react-app$/i.test(normalizedOrigin)
+        const oauthPath = hasReactBase ? '/oauth2' : '/react-app/oauth2'
+        return `${normalizedOrigin}${oauthPath}?token=${token ?? 'null'}`
+    }
+
     register = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { email, password, username } = req.body
             const isExistEmail = await useRepo.findOneBy({ email })
             if (isExistEmail) {
-                return next(errorResponse(Status.BAD_REQUEST, 'This email is already used!'))
+                return next(
+                    errorResponse(Status.BAD_REQUEST, 'This email is already used!', AuthErrorCode.EMAIL_ALREADY_EXISTS)
+                )
             }
 
             const hashedPassword = await bcrypt.hash(password, 10)
@@ -53,28 +63,48 @@ class AuthController {
                 where: { email },
                 select: { id: true, password: true, isActive: true }
             })
+
+            // Check if user exists
             if (!user) {
-                return next(errorResponse(Status.BAD_REQUEST, 'Invalid email'))
+                return next(errorResponse(Status.BAD_REQUEST, 'Invalid email', AuthErrorCode.INVALID_CREDENTIALS))
             }
+
+            // Check if password is correct
             const isPasswordValid = bcrypt.compareSync(password, user.password)
             if (!isPasswordValid) {
-                return next(errorResponse(Status.BAD_REQUEST, 'Email or password is incorrect!'))
+                return next(
+                    errorResponse(
+                        Status.BAD_REQUEST,
+                        'Email or password is incorrect!',
+                        AuthErrorCode.INVALID_CREDENTIALS
+                    )
+                )
             }
 
+            // Check if email is verified
             if (!user.isActive) {
-                return next(errorResponse(Status.UNAUTHORIZED, 'Please verify your email before logging in'))
+                return next(
+                    errorResponse(
+                        Status.FORBIDDEN,
+                        'Please verify your email before logging in',
+                        {},
+                        'EMAIL_NOT_VERIFIED'
+                    )
+                )
             }
 
+            // Generate tokens
             const accessToken = await generateToken(user.id, 'access')
             const refreshToken = await generateToken(user.id, 'refresh')
 
+            // Store refresh token in Redis with user ID as key
             res.cookie('refresh', refreshToken, {
                 maxAge: Config.cookieMaxAge,
                 httpOnly: true,
                 secure: false
             })
 
-
+            // Return tokens to client
             res.status(200).json(
                 successResponse(Status.OK, 'Login successfully!', {
                     accessToken,
@@ -82,11 +112,12 @@ class AuthController {
                 })
             )
         } catch (err) {
+            console.log(err)
             return next(err)
         }
     }
 
-    async refreshToken(req: AuthRequest, res: Response, next: NextFunction) {
+    refreshToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const user_id = req.user?.id
             if (!user_id) {
@@ -128,7 +159,7 @@ class AuthController {
         }
     }
 
-    async googleOAuthCallback(req: Request, res: Response, next: NextFunction) {
+    googleOAuthCallback = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const user_id = req.user?.id
 
@@ -143,16 +174,13 @@ class AuthController {
                 path: '/'
             })
 
-
-            res.redirect(`${Config.corsOrigin}/oauth2?token=${accessToken}`)
+            res.redirect(this.getOAuthRedirectUrl(accessToken))
         } catch (err) {
-            res.redirect(`${Config.corsOrigin}/oauth2?token=null`)
+            res.redirect(this.getOAuthRedirectUrl(null))
         }
     }
 
-
-
-    async forgotPassword(req: Request, res: Response, next: NextFunction) {
+    forgotPassword = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { email } = req.body
             const user = await useRepo.findOneBy({ email })
@@ -172,6 +200,8 @@ class AuthController {
             const otp = generateNumericOTP(6)
             const resetLink = `${Config.corsOrigin}/reset-password?email=${email}&otp=${otp}`
             redisClient.setEx(`reset-${email}`, 300, otp)
+            const check = await redisClient.get(`reset-${email}`)
+            console.log('Generated OTP:', otp, 'Check OTP in Redis:', check)
 
             const mailOptions = {
                 from: Config.emailUser,
@@ -188,7 +218,7 @@ class AuthController {
         }
     }
 
-    async resetPassword(req: Request, res: Response, next: NextFunction) {
+    resetPassword = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { email, otp, newPassword } = req.body
             const savedOTP = await redisClient.get(`reset-${email}`)
@@ -200,15 +230,13 @@ class AuthController {
             if (!user) {
                 return next(errorResponse(Status.BAD_REQUEST, 'Email does not exist'))
             }
-            if (!savedOTP || Number(savedOTP) !== Number(otp)) {
+
+            console.log(typeof savedOTP, typeof otp, 'Saved OTP:', savedOTP, 'Provided OTP:', otp)
+
+            if (String(savedOTP) !== String(otp)) {
                 return next(errorResponse(Status.BAD_REQUEST, 'Invalid or expired OTP'))
             }
-            const isSamePassword = await bcrypt.compare(newPassword, user.password)
-            if (isSamePassword) {
-                return next(
-                    errorResponse(Status.BAD_REQUEST, 'Your new password cannot be the same as the old password')
-                )
-            }
+
             const hashedPassword = await bcrypt.hash(newPassword, 10)
             user.password = hashedPassword
             await useRepo.save(user)
@@ -219,7 +247,7 @@ class AuthController {
         }
     }
 
-    async sendVerifyEmail(req: Request, res: Response, next: NextFunction) {
+    sendVerifyEmail = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { email } = req.body
             if (!email) {
@@ -236,12 +264,12 @@ class AuthController {
         }
     }
 
-    async verifyEmail(req: Request, res: Response, next: NextFunction) {
+    verifyEmail = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const { email, otp } = req.query
+            const { email, token } = req.query
 
-            if (!email || !otp) {
-                return next(errorResponse(Status.BAD_REQUEST, 'Email and OTP are required'))
+            if (!email || !token) {
+                return next(errorResponse(Status.BAD_REQUEST, 'Email and token are required'))
             }
 
             const user = await useRepo.findOneBy({ email: email as string })
@@ -250,8 +278,8 @@ class AuthController {
             }
             const savedOTP = await redisClient.get(`verify-${user.id}`)
 
-            if (!savedOTP || Number(savedOTP) !== Number(otp)) {
-                return next(errorResponse(Status.BAD_REQUEST, 'Invalid or expired OTP'))
+            if (!savedOTP || Number(savedOTP) !== Number(token)) {
+                return next(errorResponse(Status.BAD_REQUEST, 'Invalid or expired token'))
             }
 
             user.isActive = true

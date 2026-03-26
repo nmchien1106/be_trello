@@ -29,5 +29,6 @@ route.use('/comments', CommentRoute)
 route.use('/labels', LabelRoute)
 route.use('/activities', ActivityRoute)
 route.use('/notifications', NotificationRoute)
+route.use('/search', SearchRoute)
 
 export default route

@@ -4,6 +4,7 @@ import { DateTimeEntity } from './base/DateTimeEntity'
 import { Permission } from './permission.entity'
 import { WorkspaceMembers } from './workspace-member.entity'
 import { BoardMembers } from './board-member.entity'
+import { User } from './user.entity'
 @Entity('roles')
 export class Role extends DateTimeEntity {
     @PrimaryGeneratedColumn('uuid')
@@ -26,4 +27,7 @@ export class Role extends DateTimeEntity {
     })
     @JoinTable()
     public permissions: Permission[]
+
+    @ManyToMany(() => User, (user) => user.roles)
+    public users: User[]
 }

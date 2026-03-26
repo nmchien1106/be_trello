@@ -24,7 +24,7 @@ class UserRepository {
         }
         const user = this.repo.create({
             ...data,
-            role: [defaultRole]
+            roles: [defaultRole]
         })
         user.isActive = true
         return this.repo.save(user)
@@ -42,7 +42,7 @@ class UserRepository {
         return this.repo.findOneBy({ email })
     }
     findUserBy = async (query: Partial<User>) => {
-        return this.repo.findOne({ where: query, relations: ['role'] })
+        return this.repo.findOne({ where: query, relations: ['roles'] })
     }
 
     updateAvatar = async (id: string, avatarUrl: string): Promise<User | null> => {

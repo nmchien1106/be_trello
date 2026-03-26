@@ -7,6 +7,7 @@ import { Comment } from './comment.entity'
 import { Notification } from './notification.entity'
 import { WorkspaceMembers } from './workspace-member.entity'
 import { Board } from './board.entity'
+import { Role } from './role.entity'
 
 @Entity('users')
 export class User extends DateTimeEntity {
@@ -37,6 +38,10 @@ export class User extends DateTimeEntity {
     @Column({ type: 'bool', nullable: false, default: false })
     public isActive: boolean
 
+    @ManyToMany(() => Role, { cascade: false })
+    @JoinTable()
+    public roles: Role[]
+
     @OneToMany(() => WorkspaceMembers, (workspaceMember) => workspaceMember.user)
     public workspaceMembers: WorkspaceMembers[]
 
@@ -54,5 +59,4 @@ export class User extends DateTimeEntity {
 
     @OneToMany(() => Notification, (notification) => notification.user)
     public notifications: Notification[]
-
 }
