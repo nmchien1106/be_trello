@@ -15,6 +15,13 @@ class UserRepository {
         })
     }
 
+    findByIdWithPassword = async (id: string): Promise<User | null> => {
+        return this.repo.findOne({
+            where: { id },
+            select: ['id', 'password']
+        })
+    }
+
     createUser = async (data: Partial<User>): Promise<User> => {
         const roleRepo = AppDataSource.getRepository(Role)
 

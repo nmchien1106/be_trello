@@ -22,7 +22,7 @@ export class Workspace extends DateTimeEntity {
     @OneToMany(() => WorkspaceMembers, (workspaceMember) => workspaceMember.workspace)
     public workspaceMembers: WorkspaceMembers[]
 
-    @ManyToOne(() => User, (user) => user.workspaceMembers, { nullable: false })
+    @ManyToOne(() => User, (user) => user.ownedWorkspaces, { nullable: false })
     public owner: User
 
     @OneToMany(() => Board, (board) => board.workspace)

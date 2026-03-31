@@ -20,13 +20,8 @@ const route = Router()
 
 boardsRegisterPath()
 
-// Get All Lists on Board
-route.get(
-    '/:boardId/lists',
-    verifyAccessToken,
-    authorizeBoardPermission(Permissions.UPDATE_BOARD),
-    boardController.getAllListOnBoard
-)
+// Get all starred boards
+route.get('/starred', verifyAccessToken, boardController.getStarredBoards)
 
 // Get Public Boards
 route.get('/public', boardController.getPublicBoards)
@@ -52,6 +47,14 @@ route.get('/', verifyAccessToken, boardController.getAllBoards)
 
 // Get Archived Boards for current user
 route.get('/archived', verifyAccessToken, boardController.getArchivedBoards)
+
+// Get All Lists on Board
+route.get(
+    '/:boardId/lists',
+    verifyAccessToken,
+    authorizeBoardPermission(Permissions.UPDATE_BOARD),
+    boardController.getAllListOnBoard
+)
 
 // Get Archived Lists in a Board
 route.get(
@@ -196,9 +199,14 @@ route.post(
 route.post(
     '/:boardId/template',
     verifyAccessToken,
-    // authorizePermissionWorkspace(Permissions.UPDATE_WORKSPACE),
-    // validateHandle(CreateTemplateSchema),
     boardController.createBoardTemplate
+)
+
+// Star / Unstar a board
+route.post(
+    '/:boardId/star',
+    verifyAccessToken,
+    boardController.toggleStarBoard
 )
 
 export default route

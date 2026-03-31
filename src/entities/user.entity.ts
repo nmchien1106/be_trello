@@ -8,6 +8,7 @@ import { Notification } from './notification.entity'
 import { WorkspaceMembers } from './workspace-member.entity'
 import { Board } from './board.entity'
 import { Role } from './role.entity'
+import { Workspace } from './workspace.entity'
 
 @Entity('users')
 export class User extends DateTimeEntity {
@@ -56,6 +57,9 @@ export class User extends DateTimeEntity {
 
     @OneToMany(() => Board, (board) => board.owner)
     public boards: Board[]
+
+    @OneToMany(() => Workspace, (workspace) => workspace.owner)
+    public ownedWorkspaces: Workspace[]
 
     @OneToMany(() => Notification, (notification) => notification.user)
     public notifications: Notification[]

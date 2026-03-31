@@ -7,6 +7,7 @@ import AppDataSource from '@/config/typeorm.config'
 import { AuthRequest } from '@/types/auth-request'
 import bcrypt from 'bcrypt'
 import { RoleDTOForRelation } from '../role/role.dto'
+import cloudinary from '@/config/cloundinary'
 
 const roleRepo = AppDataSource.getRepository(Role)
 
@@ -37,9 +38,19 @@ class UserController {
     updateProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id
+            if (!userId) return next(errorResponse(Status.UNAUTHORIZED, 'Unauthorized'))
 
             const data = req.body
             if (data.password) {
+                const userWithPassword = await UserRepository.findByIdWithPassword(userId)
+                if (userWithPassword?.password) {
+                    const isSame = await bcrypt.compare(data.password, userWithPassword.password)
+                    if (isSame) {
+                        return res.status(Status.BAD_REQUEST).json(
+                            errorResponse(Status.BAD_REQUEST, 'New password must be different from the current password')
+                        )
+                    }
+                }
                 data.password = await bcrypt.hash(data.password, 10)
             }
             const updatedUser = await UserRepository.updateUser(userId, data)
@@ -57,17 +68,53 @@ class UserController {
     uploadAvatar = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const file = req.file
-            if (!file) {
-                return res.status(Status.BAD_REQUEST).json(errorResponse(Status.BAD_REQUEST, 'No file uploaded'))
+            const userId = req.user?.id
+
+            if (!file || !(file as Express.Multer.File).buffer) {
+                return res.status(Status.BAD_REQUEST).json(errorResponse(Status.BAD_REQUEST, 'No file uploaded or invalid payload'))
+            }
+            if (!userId) {
+                return res.status(Status.UNAUTHORIZED).json(errorResponse(Status.UNAUTHORIZED, 'Unauthorized'))
             }
 
-            await UserRepository.updateAvatar(req.user?.id as string, file.path as string)
+            const publicId = `user_${userId}_avatar`
+
+            const uploadResult = await new Promise<any>((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    reject({ status: Status.GATEWAY_TIMEOUT, message: 'Avatar upload timed out. Please try again.' })
+                }, 30000)
+
+                const stream = cloudinary.uploader.upload_stream(
+                    {
+                        folder: 'avatars',
+                        public_id: publicId,
+                        resource_type: 'image',
+                        transformation: [{ width: 500, height: 500, crop: 'limit' }]
+                    },
+                    (error, result) => {
+                        clearTimeout(timeout)
+                        if (error) {
+                            return reject(error)
+                        }
+                        resolve(result)
+                    }
+                )
+
+                stream.end((file as Express.Multer.File).buffer)
+            })
+
+            const avatarUrl = uploadResult.secure_url || uploadResult.url
+            await UserRepository.updateAvatar(userId, avatarUrl)
 
             return res.json(successResponse(Status.OK, 'Avatar uploaded successfully', {
-                avatarUrl: file.path
+                avatarUrl: avatarUrl
             }))
-        } catch (err) {
-            next(err)
+        } catch (err: any) {
+            if (err.status) {
+                next(errorResponse(err.status, err.message))
+            } else {
+                next(err)
+            }
         }
     }
     getProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {

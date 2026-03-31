@@ -85,7 +85,7 @@ class BoardRepository {
     findMemberByBoardId = async (boardId: string) => {
         const board = await this.repo.findOne({
             where: { id: boardId },
-            relations: { boardMembers: { user: true, role: true } }
+            relations: ['boardMembers', 'boardMembers.user', 'boardMembers.role']
         })
 
         if (!board) throw new Error('Board not found')
@@ -228,7 +228,7 @@ class BoardRepository {
     async getAllBoardsForUser(userId: string) {
         return this.repo.find({
             where: [{ boardMembers: { user: { id: userId } }, isArchived: false }],
-            relations: ['workspace', 'boardMembers', 'boardMembers.user'],
+            relations: ['workspace', 'workspace.owner', 'boardMembers', 'boardMembers.user'],
             order: { createdAt: 'DESC' }
         })
     }
@@ -244,7 +244,7 @@ class BoardRepository {
                     workspace: { workspaceMembers: { user: { id: userId } } }
                 }
             ],
-            relations: ['', 'workspace.workspaceMembers', 'workspace.workspaceMembers.user'],
+            relations: ['workspace', 'workspace.workspaceMembers', 'workspace.workspaceMembers.user'],
             select: {
                 id: true,
                 title: true,

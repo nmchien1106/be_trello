@@ -4,7 +4,11 @@ import { EventType } from '../../enums/event-type.enum'
 import NotificationService from './notification.service'
 import UserRepository from '../users/user.repository'
 import CardRepository from '../card/card.repository'
+import BoardRepository from '../board/board.repository'
+import { WorkspaceRepository } from '../workspace/workspace.repository'
 import { EntityType } from '@/enums/notification.enum'
+
+const workspaceRepo = new WorkspaceRepository()
 
 export class NotificationSubscriber {
     async init() {
@@ -22,6 +26,13 @@ export class NotificationSubscriber {
                     break
                 case EventType.CARD_MOVED:
                     await this.handleCardMoved(event)
+                    break
+                case EventType.WORKSPACE_MEMBER_ADDED:
+                case EventType.WORKSPACE_MEMBER_JOINED:
+                    await this.handleWorkspaceMemberEvent(event)
+                    break
+                case EventType.BOARD_MEMBER_ADDED:
+                    await this.handleBoardMemberAdded(event)
                     break
             }
         } catch (error) {
@@ -82,8 +93,6 @@ export class NotificationSubscriber {
 
     private async handleCardMoved(event: DomainEvent) {
         const { cardId, actorId, boardId, payload } = event
-        // Chỉ thông báo nếu chuyển sang Board khác hoặc có thay đổi quan trọng
-        // Ví dụ: Thông báo cho các thành viên trong card
         if (!cardId) return
 
         const members = await CardRepository.getMembersOfCard(cardId)
@@ -106,5 +115,60 @@ export class NotificationSubscriber {
             )
 
         await Promise.all(notificationPromises)
+    }
+
+    private async handleWorkspaceMemberEvent(event: DomainEvent) {
+        const { workspaceId, actorId, payload } = event
+        const actor = await UserRepository.findById(actorId)
+        if (!actor || !workspaceId) return
+
+        const workspace = await workspaceRepo.findById(workspaceId)
+        if (!workspace) return
+
+        let targetUser: any = null
+        if (event.type === EventType.WORKSPACE_MEMBER_ADDED) {
+            targetUser = await UserRepository.findByEmailAsync(payload.memberEmail)
+        } else if (event.type === EventType.WORKSPACE_MEMBER_JOINED) {
+            targetUser = workspace.owner // Notify owner when someone joins
+        }
+
+        if (targetUser && targetUser.id !== actorId) {
+            await NotificationService.create({
+                user: targetUser,
+                actor: actor,
+                type: event.type,
+                message: event.type === EventType.WORKSPACE_MEMBER_ADDED 
+                    ? `${actor.username} đã thêm bạn vào không gian làm việc ${workspace.title}.`
+                    : `${actor.username} đã tham gia không gian làm việc ${workspace.title} của bạn.`,
+                entityType: EntityType.WORKSPACE,
+                entityId: workspaceId,
+                actionUrl: `/workspace/${workspaceId}`,
+                payload: {}
+            })
+        }
+    }
+
+    private async handleBoardMemberAdded(event: DomainEvent) {
+        const { boardId, actorId } = event
+        const actor = await UserRepository.findById(actorId)
+        if (!actor || !boardId) return
+
+        const board = await BoardRepository.getBoardById(boardId)
+        if (!board) return
+
+        // Notify board owner if a new member joined (not the owner themselves)
+        const owner = board.owner
+        if (owner && owner.id !== actorId) {
+            await NotificationService.create({
+                user: owner,
+                actor: actor,
+                type: event.type,
+                message: `${actor.username} đã tham gia bảng ${board.title} của bạn.`,
+                entityType: EntityType.BOARD,
+                entityId: boardId,
+                actionUrl: `/boards/${boardId}`,
+                payload: {}
+            })
+        }
     }
 }

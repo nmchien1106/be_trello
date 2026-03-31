@@ -16,11 +16,12 @@ export class WorkspaceRepository {
     }
 
     async findAllByUserId(userId: string): Promise<Workspace[]> {
-        const memberships = await this.workspaceMemberRepo.find({
-            where: { user: { id: userId }, status: 'accepted' },
-            relations: ['workspace']
+        return this.workspaceRepo.find({
+            where: [
+                { workspaceMembers: { user: { id: userId }, status: 'accepted' } },
+                { owner: { id: userId } }
+            ]
         })
-        return memberships.map((membership) => membership.workspace)
     }
 
     async findById(id: string): Promise<Workspace | null> {
