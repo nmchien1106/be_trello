@@ -9,8 +9,8 @@ import {
     MoveListSchema,
     DuplicateListSchema
 } from './list.schema'
-import { authorizeBoardPermission, authorizeListPermission } from '@/middleware/authorization'
-import { Permissions } from '@/enums/permissions.enum'
+import { checkBoardPermission, checkListPermission } from '@/middleware/authorization'
+import { PERMISSIONS } from '@/enums/permissions.enum'
 
 const router = Router()
 
@@ -18,40 +18,35 @@ const router = Router()
 router.post(
     '/',
     verifyAccessToken,
-    authorizeBoardPermission(Permissions.CREATE_LIST),
+    checkBoardPermission(PERMISSIONS.CREATE_LIST),
     validateHandle(CreateListSchema),
     listController.createList
 )
-router.get('/:listId', verifyAccessToken, authorizeListPermission(Permissions.READ_BOARD), listController.getListById)
+router.get('/:listId', verifyAccessToken, checkListPermission(PERMISSIONS.READ_LIST), listController.getListById)
 router.patch(
     '/:listId',
     verifyAccessToken,
-    authorizeListPermission(Permissions.UPDATE_LIST),
+    checkListPermission(PERMISSIONS.UPDATE_LIST),
     validateHandle(UpdateListSchema),
     listController.updateList
 )
 router.patch(
     '/:listId/archive',
     verifyAccessToken,
-    authorizeListPermission(Permissions.UPDATE_LIST),
+    checkListPermission(PERMISSIONS.UPDATE_LIST),
     listController.archiveList
 )
 router.patch(
     '/:listId/unarchive',
     verifyAccessToken,
-    authorizeListPermission(Permissions.UPDATE_LIST),
+    checkListPermission(PERMISSIONS.UPDATE_LIST),
     listController.unarchiveList
 )
-router.delete(
-    '/:listId',
-    verifyAccessToken,
-    authorizeListPermission(Permissions.DELETE_LIST),
-    listController.deleteList
-)
+router.delete('/:listId', verifyAccessToken, checkListPermission(PERMISSIONS.DELETE_LIST), listController.deleteList)
 router.get(
     '/:listId/cards',
     verifyAccessToken,
-    authorizeListPermission(Permissions.READ_BOARD),
+    checkListPermission(PERMISSIONS.READ_LIST),
     listController.getAllCardsInList
 )
 
@@ -59,7 +54,7 @@ router.get(
 router.post(
     '/:listId/reorder',
     verifyAccessToken,
-    authorizeListPermission(Permissions.UPDATE_BOARD),
+    checkListPermission(PERMISSIONS.UPDATE_LIST),
     validateHandle(ReorderListsSchema),
     listController.reorderLists
 )
@@ -68,7 +63,7 @@ router.post(
 router.post(
     '/:listId/move',
     verifyAccessToken,
-    authorizeListPermission(Permissions.UPDATE_BOARD),
+    checkListPermission(PERMISSIONS.UPDATE_LIST),
     validateHandle(MoveListSchema),
     listController.moveListToAnotherBoard
 )
@@ -77,7 +72,7 @@ router.post(
 router.post(
     '/:listId/duplicate',
     verifyAccessToken,
-    authorizeListPermission(Permissions.READ_BOARD),
+    checkListPermission(PERMISSIONS.CREATE_LIST),
     validateHandle(DuplicateListSchema),
     listController.duplicateList
 )

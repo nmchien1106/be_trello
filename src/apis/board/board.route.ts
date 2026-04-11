@@ -4,8 +4,7 @@ import { BoardUpload } from '@/middleware/upload'
 import { Router } from 'express'
 import { verifyAccessToken } from '@/utils/jwt'
 import { validateHandle } from '@/middleware/validate-handle'
-import { authorizeBoardPermission, authorizePermissionWorkspace } from '@/middleware/authorization'
-import { Permissions } from './../../enums/permissions.enum'
+import { checkBoardPermission, checkWorkspacePermission } from '@/middleware/authorization'
 import {
     CreateBoardSchema,
     inviteByEmailSchema,
@@ -15,6 +14,7 @@ import {
     UpdateBoardRequest,
     CreateTemplateSchema
 } from './board.schema'
+import { PERMISSIONS } from '@/enums/permissions.enum'
 
 const route = Router()
 
@@ -37,7 +37,7 @@ route.get('/join', verifyAccessToken, boardController.joinBoard)
 route.post(
     '/',
     verifyAccessToken,
-    authorizePermissionWorkspace(Permissions.UPDATE_WORKSPACE),
+    checkWorkspacePermission(PERMISSIONS.CREATE_BOARD),
     validateHandle(CreateBoardSchema),
     boardController.createBoard
 )
@@ -52,7 +52,7 @@ route.get('/archived', verifyAccessToken, boardController.getArchivedBoards)
 route.get(
     '/:boardId/lists',
     verifyAccessToken,
-    authorizeBoardPermission(Permissions.UPDATE_BOARD),
+    checkBoardPermission(PERMISSIONS.READ_BOARD),
     boardController.getAllListOnBoard
 )
 
@@ -60,7 +60,7 @@ route.get(
 route.get(
     '/:boardId/archived/lists',
     verifyAccessToken,
-    authorizeBoardPermission(Permissions.READ_BOARD),
+    checkBoardPermission(PERMISSIONS.READ_BOARD),
     boardController.getArchivedListsInBoard
 )
 
@@ -68,7 +68,7 @@ route.get(
 route.get(
     '/:boardId/archived/cards',
     verifyAccessToken,
-    authorizeBoardPermission(Permissions.READ_BOARD),
+    checkBoardPermission(PERMISSIONS.READ_BOARD),
     boardController.getArchivedCardsInBoard
 )
 
@@ -76,7 +76,7 @@ route.get(
 route.post(
     '/:boardId/invite/email',
     verifyAccessToken,
-    authorizeBoardPermission(Permissions.ADD_MEMBER_TO_BOARD),
+    checkBoardPermission(PERMISSIONS.ADD_MEMBER_TO_BOARD),
     validateHandle(inviteByEmailSchema),
     boardController.inviteByEmail.bind(boardController)
 )
@@ -85,7 +85,7 @@ route.post(
 route.post(
     '/:boardId/invite/link',
     verifyAccessToken,
-    authorizeBoardPermission(Permissions.ADD_MEMBER_TO_BOARD),
+    checkBoardPermission(PERMISSIONS.ADD_MEMBER_TO_BOARD),
     boardController.createShareLink
 )
 
@@ -93,7 +93,7 @@ route.post(
 route.delete(
     '/:boardId/share-link',
     verifyAccessToken,
-    authorizeBoardPermission(Permissions.REVOKE_LINK),
+    checkBoardPermission(PERMISSIONS.REVOKE_LINK),
     boardController.revokeShareLink
 )
 
@@ -101,23 +101,18 @@ route.delete(
 route.patch(
     '/:boardId/change-owner',
     verifyAccessToken,
-    authorizeBoardPermission(Permissions.UPDATE_BOARD_MEMBER_ROLE),
+    checkBoardPermission(PERMISSIONS.UPDATE_BOARD),
     boardController.changeOwner
 )
 
 // Get Board Detail
-route.get(
-    '/:boardId',
-    verifyAccessToken,
-    authorizeBoardPermission(Permissions.READ_BOARD),
-    boardController.getBoardById
-)
+route.get('/:boardId', verifyAccessToken, checkBoardPermission(PERMISSIONS.READ_BOARD), boardController.getBoardById)
 
 // Get Members
 route.get(
     '/:boardId/members',
     verifyAccessToken,
-    // authorizeBoardPermission(Permissions.READ_BOARD),
+    checkBoardPermission(PERMISSIONS.READ_BOARD_MEMBERS),
     boardController.getAllMembers
 )
 
@@ -125,7 +120,7 @@ route.get(
 route.patch(
     '/:boardId/members/:userId/role',
     verifyAccessToken,
-    authorizeBoardPermission(Permissions.UPDATE_BOARD_MEMBER_ROLE),
+    checkBoardPermission(PERMISSIONS.UPDATE_BOARD_MEMBER_ROLE),
     boardController.updateMemberRole
 )
 
@@ -133,7 +128,7 @@ route.patch(
 route.delete(
     '/:boardId/members/:userId',
     verifyAccessToken,
-    authorizeBoardPermission(Permissions.REMOVE_MEMBER_FROM_BOARD),
+    checkBoardPermission(PERMISSIONS.REMOVE_MEMBER_FROM_BOARD),
     boardController.removeMember
 )
 
@@ -141,7 +136,7 @@ route.delete(
 route.patch(
     '/:boardId',
     verifyAccessToken,
-    authorizeBoardPermission(Permissions.UPDATE_BOARD),
+    checkBoardPermission(PERMISSIONS.UPDATE_BOARD),
     validateHandle(UpdateBoardRequest),
     boardController.updateBoard
 )
@@ -150,7 +145,7 @@ route.patch(
 route.post(
     '/:boardId/archive',
     verifyAccessToken,
-    authorizeBoardPermission(Permissions.UPDATE_BOARD),
+    checkBoardPermission(PERMISSIONS.UPDATE_BOARD),
     boardController.archiveBoard
 )
 
@@ -158,7 +153,7 @@ route.post(
 route.post(
     '/:boardId/reopen',
     verifyAccessToken,
-    authorizeBoardPermission(Permissions.UPDATE_BOARD),
+    checkBoardPermission(PERMISSIONS.UPDATE_BOARD),
     boardController.reopenBoard
 )
 
@@ -166,7 +161,7 @@ route.post(
 route.post(
     '/:boardId/background',
     verifyAccessToken,
-    authorizeBoardPermission(Permissions.UPDATE_BOARD),
+    checkBoardPermission(PERMISSIONS.UPDATE_BOARD),
     BoardUpload.single('background'),
     boardController.uploadBoardBackground
 )
@@ -175,7 +170,7 @@ route.post(
 route.delete(
     '/:boardId',
     verifyAccessToken,
-    authorizeBoardPermission(Permissions.DELETE_BOARD),
+    checkBoardPermission(PERMISSIONS.DELETE_BOARD),
     boardController.deleteBoardPerrmanently
 )
 
@@ -183,7 +178,7 @@ route.delete(
 route.post(
     '/:boardId/leave',
     verifyAccessToken,
-    authorizeBoardPermission(Permissions.READ_BOARD),
+    checkBoardPermission(PERMISSIONS.READ_BOARD),
     boardController.leaveBoard
 )
 
@@ -191,7 +186,7 @@ route.post(
 route.post(
     '/template/:templateId',
     verifyAccessToken,
-    authorizePermissionWorkspace(Permissions.UPDATE_WORKSPACE),
+    checkWorkspacePermission(PERMISSIONS.CREATE_BOARD),
     boardController.createBoardFromTemplate
 )
 
@@ -199,6 +194,7 @@ route.post(
 route.post(
     '/:boardId/template',
     verifyAccessToken,
+    checkBoardPermission(PERMISSIONS.UPDATE_BOARD),
     boardController.createBoardTemplate
 )
 
@@ -206,6 +202,7 @@ route.post(
 route.post(
     '/:boardId/star',
     verifyAccessToken,
+    checkBoardPermission(PERMISSIONS.READ_BOARD),
     boardController.toggleStarBoard
 )
 

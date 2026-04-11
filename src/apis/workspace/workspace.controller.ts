@@ -18,7 +18,7 @@ import { DomainEvent } from '@/events/interface'
 const repo = new WorkspaceRepository()
 
 class WorkspaceController {
-    getAllUserWorkspaces = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    getWorkspaces = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const user = req.user
             if (!user) {
@@ -26,8 +26,7 @@ class WorkspaceController {
             }
 
             const data = await repo.findAllByUserId(user.id)
-            const workspaces = data.filter((ws) => !ws.isArchived)
-            return res.status(Status.OK).json(successResponse(Status.OK, 'Get all user workspaces', workspaces))
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Get all user workspaces', data))
         } catch (err) {
             next(err)
         }
@@ -39,9 +38,8 @@ class WorkspaceController {
             if (!user) {
                 return next(errorResponse(Status.UNAUTHORIZED, 'Authentication required'))
             }
-            const workspaces = await repo.findAllByUserId(user.id)
-            const archivedWorkspaces = workspaces.filter((ws) => ws.isArchived)
-            return res.status(Status.OK).json(successResponse(Status.OK, 'Get archived workspaces', archivedWorkspaces))
+            const workspaces = await repo.findArchivedByUserId(user.id)
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Get archived workspaces', workspaces))
         } catch (err) {
             next(err)
         }
@@ -83,17 +81,6 @@ class WorkspaceController {
             }
             const createdWorkspace = await repo.createWorkspace(req.body, user.id)
             await repo.addMemberToWorkspace(user.id, createdWorkspace.id, Roles.WORKSPACE_ADMIN, 'accepted')
-            const event: DomainEvent = {
-                eventId: crypto.randomUUID(),
-                type: EventType.WORKSPACE_CREATED,
-                workspaceId: createdWorkspace.id,
-                actorId: user.id,
-                payload: {
-                    title: createdWorkspace.title
-                }
-            }
-
-            EventBus.publish(event)
             return res
                 .status(Status.CREATED)
                 .json(successResponse(Status.CREATED, 'Created workspace', createdWorkspace))
@@ -105,18 +92,6 @@ class WorkspaceController {
     updateWorkspace = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const data = await repo.updateWorkspace(req.params.workspaceId, req.body)
-            const event: DomainEvent = {
-                eventId: crypto.randomUUID(),
-                type: EventType.WORKSPACE_UPDATED,
-                workspaceId: req.params.workspaceId,
-                actorId: req.user.id,
-                payload: {
-                    updates: req.body
-                }
-            }
-
-            EventBus.publish(event)
-
             return res.status(Status.OK).json(successResponse(Status.OK, 'Updated workspace', data))
         } catch (err) {
             next(err)
@@ -130,14 +105,6 @@ class WorkspaceController {
                 return next(errorResponse(Status.UNAUTHORIZED, 'Authentication required'))
             }
             await repo.deleteWorkspace(req.params.workspaceId)
-            const event: DomainEvent = {
-                eventId: crypto.randomUUID(),
-                type: EventType.WORKSPACE_DELETE,
-                workspaceId: req.params.workspaceId,
-                actorId: user.id
-            }
-
-            EventBus.publish(event)
             return res.status(Status.OK).json(successResponse(Status.OK, 'Deleted workspace'))
         } catch (err) {
             next(err)
@@ -275,42 +242,6 @@ class WorkspaceController {
             const { memberId, workspaceId, roleId } = req.body
             await repo.changeMemberRole(memberId, workspaceId, roleId)
             return res.status(Status.OK).json(successResponse(Status.OK, 'Changed member role'))
-        } catch (err) {
-            next(err)
-        }
-    }
-
-    getAllInvitations = async (req: AuthRequest, res: Response, next: NextFunction) => {
-        try {
-            const user = req.user
-            if (!user) {
-                return next(errorResponse(Status.UNAUTHORIZED, 'Authentication required'))
-            }
-            const invitations = await repo.findAllInvitationsForUser(user.id)
-            return res.status(Status.OK).json(successResponse(Status.OK, 'Get all invitations for user', invitations))
-        } catch (err) {
-            next(err)
-        }
-    }
-
-    respondToInvitation = async (req: AuthRequest, res: Response, next: NextFunction) => {
-        try {
-            const user = req.user
-            if (!user) {
-                return next(errorResponse(Status.UNAUTHORIZED, 'Authentication required'))
-            }
-            const { status } = req.body
-            const workspaceId = req.params.workspaceId
-            const invitations = await repo.findAllInvitationsForUser(user.id)
-            const invitation = invitations.find((inv) => {
-                return inv.workspace.id === workspaceId
-            })
-            if (!invitation) {
-                return res.status(Status.NOT_FOUND).json(errorResponse(Status.NOT_FOUND, 'Invitation not found'))
-            }
-            invitation.status = status
-            await repo.updateInvitationStatus(invitation)
-            return res.status(Status.OK).json(successResponse(Status.OK, 'Responded to invitation'))
         } catch (err) {
             next(err)
         }

@@ -18,8 +18,17 @@ export class WorkspaceRepository {
     async findAllByUserId(userId: string): Promise<Workspace[]> {
         return this.workspaceRepo.find({
             where: [
-                { workspaceMembers: { user: { id: userId }, status: 'accepted' } },
-                { owner: { id: userId } }
+                { workspaceMembers: { user: { id: userId }, status: 'accepted' }, isArchived: false },
+                { owner: { id: userId }, isArchived: false }
+            ]
+        })
+    }
+
+    async findArchivedByUserId(userId: string): Promise<Workspace[]> {
+        return this.workspaceRepo.find({
+            where: [
+                { workspaceMembers: { user: { id: userId }, status: 'accepted' }, isArchived: true },
+                { owner: { id: userId }, isArchived: true }
             ]
         })
     }

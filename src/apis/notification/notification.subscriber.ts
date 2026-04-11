@@ -21,8 +21,17 @@ export class NotificationSubscriber {
                 case EventType.COMMENT_CREATED:
                     await this.handleCommentCreated(event)
                     break
+                case EventType.COMMENT_UPDATED:
+                    await this.handleCommentUpdated(event)
+                    break
+                case EventType.COMMENT_DELETED:
+                    await this.handleCommentDeleted(event)
+                    break
                 case EventType.CARD_MEMBER_ASSIGNED:
                     await this.handleCardMemberAssigned(event)
+                    break
+                case EventType.CARD_MEMBER_REMOVED:
+                    await this.handleCardMemberRemoved(event)
                     break
                 case EventType.CARD_MOVED:
                     await this.handleCardMoved(event)
@@ -30,6 +39,9 @@ export class NotificationSubscriber {
                 case EventType.WORKSPACE_MEMBER_ADDED:
                 case EventType.WORKSPACE_MEMBER_JOINED:
                     await this.handleWorkspaceMemberEvent(event)
+                    break
+                case EventType.WORKSPACE_MEMBER_REMOVED:
+                    await this.handleWorkspaceMemberRemoved(event)
                     break
                 case EventType.BOARD_MEMBER_ADDED:
                     await this.handleBoardMemberAdded(event)
@@ -68,7 +80,7 @@ export class NotificationSubscriber {
 
     private async handleCardMemberAssigned(event: DomainEvent) {
         const { cardId, actorId, boardId, payload } = event
-        const targetUserId = payload.userId
+        const targetUserId = payload?.memberId || payload?.userId
 
         if (!targetUserId || targetUserId === actorId) return
 
@@ -86,6 +98,31 @@ export class NotificationSubscriber {
                 entityType: EntityType.CARD,
                 entityId: cardId!,
                 actionUrl: `/boards/${boardId}/cards/${cardId}`,
+                payload: {}
+            })
+        }
+    }
+
+    private async handleCardMemberRemoved(event: DomainEvent) {
+        const { cardId, actorId, boardId, payload } = event
+        const targetUserId = payload?.memberId || payload?.userId
+
+        if (!targetUserId || targetUserId === actorId) return
+
+        const [actor, targetUser] = await Promise.all([
+            UserRepository.findById(actorId),
+            UserRepository.findById(targetUserId)
+        ])
+
+        if (actor && targetUser) {
+            await NotificationService.create({
+                user: targetUser,
+                actor: actor,
+                type: event.type,
+                message: `${actor.username} đã xóa bạn khỏi một thẻ.`,
+                entityType: EntityType.CARD,
+                entityId: cardId!,
+                actionUrl: boardId && cardId ? `/boards/${boardId}/cards/${cardId}` : undefined,
                 payload: {}
             })
         }
@@ -137,15 +174,99 @@ export class NotificationSubscriber {
                 user: targetUser,
                 actor: actor,
                 type: event.type,
-                message: event.type === EventType.WORKSPACE_MEMBER_ADDED 
-                    ? `${actor.username} đã thêm bạn vào không gian làm việc ${workspace.title}.`
-                    : `${actor.username} đã tham gia không gian làm việc ${workspace.title} của bạn.`,
+                message:
+                    event.type === EventType.WORKSPACE_MEMBER_ADDED
+                        ? `${actor.username} đã thêm bạn vào không gian làm việc ${workspace.title}.`
+                        : `${actor.username} đã tham gia không gian làm việc ${workspace.title} của bạn.`,
                 entityType: EntityType.WORKSPACE,
                 entityId: workspaceId,
                 actionUrl: `/workspace/${workspaceId}`,
                 payload: {}
             })
         }
+    }
+
+    private async handleWorkspaceMemberRemoved(event: DomainEvent) {
+        const { workspaceId, actorId, payload } = event
+        const targetUserId = payload?.memberId
+        if (!workspaceId || !targetUserId || targetUserId === actorId) return
+
+        const [actor, targetUser] = await Promise.all([
+            UserRepository.findById(actorId),
+            UserRepository.findById(targetUserId)
+        ])
+
+        if (!actor || !targetUser) return
+
+        const workspace = await workspaceRepo.findById(workspaceId)
+        if (!workspace) return
+
+        await NotificationService.create({
+            user: targetUser,
+            actor: actor,
+            type: event.type,
+            message: `${actor.username} đã xóa bạn khỏi không gian làm việc ${workspace.title}.`,
+            entityType: EntityType.WORKSPACE,
+            entityId: workspaceId,
+            actionUrl: `/workspace/${workspaceId}`,
+            payload: {}
+        })
+    }
+
+    private async handleCommentUpdated(event: DomainEvent) {
+        const { cardId, actorId, boardId, payload } = event
+        if (!cardId) return
+
+        const actionUrl = boardId ? `/boards/${boardId}/cards/${cardId}` : `/cards/${cardId}`
+
+        const members = await CardRepository.getMembersOfCard(cardId)
+        const actor = await UserRepository.findById(actorId)
+        if (!actor) return
+
+        const notificationPromises = members
+            .filter((m) => m.user.id !== actorId)
+            .map((m) =>
+                NotificationService.create({
+                    user: m.user,
+                    actor: actor,
+                    type: event.type,
+                    message: `${actor.username} đã chỉnh sửa bình luận trong thẻ mà bạn tham gia.`,
+                    entityType: EntityType.COMMENT,
+                    entityId: payload.commentId,
+                    actionUrl,
+                    payload: { context: payload.content }
+                })
+            )
+
+        await Promise.all(notificationPromises)
+    }
+
+    private async handleCommentDeleted(event: DomainEvent) {
+        const { cardId, actorId, boardId, payload } = event
+        if (!cardId) return
+
+        const actionUrl = boardId ? `/boards/${boardId}/cards/${cardId}` : `/cards/${cardId}`
+
+        const members = await CardRepository.getMembersOfCard(cardId)
+        const actor = await UserRepository.findById(actorId)
+        if (!actor) return
+
+        const notificationPromises = members
+            .filter((m) => m.user.id !== actorId)
+            .map((m) =>
+                NotificationService.create({
+                    user: m.user,
+                    actor: actor,
+                    type: event.type,
+                    message: `${actor.username} đã xóa một bình luận trong thẻ mà bạn tham gia.`,
+                    entityType: EntityType.COMMENT,
+                    entityId: payload.commentId,
+                    actionUrl,
+                    payload: {}
+                })
+            )
+
+        await Promise.all(notificationPromises)
     }
 
     private async handleBoardMemberAdded(event: DomainEvent) {

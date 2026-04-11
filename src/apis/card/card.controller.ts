@@ -9,8 +9,15 @@ import { UserDTOForRelation } from '../users/user.dto'
 import notificationService from '../notification/notification.service'
 import { User } from '@/entities/user.entity'
 import { EntityType, NotificationType } from '@/enums/notification.enum'
+import { EventBus } from '@/events/event-bus'
+import { EventType } from '@/enums/event-type.enum'
+import crypto from 'crypto'
 
 class CardController {
+    private getCardId(req: AuthRequest): string | undefined {
+        return req.params.cardId || req.params.id
+    }
+
     createCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
@@ -23,7 +30,8 @@ class CardController {
 
     getCardById = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
-            const cardId = req.params.id
+            const cardId = this.getCardId(req)
+            if (!cardId) return next(errorResponse(Status.BAD_REQUEST, 'Card ID is required'))
             const result = await cardRepository.getCardById(cardId)
             return res.status(Status.OK).json(successResponse(Status.OK, 'Card retrieved successfully', result))
         } catch (err) {
@@ -34,7 +42,9 @@ class CardController {
     updateCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
-            const result = await cardService.updateCard(req.params.id, req.body, req.user.id)
+            const cardId = this.getCardId(req)
+            if (!cardId) return next(errorResponse(Status.BAD_REQUEST, 'Card ID is required'))
+            const result = await cardService.updateCard(cardId, req.body, req.user.id)
             return res.status(Status.OK).json(successResponse(Status.OK, 'Card updated successfully', result))
         } catch (err: any) {
             next(errorResponse(err.status || 500, err.message))
@@ -44,7 +54,9 @@ class CardController {
     deleteCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
-            await cardService.deleteCard(req.params.id, req.user.id)
+            const cardId = this.getCardId(req)
+            if (!cardId) return next(errorResponse(Status.BAD_REQUEST, 'Card ID is required'))
+            await cardService.deleteCard(cardId, req.user.id)
             return res.status(Status.OK).json(successResponse(Status.OK, 'Card deleted successfully'))
         } catch (err: any) {
             next(errorResponse(err.status || 500, err.message))
@@ -53,7 +65,8 @@ class CardController {
 
     addMemberToCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
-            const cardId = req.params.id
+            const cardId = this.getCardId(req)
+            if (!cardId) return next(errorResponse(Status.BAD_REQUEST, 'Card ID is required'))
 
             let memberId = req.body.memberId
             if (!memberId || memberId === '') {
@@ -90,6 +103,15 @@ class CardController {
 
             const newMember = await cardRepository.addMemberToCard(cardId, memberId)
 
+            EventBus.publish({
+                eventId: crypto.randomUUID(),
+                type: EventType.CARD_MEMBER_ASSIGNED,
+                boardId,
+                cardId,
+                actorId: req.user!.id,
+                payload: { memberId }
+            })
+
             // await notificationService.create({
             //     user: { id: memberId } as User,
             //     message: 'You have been added to a card',
@@ -110,7 +132,8 @@ class CardController {
 
     getMembersOfCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
-            const cardId = req.params.id
+            const cardId = this.getCardId(req)
+            if (!cardId) return next(errorResponse(Status.BAD_REQUEST, 'Card ID is required'))
             const members = await cardRepository.getMembersOfCard(cardId)
             const result = members.map((m) => {
                 return {
@@ -129,8 +152,13 @@ class CardController {
 
     removeMemberOfCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
-            const cardId = req.params.id
+            const cardId = this.getCardId(req)
+            if (!cardId) return next(errorResponse(Status.BAD_REQUEST, 'Card ID is required'))
             const memberId = req.body?.memberId
+
+            if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+            if (!memberId) return next(errorResponse(Status.BAD_REQUEST, 'memberId is required'))
+
             const existingMember = await cardRepository.findMemberById(cardId, memberId)
             if (!existingMember) {
                 return res
@@ -138,8 +166,20 @@ class CardController {
                     .json(errorResponse(Status.NOT_FOUND, 'User is not member of the card'))
             }
             await cardRepository.removeMemberFromCard(cardId, memberId)
+
+            const boardId = await cardRepository.getBoardIdFromCard(cardId)
+            EventBus.publish({
+                eventId: crypto.randomUUID(),
+                type: EventType.CARD_MEMBER_REMOVED,
+                boardId,
+                cardId,
+                actorId: req.user.id,
+                payload: { memberId }
+            })
+
             return res.status(Status.OK).json(successResponse(Status.OK, 'Member removed from card successfully'))
         } catch (err: any) {
+            console.log(err)
             next(err)
         }
     }
@@ -147,7 +187,9 @@ class CardController {
     archiveCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
-            const result = await cardService.toggleArchiveCard(req.user.id, req.params.id, true)
+            const cardId = this.getCardId(req)
+            if (!cardId) return next(errorResponse(Status.BAD_REQUEST, 'Card ID is required'))
+            const result = await cardService.toggleArchiveCard(req.user.id, cardId, true)
             return res.status(result.status).json(successResponse(result.status, result.message, result.data))
         } catch (err: any) {
             next(errorResponse(err.status || 500, err.message))
@@ -157,7 +199,9 @@ class CardController {
     unarchiveCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
-            const result = await cardService.toggleArchiveCard(req.user.id, req.params.id, false)
+            const cardId = this.getCardId(req)
+            if (!cardId) return next(errorResponse(Status.BAD_REQUEST, 'Card ID is required'))
+            const result = await cardService.toggleArchiveCard(req.user.id, cardId, false)
             return res.status(result.status).json(successResponse(result.status, result.message, result.data))
         } catch (err: any) {
             next(errorResponse(err.status || 500, err.message))
@@ -167,7 +211,9 @@ class CardController {
     duplicateCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
-            const result = await cardService.duplicateCard(req.user.id, req.params.id, req.body)
+            const cardId = this.getCardId(req)
+            if (!cardId) return next(errorResponse(Status.BAD_REQUEST, 'Card ID is required'))
+            const result = await cardService.duplicateCard(req.user.id, cardId, req.body)
             return res.status(result.status).json(successResponse(result.status, result.message, result.data))
         } catch (err: any) {
             next(errorResponse(err.status || 500, err.message))
@@ -177,7 +223,9 @@ class CardController {
     reorderCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
-            const result = await cardService.reorderCard(req.user.id, req.params.id, req.body)
+            const cardId = this.getCardId(req)
+            if (!cardId) return next(errorResponse(Status.BAD_REQUEST, 'Card ID is required'))
+            const result = await cardService.reorderCard(req.user.id, cardId, req.body)
             return res.status(result.status).json(successResponse(result.status, result.message, result.data))
         } catch (err: any) {
             next(errorResponse(err.status || 500, err.message))
@@ -187,7 +235,9 @@ class CardController {
     reorderCardList = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
-            const result = await cardService.moveCardToAnotherList(req.user.id, req.params.id, req.body)
+            const cardId = this.getCardId(req)
+            if (!cardId) return next(errorResponse(Status.BAD_REQUEST, 'Card ID is required'))
+            const result = await cardService.moveCardToAnotherList(req.user.id, cardId, req.body)
             return res.status(result.status).json(successResponse(result.status, result.message, result.data))
         } catch (err: any) {
             next(errorResponse(err.status || 500, err.message))
@@ -198,7 +248,9 @@ class CardController {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
             const { targetBoardId, targetListId, beforeId, afterId } = req.body
-            const result = await cardService.moveCardToBoard(req.user.id, req.params.id, {
+            const cardId = this.getCardId(req)
+            if (!cardId) return next(errorResponse(Status.BAD_REQUEST, 'Card ID is required'))
+            const result = await cardService.moveCardToBoard(req.user.id, cardId, {
                 targetBoardId,
                 targetListId,
                 beforeId,
@@ -347,21 +399,13 @@ class CardController {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
 
-            const result = await cardService.getUnassignedMembers(req.params.id)
+            const cardId = this.getCardId(req)
+            if (!cardId) return next(errorResponse(Status.BAD_REQUEST, 'Card ID is required'))
+            const result = await cardService.getUnassignedMembers(cardId)
 
             return res.status(Status.OK).json(successResponse(Status.OK, 'Get unassigned members successfully', result))
         } catch (err: any) {
             next(errorResponse(err.status || Status.INTERNAL_SERVER_ERROR, err.message))
-        }
-    }
-
-    getCardsInBoard = async (req: AuthRequest, res: Response, next: NextFunction) => {
-        try {
-            if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
-            const result = await cardService.getCardsInBoard(req.user.id, req.params.boardId)
-            return res.status(Status.OK).json(successResponse(Status.OK, 'Get cards in board successfully', result))
-        } catch (err: any) {
-            next(errorResponse(err.status || 500, err.message))
         }
     }
 

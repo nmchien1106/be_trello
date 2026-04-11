@@ -12,143 +12,141 @@ import {
     UpdateCardSchema,
     GetAssignedCardsSchema
 } from './card.schema'
-import { Permissions } from './../../enums/permissions.enum'
+import { PERMISSIONS } from '@/enums/permissions.enum'
 import {
-    authorizeCardPermission,
-    authorizeAttachmentPermission,
-    authorizeListPermission
+    checkAttachmentPermission,
+    checkBoardPermission,
+    checkCardPermission,
+    checkListPermission
 } from '@/middleware/authorization'
-import multer from 'multer'
-import { AttachmentUpload, CardBackgroundUpload } from '@/middleware/upload'
+import { CardBackgroundUpload } from '@/middleware/upload'
 
 const route = Router()
 route.get('/due-soon', verifyAccessToken, cardController.getCardsDueSoon) // SCRUM-164
 route.get('/assigned', verifyAccessToken, validateHandle(GetAssignedCardsSchema), cardController.getAssignedCards) // SCRUM-163
 route.get('/search', verifyAccessToken, cardController.globalSearch) // SCRUM-165
-route.get('/board/:boardId', verifyAccessToken, cardController.getCardsInBoard) // SCRUM-162
+route.get(
+    '/board/:boardId',
+    verifyAccessToken,
+    checkBoardPermission(PERMISSIONS.READ_BOARD),
+    cardController.getCardsInBoard
+) // SCRUM-162
 
 // Create a new card
 route.post(
     '/',
     verifyAccessToken,
-    authorizeListPermission(Permissions.CREATE_CARD),
+    checkListPermission(PERMISSIONS.CREATE_CARD),
     validateHandle(CreateCardSchema),
     cardController.createCard
 )
 
 // Get card by id
-route.get('/:id', verifyAccessToken, authorizeCardPermission(Permissions.READ_CARD), cardController.getCardById)
+route.get('/:cardId', verifyAccessToken, checkCardPermission(PERMISSIONS.READ_CARD), cardController.getCardById)
 
 // Update a card
 route.patch(
-    '/:id',
+    '/:cardId',
     verifyAccessToken,
-    authorizeCardPermission(Permissions.UPDATE_CARD),
+    checkCardPermission(PERMISSIONS.UPDATE_CARD),
     validateHandle(UpdateCardSchema),
     cardController.updateCard
 )
 
 // Delete a card
-route.delete('/:id', verifyAccessToken, authorizeCardPermission(Permissions.DELETE_CARD), cardController.deleteCard)
+route.delete('/:cardId', verifyAccessToken, checkCardPermission(PERMISSIONS.DELETE_CARD), cardController.deleteCard)
 
 // Add member to card
 route.post(
-    '/:id/members',
+    '/:cardId/members',
     verifyAccessToken,
-    authorizeCardPermission(Permissions.ADD_MEMBER_TO_CARD),
+    checkCardPermission(PERMISSIONS.ADD_MEMBER_TO_CARD),
     validateHandle(AddMemberToCard),
     cardController.addMemberToCard
 )
 
 // Get members of a card
 route.get(
-    '/:id/members',
+    '/:cardId/members',
     verifyAccessToken,
-    // authorizeCardPermission(Permissions.READ_CARD),
+    checkCardPermission(PERMISSIONS.READ_CARD),
     cardController.getMembersOfCard
 )
 
 // Remove member from card
 route.delete(
-    '/:id/members',
+    '/:cardId/members',
     verifyAccessToken,
-    // authorizeCardPermission(Permissions.REMOVE_MEMBER_FROM_CARD),
+    checkCardPermission(PERMISSIONS.REMOVE_MEMBER_FROM_CARD),
     cardController.removeMemberOfCard
 )
 
 route.post(
-    '/:id/reorder',
+    '/:cardId/reorder',
     verifyAccessToken,
-    // authorizeCardPermission(Permissions.UPDATE_BOARD),
+    checkCardPermission(PERMISSIONS.UPDATE_CARD),
     validateHandle(ReorderCardSchema),
     cardController.reorderCard
 )
 
 route.post(
-    '/:id/reorder-list',
+    '/:cardId/reorder-list',
     verifyAccessToken,
-    // authorizeCardPermission(Permissions.UPDATE_CARD),
+    checkCardPermission(PERMISSIONS.UPDATE_CARD),
     validateHandle(ReorderCardSchema),
     cardController.reorderCardList
 )
 
 route.post(
-    '/:id/move',
+    '/:cardId/move',
     verifyAccessToken,
-    // authorizeCardPermission(Permissions.UPDATE_CARD),
+    checkCardPermission(PERMISSIONS.UPDATE_CARD),
     validateHandle(MoveCardToBoardSchema),
     cardController.moveCardToBoard
 )
 
 route.post(
-    '/:id/duplicate',
+    '/:cardId/duplicate',
     verifyAccessToken,
-    // authorizeCardPermission(Permissions.READ_BOARD),
+    checkCardPermission(PERMISSIONS.UPDATE_CARD),
     validateHandle(DuplicateCardSchema),
     cardController.duplicateCard
 )
 
 route.patch(
-    '/:id/archive',
+    '/:cardId/archive',
     verifyAccessToken,
-    // authorizeCardPermission(Permissions.UPDATE_CARD),
+    checkCardPermission(PERMISSIONS.UPDATE_CARD),
     cardController.archiveCard
 )
 route.patch(
-    '/:id/unarchive',
+    '/:cardId/unarchive',
     verifyAccessToken,
-    // authorizeCardPermission(Permissions.UPDATE_CARD),
+    checkCardPermission(PERMISSIONS.UPDATE_CARD),
     cardController.unarchiveCard
 )
 
 route.post(
-    '/:id/presigned-url',
+    '/:cardId/presigned-url',
     verifyAccessToken,
-    // authorizeCardPermission(Permissions.UPDATE_CARD),
-    cardController.getPresignedUrl
-)
-
-route.post(
-    '/:id/presigned-url',
-    verifyAccessToken,
-    // authorizeCardPermission(Permissions.UPDATE_CARD),
+    checkCardPermission(PERMISSIONS.UPDATE_CARD),
     cardController.getPresignedUrl
 )
 
 //Create attachment on card
 route.post(
-    '/:id/attachments',
+    '/:cardId/attachments',
     verifyAccessToken,
-    // authorizeCardPermission(Permissions.UPDATE_CARD),
+    checkCardPermission(PERMISSIONS.UPDATE_CARD),
     validateHandle(CreateAttachmentSchema),
     cardController.createAttachment
 )
 
 //Get attachments on card
 route.get(
-    '/:id/attachments',
+    '/:cardId/attachments',
     verifyAccessToken,
-    // authorizeCardPermission(Permissions.READ_CARD),
+    checkCardPermission(PERMISSIONS.READ_CARD),
     cardController.getAttachmentsByCard
 )
 
@@ -156,14 +154,14 @@ route.get(
 route.delete(
     '/attachments/:id',
     verifyAccessToken,
-    // authorizeAttachmentPermission(Permissions.UPDATE_CARD),
+    checkAttachmentPermission(PERMISSIONS.UPDATE_CARD),
     cardController.deleteAttachment
 )
 
 route.post(
     '/:cardId/background',
     verifyAccessToken,
-    // authorizeCardPermission(Permissions.UPDATE_CARD),
+    checkCardPermission(PERMISSIONS.UPDATE_CARD),
     CardBackgroundUpload.single('file'),
     cardController.uploadCardBackground
 )
@@ -172,7 +170,7 @@ route.post(
 route.get(
     '/:cardId/unassigned-members',
     verifyAccessToken,
-    // authorizeCardPermission(Permissions.READ_CARD),
+    checkCardPermission(PERMISSIONS.READ_CARD),
     cardController.getUnassignedMembers
 )
 

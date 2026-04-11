@@ -20,7 +20,7 @@ import userRepository from '../users/user.repository'
 import { BoardService } from './board.service'
 import { CreateBoardDto } from './board.dto'
 import { WorkspaceMembers } from '@/entities/workspace-member.entity'
-import { Permissions } from '@/enums/permissions.enum'
+import { PERMISSIONS } from '@/enums/permissions.enum'
 import { EventBus } from '@/events/event-bus'
 import { DomainEvent } from '@/events/interface'
 import { EventType } from '@/enums/event-type.enum'
@@ -49,87 +49,97 @@ class BoardController {
                     title: 'Business Plan',
                     description: 'Structure your business plan from vision to execution.',
                     category: 'Business',
-                    backgroundPath: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=2071&auto=format&fit=crop',
+                    backgroundPath:
+                        'https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=2071&auto=format&fit=crop',
                     lists: [
                         { title: 'Vision & Mission', cards: ['Company Overview', 'Core Values', 'Long-term Goals'] },
-                        { title: 'Market Research', cards: ['Competitor Analysis', 'Target Audience', 'SWOT Analysis'] },
+                        {
+                            title: 'Market Research',
+                            cards: ['Competitor Analysis', 'Target Audience', 'SWOT Analysis']
+                        },
                         { title: 'Action Plan', cards: ['Q1 Goals', 'Q2 Goals', 'Budget Planning'] },
-                        { title: 'Completed', cards: ['Business Registration'] },
-                    ],
+                        { title: 'Completed', cards: ['Business Registration'] }
+                    ]
                 },
                 {
                     title: 'Agile Sprint Board',
                     description: 'A classic agile workflow for software development teams.',
                     category: 'Engineering',
-                    backgroundPath: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?q=80&w=2069&auto=format&fit=crop',
+                    backgroundPath:
+                        'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?q=80&w=2069&auto=format&fit=crop',
                     lists: [
                         { title: 'Backlog', cards: ['Bug: Login fix', 'Feature: User roles', 'Refactor: API'] },
                         { title: 'Sprint', cards: ['UI: Dashboard redesign'] },
                         { title: 'In Progress', cards: ['Auth: JWT implementation'] },
                         { title: 'Review', cards: [] },
-                        { title: 'Done', cards: ['Database schema setup'] },
-                    ],
+                        { title: 'Done', cards: ['Database schema setup'] }
+                    ]
                 },
                 {
                     title: 'Project Roadmap',
                     description: 'Manage any project from start to finish.',
                     category: 'Project Management',
-                    backgroundPath: 'https://images.unsplash.com/photo-1454165833767-02a6e901f014?q=80&w=2070&auto=format&fit=crop',
+                    backgroundPath:
+                        'https://images.unsplash.com/photo-1454165833767-02a6e901f014?q=80&w=2070&auto=format&fit=crop',
                     lists: [
                         { title: 'Resources', cards: ['Project Brief', 'Meeting Notes', 'Brand Guidelines'] },
                         { title: 'To Do', cards: ['Design system setup', 'API integration', 'QA Testing'] },
                         { title: 'In Progress', cards: ['Frontend development'] },
-                        { title: 'Done', cards: ['Requirements gathering'] },
-                    ],
+                        { title: 'Done', cards: ['Requirements gathering'] }
+                    ]
                 },
                 {
                     title: 'Design System',
                     description: 'Organize your design components, patterns, and assets.',
                     category: 'Design',
-                    backgroundPath: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?q=80&w=2000&auto=format&fit=crop',
+                    backgroundPath:
+                        'https://images.unsplash.com/photo-1561070791-2526d30994b5?q=80&w=2000&auto=format&fit=crop',
                     lists: [
                         { title: 'Typography', cards: ['Headings', 'Body Text', 'Links'] },
                         { title: 'Components', cards: ['Buttons', 'Inputs', 'Modals'] },
                         { title: 'Colors', cards: ['Primary Palette', 'Secondary Palette', 'Semantic Colors'] },
-                        { title: 'Guidelines', cards: ['Accessibility', 'Spacing', 'Iconography'] },
-                    ],
+                        { title: 'Guidelines', cards: ['Accessibility', 'Spacing', 'Iconography'] }
+                    ]
                 },
                 {
                     title: 'Content Marketing Calendar',
                     description: 'Plan, track, and execute your content marketing strategy.',
                     category: 'Marketing',
-                    backgroundPath: 'https://images.unsplash.com/photo-1432821596592-e2c18b78144f?q=80&w=2000&auto=format&fit=crop',
+                    backgroundPath:
+                        'https://images.unsplash.com/photo-1432821596592-e2c18b78144f?q=80&w=2000&auto=format&fit=crop',
                     lists: [
                         { title: 'Ideas', cards: ['Q3 Industry Trends', 'Interview Series', 'New Feature Launch'] },
                         { title: 'Drafting', cards: ['Case Study: Customer X'] },
                         { title: 'Review', cards: ['Monthly Newsletter'] },
-                        { title: 'Published', cards: ['Getting Started Guide', 'Q2 Analytics Report'] },
-                    ],
+                        { title: 'Published', cards: ['Getting Started Guide', 'Q2 Analytics Report'] }
+                    ]
                 },
                 {
                     title: 'Personal Tracker',
                     description: 'Keep your personal tasks and goals organized.',
                     category: 'Personal',
-                    backgroundPath: 'https://images.unsplash.com/photo-1506784365847-bbad939e9335?q=80&w=2000&auto=format&fit=crop',
+                    backgroundPath:
+                        'https://images.unsplash.com/photo-1506784365847-bbad939e9335?q=80&w=2000&auto=format&fit=crop',
                     lists: [
                         { title: 'To Do', cards: ['Grocery Shopping', 'Dentist Appointment', 'Pay Bills'] },
                         { title: 'Doing', cards: ['Read "Atomic Habits"'] },
-                        { title: 'Done', cards: ['Morning Workout', 'Call Mom'] },
-                    ],
+                        { title: 'Done', cards: ['Morning Workout', 'Call Mom'] }
+                    ]
                 },
                 {
                     title: 'Recruitment Pipeline',
                     description: 'Track candidates through the hiring process seamlessly.',
                     category: 'HR',
-                    backgroundPath: 'https://images.unsplash.com/photo-1542744094-3a31f272c490?q=80&w=2000&auto=format&fit=crop',
+                    backgroundPath:
+                        'https://images.unsplash.com/photo-1542744094-3a31f272c490?q=80&w=2000&auto=format&fit=crop',
                     lists: [
                         { title: 'Applied', cards: ['John Doe - Frontend', 'Jane Smith - Designer'] },
                         { title: 'Initial Screening', cards: ['Bob Johnson - Backend'] },
                         { title: 'Interviewing', cards: ['Alice Brown - Product Manager'] },
                         { title: 'Offered', cards: [] },
-                        { title: 'Hired', cards: ['Mike Davis - DevOps'] },
-                    ],
-                },
+                        { title: 'Hired', cards: ['Mike Davis - DevOps'] }
+                    ]
+                }
             ]
 
             for (const t of templates) {
@@ -437,7 +447,7 @@ class BoardController {
             }
 
             await BoardRepository.addMemberToBoard(boardId, userId, role)
-            
+
             EventBus.publish({
                 eventId: crypto.randomUUID(),
                 type: EventType.BOARD_MEMBER_ADDED,
@@ -724,7 +734,7 @@ class BoardController {
                 return next(errorResponse(Status.FORBIDDEN, 'You are not a member of this workspace'))
             }
 
-            const hasPermission = member.role.permissions.some((p) => p.name === Permissions.CREATE_BOARD)
+            const hasPermission = member.role.permissions.some((p) => p.name === PERMISSIONS.CREATE_BOARD)
             if (!hasPermission) {
                 return next(
                     errorResponse(Status.FORBIDDEN, 'You do not have permission to create board in this workspace')
@@ -741,14 +751,16 @@ class BoardController {
         try {
             const { boardId } = req.params
             const members = await BoardRepository.findMemberByBoardId(boardId)
-            const result = members.map((m) => ({
-                userId: m.user?.id,
-                username: m.user?.username,
-                email: m.user?.email,
-                avatarUrl: m.user?.avatarUrl,
-                role: m.role?.name || 'member',
-                fullName: m.user?.fullName
-            })).filter(m => m.userId)
+            const result = members
+                .map((m) => ({
+                    userId: m.user?.id,
+                    username: m.user?.username,
+                    email: m.user?.email,
+                    avatarUrl: m.user?.avatarUrl,
+                    role: m.role?.name || 'member',
+                    fullName: m.user?.fullName
+                }))
+                .filter((m) => m.userId)
 
             return res.json(successResponse(Status.OK, 'Get board members successfully', result))
         } catch (err) {
@@ -989,13 +1001,21 @@ class BoardController {
             const member = await boardMemberRepo.findOne({ where: { board: { id: boardId }, user: { id: userId } } })
 
             if (!member) {
-                return res.status(Status.NOT_FOUND).json(errorResponse(Status.NOT_FOUND, 'You are not a member of this board'))
+                return res
+                    .status(Status.NOT_FOUND)
+                    .json(errorResponse(Status.NOT_FOUND, 'You are not a member of this board'))
             }
 
             member.isStarred = !member.isStarred
             await boardMemberRepo.save(member)
 
-            return res.status(Status.OK).json(successResponse(Status.OK, member.isStarred ? 'Board starred' : 'Board unstarred', { isStarred: member.isStarred }))
+            return res
+                .status(Status.OK)
+                .json(
+                    successResponse(Status.OK, member.isStarred ? 'Board starred' : 'Board unstarred', {
+                        isStarred: member.isStarred
+                    })
+                )
         } catch (err) {
             next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to toggle star', err))
         }
@@ -1012,9 +1032,7 @@ class BoardController {
                 relations: ['board', 'board.workspace']
             })
 
-            const boards = members
-                .map(m => m.board)
-                .filter(b => b && !b.isArchived)
+            const boards = members.map((m) => m.board).filter((b) => b && !b.isArchived)
 
             return res.status(Status.OK).json(successResponse(Status.OK, 'Starred boards fetched', boards))
         } catch (err) {
