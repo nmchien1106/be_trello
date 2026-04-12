@@ -50,6 +50,15 @@ router.post(
     LabelController.assignExistingLabelToCard
 )
 
+//Unassign existing label from card
+router.post(
+    '/cards/:cardId/unassign',
+    verifyAccessToken,
+    checkCardPermission(PERMISSIONS.UPDATE_CARD),
+    validateHandle(AssignExistingLabelBodySchema),
+    LabelController.unassignExistingLabelFromCard
+)
+
 //Get label
 router.get('/:id', verifyAccessToken, checkLabelPermission(PERMISSIONS.READ_CARD), LabelController.getLabel)
 

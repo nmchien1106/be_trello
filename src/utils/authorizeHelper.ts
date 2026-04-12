@@ -26,7 +26,7 @@ export const canUserAccess = async (
 ) => {
     const { workspaceId, boardId } = context || {}
 
-    if (boardId && typeof permission === 'string' && permission.endsWith(':read')) {
+    if (boardId && typeof permission === 'string') {
         const board = await DataSource.getRepository(Board).findOne({
             where: { id: boardId },
             relations: ['workspace']

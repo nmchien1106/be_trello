@@ -185,7 +185,6 @@ export const checkActivityPermission = (p: Permission) => {
                 return next(errorResponse(Status.NOT_FOUND, 'Activity not found'))
             }
 
-            // Nếu activity không gắn board/card -> chỉ actor mới được phép
             if (!activity.boardId && !activity.cardId) {
                 if (activity.actorId === user.id) return next()
                 return next(errorResponse(Status.FORBIDDEN, 'You do not have permission to access this resource'))

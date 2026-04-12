@@ -32,7 +32,7 @@ router.get(
 
 // Update a checklist
 router.patch(
-    '/:id',
+    '/:checklistId',
     verifyAccessToken,
     checkChecklistPermission(PERMISSIONS.UPDATE_CARD),
     validateHandle(UpdateChecklistSchema),
@@ -41,7 +41,7 @@ router.patch(
 
 // Delete a checklist
 router.delete(
-    '/:id',
+    '/:checklistId',
     verifyAccessToken,
     checkChecklistPermission(PERMISSIONS.UPDATE_CARD),
     checklistController.deleteChecklist
