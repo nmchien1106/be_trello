@@ -64,12 +64,10 @@ class AuthController {
                 select: { id: true, password: true, isActive: true }
             })
 
-            // Check if user exists
             if (!user) {
                 return next(errorResponse(Status.BAD_REQUEST, 'Invalid email', AuthErrorCode.INVALID_CREDENTIALS))
             }
 
-            // Check if password is correct
             const isPasswordValid = bcrypt.compareSync(password, user.password)
             if (!isPasswordValid) {
                 return next(
@@ -81,7 +79,6 @@ class AuthController {
                 )
             }
 
-            // Check if email is verified
             if (!user.isActive) {
                 return next(
                     errorResponse(
@@ -93,18 +90,15 @@ class AuthController {
                 )
             }
 
-            // Generate tokens
             const accessToken = await generateToken(user.id, 'access')
             const refreshToken = await generateToken(user.id, 'refresh')
 
-            // Store refresh token in Redis with user ID as key
             res.cookie('refresh', refreshToken, {
                 maxAge: Config.cookieMaxAge,
                 httpOnly: true,
                 secure: false
             })
 
-            // Return tokens to client
             res.status(200).json(
                 successResponse(Status.OK, 'Login successfully!', {
                     accessToken,
