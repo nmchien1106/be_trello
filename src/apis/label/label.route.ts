@@ -1,8 +1,8 @@
 import { Router } from 'express'
 import LabelController from './label.controller'
 import { verifyAccessToken } from '@/utils/jwt'
-import { authorizeBoardPermission, authorizeCardPermission, authorizeLabelPermission } from '@/middleware/authorization'
-import { Permissions } from '@/enums/permissions.enum'
+import { checkBoardPermission, checkCardPermission, checkLabelPermission } from '@/middleware/authorization'
+import { PERMISSIONS } from '@/enums/permissions.enum'
 import { validateHandle } from '@/middleware/validate-handle'
 import { AssignExistingLabelBodySchema, CreateLabelBodySchema, UpdateLabelBodySchema } from '@/apis/label/label.schema'
 const router = Router()
@@ -11,7 +11,7 @@ const router = Router()
 router.post(
     '/cards/:cardId',
     verifyAccessToken,
-    authorizeCardPermission(Permissions.UPDATE_CARD),
+    checkCardPermission(PERMISSIONS.UPDATE_CARD),
     validateHandle(CreateLabelBodySchema),
     LabelController.createLabel
 )
@@ -20,7 +20,7 @@ router.post(
 router.patch(
     '/:id',
     verifyAccessToken,
-    authorizeLabelPermission(Permissions.UPDATE_CARD),
+    checkLabelPermission(PERMISSIONS.UPDATE_CARD),
     validateHandle(UpdateLabelBodySchema),
     LabelController.updateLabel
 )
@@ -29,7 +29,7 @@ router.patch(
 router.get(
     '/cards/:cardId',
     verifyAccessToken,
-    authorizeCardPermission(Permissions.READ_CARD),
+    checkCardPermission(PERMISSIONS.READ_CARD),
     LabelController.getAllLabelsOnCard
 )
 
@@ -37,7 +37,7 @@ router.get(
 router.get(
     '/boards/:boardId',
     verifyAccessToken,
-    authorizeBoardPermission(Permissions.READ_BOARD),
+    checkBoardPermission(PERMISSIONS.READ_BOARD),
     LabelController.getAllLabelsOnBoard
 )
 
@@ -45,15 +45,24 @@ router.get(
 router.post(
     '/cards/:cardId/assign',
     verifyAccessToken,
-    authorizeCardPermission(Permissions.UPDATE_CARD),
+    checkCardPermission(PERMISSIONS.UPDATE_CARD),
     validateHandle(AssignExistingLabelBodySchema),
     LabelController.assignExistingLabelToCard
 )
 
+//Unassign existing label from card
+router.post(
+    '/cards/:cardId/unassign',
+    verifyAccessToken,
+    checkCardPermission(PERMISSIONS.UPDATE_CARD),
+    validateHandle(AssignExistingLabelBodySchema),
+    LabelController.unassignExistingLabelFromCard
+)
+
 //Get label
-router.get('/:id', verifyAccessToken, authorizeLabelPermission(Permissions.READ_CARD), LabelController.getLabel)
+router.get('/:id', verifyAccessToken, checkLabelPermission(PERMISSIONS.READ_CARD), LabelController.getLabel)
 
 //Delete label
-router.delete('/:id', verifyAccessToken, authorizeLabelPermission(Permissions.UPDATE_CARD), LabelController.deleteLabel)
+router.delete('/:id', verifyAccessToken, checkLabelPermission(PERMISSIONS.UPDATE_CARD), LabelController.deleteLabel)
 
 export default router

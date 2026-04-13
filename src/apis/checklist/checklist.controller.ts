@@ -29,8 +29,8 @@ class ChecklistController {
     updateChecklist = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
-            const { id } = req.params
-            const result = await checklistService.updateChecklist(req.user.id, id, req.body.title)
+            const { checklistId } = req.params
+            const result = await checklistService.updateChecklist(req.user.id, checklistId, req.body.title)
             return res.status(result.status).json(successResponse(result.status, result.message, result.data))
         } catch (err: any) {
             next(errorResponse(err.status || Status.INTERNAL_SERVER_ERROR, err.message))
@@ -40,8 +40,8 @@ class ChecklistController {
     deleteChecklist = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
-            const { id } = req.params
-            const result = await checklistService.deleteChecklist(req.user.id, id)
+            const { checklistId } = req.params
+            const result = await checklistService.deleteChecklist(req.user.id, checklistId)
             return res.status(result.status).json(successResponse(result.status, result.message))
         } catch (err: any) {
             next(errorResponse(err.status || Status.INTERNAL_SERVER_ERROR, err.message))

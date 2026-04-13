@@ -91,6 +91,25 @@ class LabelController {
         }
     }
 
+    unassignExistingLabelFromCard = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            if (!req.user?.id) {
+                return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+            }
+
+            const { cardId } = req.params
+            const { labelId } = req.body
+
+            const result = await LabelService.unassignExistingLabelFromCard(cardId, labelId)
+
+            return res
+                .status(Status.OK)
+                .json(successResponse(Status.OK, 'Label unassigned from card successfully', result))
+        } catch (err) {
+            next(err)
+        }
+    }
+
     getLabel = async (req: Request, res: Response, next: NextFunction) => {
         try {
             if (!req.user?.id) {

@@ -22,18 +22,7 @@ class ListRepository {
     async findById(id: string) {
         return await this.repo.findOne({
             where: { id },
-            relations: ['board'],
-            select: {
-                id: true,
-                title: true,
-                position: true,
-                isArchived: true,
-                createdAt: true,
-                updatedAt: true,
-                board: {
-                    id: true
-                }
-            }
+            relations: ['board']
         })
     }
 

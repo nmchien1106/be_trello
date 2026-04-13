@@ -183,6 +183,47 @@ class LabelService {
         }
     }
 
+    async unassignExistingLabelFromCard(cardId: string, labelId: string) {
+        const card = await cardRepo.findOne({
+            where: { id: cardId },
+            relations: {
+                list: {
+                    board: true
+                }
+            }
+        })
+
+        if (!card) {
+            throw new Error('Card not found')
+        }
+
+        const label = await labelRepository.findOne({
+            where: { id: labelId },
+            relations: { board: true }
+        })
+
+        if (!label) {
+            throw new Error('Label not found')
+        }
+
+        if (label.board.id !== card.list.board.id) {
+            throw new Error('Label must belong to the same board')
+        }
+
+        await cardLabelRepo.delete({
+            card: { id: cardId },
+            label: { id: labelId }
+        })
+
+        return {
+            id: label.id,
+            name: label.name,
+            color: label.color,
+            createdAt: label.createdAt,
+            updatedAt: label.updatedAt
+        }
+    }
+
     async getLabel(labelId: string) {
         const label = await labelRepository.findOne({ where: { id: labelId } })
 

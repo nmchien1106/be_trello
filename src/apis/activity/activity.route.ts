@@ -10,14 +10,19 @@ import {
     GetActivitiesByUserSchema,
     GetActivitiesByCommentSchema
 } from './activity.schema'
-import { authorizeBoardPermission } from '@/middleware/authorization'
-import { Permissions } from './../../enums/permissions.enum'
+import {
+    checkActivityPermission,
+    checkBoardPermission,
+    checkCardPermission,
+    checkCommentPermission
+} from '@/middleware/authorization'
+import { PERMISSIONS } from '@/enums/permissions.enum'
 const route = Router()
 
 route.get(
     '/board/:boardId',
     verifyAccessToken,
-    authorizeBoardPermission(Permissions.READ_BOARD),
+    checkBoardPermission(PERMISSIONS.READ_BOARD),
     validateHandle(GetActivitiesByBoardSchema),
     activityController.getActivitiesByBoard
 )
@@ -25,6 +30,7 @@ route.get(
 route.get(
     '/card/:cardId',
     verifyAccessToken,
+    checkCardPermission(PERMISSIONS.READ_CARD),
     validateHandle(GetActivitiesByCardSchema),
     activityController.getActivitiesByCard
 )
@@ -34,12 +40,25 @@ route.get('/user', verifyAccessToken, validateHandle(GetActivitiesByUserSchema),
 route.get(
     '/comment/:commentId',
     verifyAccessToken,
+    checkCommentPermission(PERMISSIONS.READ_CARD),
     validateHandle(GetActivitiesByCommentSchema),
     activityController.getActivitiesByComment
 )
 
-route.get('/:id', verifyAccessToken, validateHandle(GetActivitySchema), activityController.getActivity)
+route.get(
+    '/:id',
+    verifyAccessToken,
+    checkActivityPermission(PERMISSIONS.READ_BOARD),
+    validateHandle(GetActivitySchema),
+    activityController.getActivity
+)
 
-route.delete('/:id', verifyAccessToken, validateHandle(DeleteActivitySchema), activityController.deleteActivity)
+route.delete(
+    '/:id',
+    verifyAccessToken,
+    checkActivityPermission(PERMISSIONS.MANAGE_BOARD),
+    validateHandle(DeleteActivitySchema),
+    activityController.deleteActivity
+)
 
 export default route

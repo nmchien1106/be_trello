@@ -22,4 +22,7 @@ export class BoardMembers extends DateTimeEntity {
     @ManyToOne(() => User, (user) => user.boardMembers)
     @JoinColumn({ name: 'userId' })
     user: User
+
+    @Column({ type: 'boolean', default: false })
+    public isStarred: boolean
 }

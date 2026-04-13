@@ -13,480 +13,207 @@ import { Label } from '@/entities/label.entity'
 import { Role } from '@/entities/role.entity'
 import { Checklist } from '@/entities/checklist.entity'
 import { ChecklistItem } from '@/entities/checklist-item.entity'
+import { Comment } from '@/entities/comment.entity'
+import { Activity } from '@/entities/activity.entity'
+import redisClient from '@/config/redis.config'
 
-const normalizePermissions = (requiredPermission: string | string[]) =>
-    Array.isArray(requiredPermission) ? requiredPermission : [requiredPermission]
+import listRepository from '@/apis/list/list.repository'
+import cardRepository from '@/apis/card/card.repository'
+import checklistRepository from '@/apis/checklist/checklist.repository'
+import { canUserAccess } from '@/utils/authorizeHelper'
+import { Permission } from '@/enums/permissions.enum'
 
-const hasAllPermissions = (granted: string[], requiredPermission: string | string[]) => {
-    const required = normalizePermissions(requiredPermission)
-    return required.every((perm) => granted.includes(perm))
-}
+type PermissionContext = { workspaceId?: string; boardId?: string } | null
+type ContextResolver = (req: AuthRequest) => Promise<PermissionContext> | PermissionContext
 
-const rolePermissionCache = new Map<string, string[]>()
+const Resolvers = {
+    fromWorkspaceId: (req: AuthRequest): PermissionContext => {
+        const workspaceId = req.params.workspaceId || req.body.workspaceId || req.query.workspaceId
+        return workspaceId ? { workspaceId } : null
+    },
 
-const getRolePermissions = async (roleName: string) => {
-    if (rolePermissionCache.has(roleName)) {
-        return rolePermissionCache.get(roleName)!
+    fromBoardId: (req: AuthRequest): PermissionContext => {
+        const boardId = req.params.boardId || req.body.boardId || req.query.boardId || req.params.id
+        return boardId ? { boardId } : null
+    },
+
+    fromListId: async (req: AuthRequest): Promise<PermissionContext> => {
+        const listId = req.params.listId || req.body.listId || req.query.listId || req.params.id
+        if (!listId) return null
+
+        const list = await listRepository.findById(listId)
+        return list ? { boardId: list.board.id } : null
+    },
+
+    fromCardId: async (req: AuthRequest): Promise<PermissionContext> => {
+        const cardId = req.params.cardId || req.body.cardId || req.query.cardId || req.params.id
+        console.log(cardId)
+        if (!cardId) return null
+        const card = await cardRepository.findById(cardId)
+        return card ? { boardId: card.list.board.id } : null
+    },
+
+    fromChecklistId: async (req: AuthRequest): Promise<PermissionContext> => {
+        const checklistId = req.params.checklistId || req.body.checklistId || req.query.checklistId || req.params.id
+        if (!checklistId) return null
+        const checklist = await checklistRepository.findChecklistById(checklistId)
+        return checklist ? { boardId: checklist.card.list.board.id } : null
+    },
+
+    fromChecklistItemId: async (req: AuthRequest): Promise<PermissionContext> => {
+        const itemId = req.params.itemId
+        if (!itemId) return null
+
+        const itemRepo = AppDataSource.getRepository(ChecklistItem)
+        const item = await itemRepo.findOne({
+            where: { id: itemId },
+            relations: ['checklist', 'checklist.card', 'checklist.card.list', 'checklist.card.list.board']
+        })
+
+        return item ? { boardId: item.checklist.card.list.board.id } : null
+    },
+
+    fromCommentId: async (req: AuthRequest): Promise<PermissionContext> => {
+        const commentId = req.params.commentId || req.body.commentId || req.params.id
+        if (!commentId) return null
+
+        const commentRepo = AppDataSource.getRepository(Comment)
+        const comment = await commentRepo.findOne({
+            where: { id: commentId },
+            relations: ['card', 'card.list', 'card.list.board']
+        })
+
+        return comment ? { boardId: comment.card.list.board.id } : null
+    },
+
+    fromAttachmentId: async (req: AuthRequest): Promise<PermissionContext> => {
+        const attachmentId = req.params.id || req.body.attachmentId || req.query.attachmentId
+        if (!attachmentId) return null
+
+        const attachmentRepo = AppDataSource.getRepository(Attachment)
+        const attachment = await attachmentRepo.findOne({
+            where: { id: attachmentId },
+            relations: ['card', 'card.list', 'card.list.board']
+        })
+
+        return attachment ? { boardId: attachment.card.list.board.id } : null
+    },
+
+    fromLabelId: async (req: AuthRequest): Promise<PermissionContext> => {
+        const labelId = req.params.id || req.body.labelId || req.query.labelId || req.params.labelId
+        if (!labelId) return null
+
+        const labelRepo = AppDataSource.getRepository(Label)
+        const label = await labelRepo.findOne({
+            where: { id: labelId },
+            relations: ['board']
+        })
+
+        return label ? { boardId: label.board.id } : null
+    },
+
+    fromWorkspaceShareLinkToken: async (req: AuthRequest): Promise<PermissionContext> => {
+        const token = (req.query?.token as string | undefined) || req.body?.token
+        if (!token) return null
+
+        const dataStr = await redisClient.get(`workspaceShareLink:${token}`)
+        if (!dataStr) return null
+
+        const parsed = JSON.parse(dataStr) as { workspaceId?: string }
+        return parsed.workspaceId ? { workspaceId: parsed.workspaceId } : null
     }
-
-    const role = await AppDataSource.getRepository(Role).findOne({
-        where: { name: roleName },
-        relations: ['permissions']
-    })
-
-    const permissions = role?.permissions?.map((permission) => permission.name) ?? []
-    rolePermissionCache.set(roleName, permissions)
-    return permissions
 }
 
-const canAccessBoardByMembership = async (params: {
-    userId: string
-    board: Board
-    requiredPermission: string | string[]
-}) => {
-    const { userId, board, requiredPermission } = params
-
-    if (board.owner?.id === userId) return true
-
-    const boardMemberRepository = AppDataSource.getRepository(BoardMembers)
-    const boardMembership = await boardMemberRepository.findOne({
-        where: {
-            board: { id: board.id },
-            user: { id: userId }
-        },
-        relations: ['role', 'role.permissions']
-    })
-
-    if (boardMembership?.role) {
-        const boardPermissions = boardMembership.role.permissions?.map((p) => p.name) ?? []
-        if (hasAllPermissions(boardPermissions, requiredPermission)) {
-            return true
-        }
-    }
-
-    if (!board.workspace?.id) return false
-
-    const workspaceMemberRepository = AppDataSource.getRepository(WorkspaceMembers)
-    const wsMembership = await workspaceMemberRepository.findOne({
-        where: {
-            workspace: { id: board.workspace.id },
-            user: { id: userId }
-        },
-        relations: ['role']
-    })
-
-    if (!wsMembership) return false
-
-    const effectiveBoardRole = wsMembership.role?.name === 'workspace_admin' ? 'board_admin' : 'board_member'
-    const effectivePermissions = await getRolePermissions(effectiveBoardRole)
-
-    return hasAllPermissions(effectivePermissions, requiredPermission)
-}
-
-export const authorizePermissionWorkspace = (requiredPermission: string | string[]) => {
+export const authorize = (requiredPermission: string, resolver: ContextResolver) => {
     return async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const user = req.user
             if (!user) {
                 return next(errorResponse(Status.NOT_FOUND, 'User not found'))
             }
-
-            const workspaceId = req.params.workspaceId || req.body.workspaceId
-            const workspaceMemberRepository = AppDataSource.getRepository(WorkspaceMembers)
-
-            const membership = await workspaceMemberRepository.findOne({
-                where: {
-                    workspace: { id: workspaceId },
-                    user: { id: user.id }
-                },
-                relations: ['role', 'role.permissions']
-            })
-            if (!membership) {
-                return next(errorResponse(Status.NOT_FOUND, 'Membership not found'))
+            const context = await resolver(req)
+            if (!context) {
+                return next(errorResponse(Status.BAD_REQUEST, 'Invalid request context'))
             }
-            const permissions = Array.isArray(requiredPermission) ? requiredPermission : [requiredPermission]
-            const hasPermission = permissions.every((perm) => membership.role.permissions.some((p) => p.name === perm))
-
+            const { workspaceId, boardId } = context
+            let hasPermission: boolean = false
+            if (boardId) hasPermission = await canUserAccess(user.id, requiredPermission, { boardId })
+            if (workspaceId) hasPermission = await canUserAccess(user.id, requiredPermission, { workspaceId })
             if (!hasPermission) {
-                return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
+                console.log('Permission check:', { userId: user.id, requiredPermission, context, hasPermission })
+                return next(errorResponse(Status.FORBIDDEN, 'You do not have permission to access this resource'))
             }
-
             next()
         } catch (err) {
             console.log(err)
-            return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
+            return next(errorResponse(Status.FORBIDDEN, 'You do not have permission to access this resource'))
         }
     }
 }
 
-export const authorizeRole = (requiredRoles: string | string[]) => {
-    return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-        try {
-            const user = req.user
-            if (!user) {
-                return next(errorResponse(Status.NOT_FOUND, 'User not found'))
-            }
+export const checkWorkspacePermission = (p: Permission) => authorize(p, Resolvers.fromWorkspaceId)
+export const checkBoardPermission = (p: Permission) => authorize(p, Resolvers.fromBoardId)
+export const checkListPermission = (p: Permission) => authorize(p, Resolvers.fromListId)
+export const checkCardPermission = (p: Permission) => authorize(p, Resolvers.fromCardId)
+export const checkChecklistPermission = (p: Permission) => authorize(p, Resolvers.fromChecklistId)
+export const checkChecklistItemPermission = (p: Permission) => authorize(p, Resolvers.fromChecklistItemId)
+export const checkCommentPermission = (p: Permission) => authorize(p, Resolvers.fromCommentId)
+export const checkAttachmentPermission = (p: Permission) => authorize(p, Resolvers.fromAttachmentId)
+export const checkLabelPermission = (p: Permission) => authorize(p, Resolvers.fromLabelId)
+export const checkWorkspaceShareLinkPermission = (p: Permission) => authorize(p, Resolvers.fromWorkspaceShareLinkToken)
 
-            const roles = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles]
-            const hasRole = roles.every((role) => user.roles.includes(role))
-            if (!hasRole) {
-                return next(errorResponse(Status.FORBIDDEN, 'Role access denied'))
-            }
-            next()
-        } catch (err) {
-            return next(errorResponse(Status.FORBIDDEN, 'Role access denied'))
-        }
-    }
-}
-
-export const authorizeRoleWorkspace = (requiredRoles: string | string[]) => {
+export const checkActivityPermission = (p: Permission) => {
     return async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const user = req.user
             if (!user) {
                 return next(errorResponse(Status.NOT_FOUND, 'User not found'))
             }
-            const workspaceId = req.params.workspaceId || req.body.workspaceId
-            const workspaceMemberRepository = AppDataSource.getRepository(WorkspaceMembers)
-            const membership = await workspaceMemberRepository.findOne({
-                where: {
-                    workspace: { id: workspaceId },
-                    user: { id: user.id }
-                },
-                relations: ['role']
-            })
-            if (!membership) {
-                return next(errorResponse(Status.NOT_FOUND, 'Membership not found'))
-            }
-            const roles = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles]
-            const hasRole = roles.every((role) => membership.role.name === role)
-            if (!hasRole) {
-                return next(errorResponse(Status.FORBIDDEN, 'Role access denied'))
-            }
-            next()
-        } catch (err) {
-            return next(errorResponse(Status.FORBIDDEN, 'Role access denied'))
-        }
-    }
-}
 
-export const authorizeBoardPermission = (requiredPermission: string | string[]) => {
-    return async (req: AuthRequest, res: Response, next: NextFunction) => {
-        try {
-            const user = req.user
-            if (!user) {
-                return next(errorResponse(Status.NOT_FOUND, 'User not found'))
+            const activityId = req.params.id
+            if (!activityId) {
+                return next(errorResponse(Status.BAD_REQUEST, 'Invalid request context'))
             }
-            const boardId = req.params.boardId || req.body.boardId || req.query.boardId || req.params.id
 
-            const boardRepo = AppDataSource.getRepository(Board)
-            const board = await boardRepo.findOne({
-                where: { id: boardId },
-                relations: ['workspace', 'owner']
+            const activityRepo = AppDataSource.getRepository(Activity)
+            const activity = await activityRepo.findOne({
+                where: { id: activityId },
+                relations: ['board', 'card', 'actor']
             })
 
-            if (!board) {
+            if (!activity) {
+                return next(errorResponse(Status.NOT_FOUND, 'Activity not found'))
+            }
+
+            if (!activity.boardId && !activity.cardId) {
+                if (activity.actorId === user.id) return next()
+                return next(errorResponse(Status.FORBIDDEN, 'You do not have permission to access this resource'))
+            }
+
+            let boardId: string | null = null
+
+            if (activity.cardId) {
+                const card = await AppDataSource.getRepository(Card).findOne({
+                    where: { id: activity.cardId },
+                    relations: ['list', 'list.board']
+                })
+                boardId = card?.list?.board?.id ?? null
+            } else if (activity.boardId) {
+                boardId = activity.boardId
+            }
+
+            if (!boardId) {
                 return next(errorResponse(Status.NOT_FOUND, 'Board not found'))
             }
 
-            const allowed = await canAccessBoardByMembership({
-                userId: user.id,
-                board,
-                requiredPermission
-            })
-
-            if (allowed) return next()
-
-            return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
-        } catch (err) {
-            return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
-        }
-    }
-}
-
-export const authorizeListPermission = (requiredPermission: string | string[]) => {
-    return async (req: AuthRequest, res: Response, next: NextFunction) => {
-        try {
-            const user = req.user
-            if (!user) return next(errorResponse(Status.NOT_FOUND, 'User not found'))
-
-            const listId = req.params.listId || req.body.listId || req.query.listId || req.params.id
-
-            const listRepository = AppDataSource.getRepository(List)
-            const list = await listRepository.findOne({
-                where: { id: listId },
-                relations: ['board', 'board.workspace', 'board.owner']
-            })
-
-            if (!list) {
-                return next(errorResponse(Status.NOT_FOUND, 'List not found'))
-            }
-
-            const allowed = await canAccessBoardByMembership({
-                userId: user.id,
-                board: list.board,
-                requiredPermission
-            })
-
-            if (allowed) return next()
-
-            return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
-        } catch (err) {
-            console.log(err)
-            return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
-        }
-    }
-}
-
-export const authorizeCardPermission = (requiredPermission: string | string[]) => {
-    return async (req: AuthRequest, res: Response, next: NextFunction) => {
-        try {
-            const user = req.user
-            if (!user) return next(errorResponse(Status.NOT_FOUND, 'User not found'))
-
-            const cardId = req.params.id || req.params.cardId || req.body.cardId || req.query.cardId
-            if (!cardId) {
-                return next(errorResponse(Status.BAD_REQUEST, 'Card id is required'))
-            }
-
-            const cardRepository = AppDataSource.getRepository(Card)
-            const card = await cardRepository.findOne({
-                where: { id: cardId },
-                relations: ['list', 'list.board', 'list.board.workspace', 'list.board.owner']
-            })
-            if (!card) {
-                return next(errorResponse(Status.NOT_FOUND, 'Card not found'))
-            }
-
-            const board = card.list.board
-
-            const allowed = await canAccessBoardByMembership({
-                userId: user.id,
-                board,
-                requiredPermission
-            })
-
-            if (allowed) return next()
-
-            return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
-        } catch (err) {
-            console.error('AuthorizeCardPermission Error:', err)
-            return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
-        }
-    }
-}
-
-export const authorizeChecklistPermission = (requiredPermission: string | string[]) => {
-    return async (req: AuthRequest, res: Response, next: NextFunction) => {
-        try {
-            const user = req.user
-            if (!user) return next(errorResponse(Status.NOT_FOUND, 'User not found'))
-
-            const checklistId = req.params.id || req.body.checklistId
-            if (!checklistId) {
-                return next(errorResponse(Status.BAD_REQUEST, 'Checklist id is required'))
-            }
-
-            const checklistRepo = AppDataSource.getRepository(Checklist)
-            const checklist = await checklistRepo.findOne({
-                where: { id: checklistId },
-                relations: [
-                    'card',
-                    'card.list',
-                    'card.list.board',
-                    'card.list.board.workspace',
-                    'card.list.board.owner'
-                ]
-            })
-
-            if (!checklist) {
-                return next(errorResponse(Status.NOT_FOUND, 'Checklist not found'))
-            }
-
-            const allowed = await canAccessBoardByMembership({
-                userId: user.id,
-                board: checklist.card.list.board,
-                requiredPermission
-            })
-
-            if (!allowed) {
-                return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
+            const hasPermission = await canUserAccess(user.id, p, { boardId })
+            if (!hasPermission) {
+                return next(errorResponse(Status.FORBIDDEN, 'You do not have permission to access this resource'))
             }
 
             next()
         } catch (err) {
-            return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
-        }
-    }
-}
-
-export const authorizeChecklistItemPermission = (requiredPermission: string | string[]) => {
-    return async (req: AuthRequest, res: Response, next: NextFunction) => {
-        try {
-            const user = req.user
-            if (!user) return next(errorResponse(Status.NOT_FOUND, 'User not found'))
-
-            const itemId = req.params.itemId
-            if (!itemId) {
-                return next(errorResponse(Status.BAD_REQUEST, 'Checklist item id is required'))
-            }
-
-            const checklistItemRepo = AppDataSource.getRepository(ChecklistItem)
-            const item = await checklistItemRepo.findOne({
-                where: { id: itemId },
-                relations: [
-                    'checklist',
-                    'checklist.card',
-                    'checklist.card.list',
-                    'checklist.card.list.board',
-                    'checklist.card.list.board.workspace',
-                    'checklist.card.list.board.owner'
-                ]
-            })
-
-            if (!item) {
-                return next(errorResponse(Status.NOT_FOUND, 'Checklist item not found'))
-            }
-
-            const allowed = await canAccessBoardByMembership({
-                userId: user.id,
-                board: item.checklist.card.list.board,
-                requiredPermission
-            })
-
-            if (!allowed) {
-                return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
-            }
-
-            next()
-        } catch (err) {
-            return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
-        }
-    }
-}
-
-export const authorizeAttachmentPermission = (requiredPermission: string | string[]) => {
-    return async (req: AuthRequest, res: Response, next: NextFunction) => {
-        try {
-            const user = req.user
-            if (!user) {
-                return next(errorResponse(Status.NOT_FOUND, 'User not found'))
-            }
-            const attachmentId = req.params.id || req.body.attachmentId
-
-            const attachmentRepo = AppDataSource.getRepository(Attachment)
-            const attachment = await attachmentRepo.findOne({
-                where: { id: attachmentId },
-                relations: ['card', 'card.list', 'card.list.board']
-            })
-
-            if (!attachment) {
-                return next(errorResponse(Status.NOT_FOUND, 'Attachment not found'))
-            }
-
-            const boardRepo = AppDataSource.getRepository(Board)
-            const board = await boardRepo.findOne({
-                where: { id: attachment.card.list.board.id },
-                relations: ['workspace', 'owner']
-            })
-
-            if (!board) {
-                return next(errorResponse(Status.NOT_FOUND, 'Board not found'))
-            }
-
-            const allowed = await canAccessBoardByMembership({
-                userId: user.id,
-                board,
-                requiredPermission
-            })
-
-            if (!allowed) {
-                return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
-            }
-
-            next()
-        } catch (err) {
-            return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
-        }
-    }
-}
-
-export const checkBoardMember = async (requiredRoles: string | string[], boardId: string, userId: string) => {
-    const BoardMemberRepository = AppDataSource.getRepository(BoardMembers)
-
-    return BoardMemberRepository.findOne({
-        where: {
-            board: { id: boardId },
-            user: { id: userId }
-        },
-        relations: ['role']
-    })
-        .then((membership) => {
-            if (!membership) {
-                return false
-            }
-            const roles = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles]
-
-            const hasRole = roles.some((role) => {
-                return membership.role.name === role
-            })
-            return hasRole
-        })
-        .catch(() => {
-            return false
-        })
-}
-
-export const authorizeLabelPermission = (requiredPermission: string | string[]) => {
-    return async (req: AuthRequest, res: Response, next: NextFunction) => {
-        try {
-            const user = req.user
-            if (!user) {
-                return next(errorResponse(Status.NOT_FOUND, 'User not found'))
-            }
-
-            const labelId = req.params.id || req.body.labelId || req.query.labelId || req.params.labelId
-
-            if (!labelId) {
-                return next(errorResponse(Status.BAD_REQUEST, 'Label id is required'))
-            }
-
-            const labelRepo = AppDataSource.getRepository(Label)
-
-            const label = await labelRepo.findOne({
-                where: { id: labelId },
-                relations: ['board']
-            })
-
-            if (!label) {
-                return next(errorResponse(Status.NOT_FOUND, 'Label not found'))
-            }
-
-            const boardId = label.board.id
-
-            const boardRepo = AppDataSource.getRepository(Board)
-            const board = await boardRepo.findOne({
-                where: { id: boardId },
-                relations: ['workspace', 'owner']
-            })
-
-            if (!board) {
-                return next(errorResponse(Status.NOT_FOUND, 'Board not found'))
-            }
-
-            const allowed = await canAccessBoardByMembership({
-                userId: user.id,
-                board,
-                requiredPermission
-            })
-
-            if (!allowed) {
-                return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
-            }
-
-            next()
-        } catch (err) {
-            return next(errorResponse(Status.FORBIDDEN, 'Permission denied'))
+            return next(errorResponse(Status.FORBIDDEN, 'You do not have permission to access this resource'))
         }
     }
 }

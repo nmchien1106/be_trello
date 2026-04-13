@@ -8,12 +8,8 @@ import {
     CreateChecklistItemSchema,
     UpdateChecklistItemSchema
 } from './checklist.schema'
-import {
-    authorizeCardPermission,
-    authorizeChecklistPermission,
-    authorizeChecklistItemPermission
-} from '@/middleware/authorization'
-import { Permissions } from '@/enums/permissions.enum'
+import { checkCardPermission, checkChecklistItemPermission, checkChecklistPermission } from '@/middleware/authorization'
+import { PERMISSIONS } from '@/enums/permissions.enum'
 
 const router = Router()
 
@@ -21,7 +17,7 @@ const router = Router()
 router.post(
     '/',
     verifyAccessToken,
-    authorizeCardPermission(Permissions.UPDATE_CARD),
+    checkCardPermission(PERMISSIONS.UPDATE_CARD),
     validateHandle(CreateChecklistSchema),
     checklistController.createChecklist
 )
@@ -30,24 +26,24 @@ router.post(
 router.get(
     '/card/:cardId',
     verifyAccessToken,
-    authorizeCardPermission(Permissions.READ_CARD),
+    checkCardPermission(PERMISSIONS.READ_CARD),
     checklistController.getChecklistsOnCard
 )
 
 // Update a checklist
 router.patch(
-    '/:id',
+    '/:checklistId',
     verifyAccessToken,
-    authorizeChecklistPermission(Permissions.UPDATE_CARD),
+    checkChecklistPermission(PERMISSIONS.UPDATE_CARD),
     validateHandle(UpdateChecklistSchema),
     checklistController.updateChecklist
 )
 
 // Delete a checklist
 router.delete(
-    '/:id',
+    '/:checklistId',
     verifyAccessToken,
-    authorizeChecklistPermission(Permissions.UPDATE_CARD),
+    checkChecklistPermission(PERMISSIONS.UPDATE_CARD),
     checklistController.deleteChecklist
 )
 
@@ -55,7 +51,7 @@ router.delete(
 router.post(
     '/items',
     verifyAccessToken,
-    authorizeChecklistPermission(Permissions.UPDATE_CARD),
+    checkChecklistPermission(PERMISSIONS.UPDATE_CARD),
     validateHandle(CreateChecklistItemSchema),
     checklistController.createItem
 )
@@ -64,7 +60,7 @@ router.post(
 router.patch(
     '/items/:itemId',
     verifyAccessToken,
-    authorizeChecklistItemPermission(Permissions.UPDATE_CARD),
+    checkChecklistItemPermission(PERMISSIONS.UPDATE_CARD),
     validateHandle(UpdateChecklistItemSchema),
     checklistController.updateItem
 )
@@ -73,7 +69,7 @@ router.patch(
 router.delete(
     '/items/:itemId',
     verifyAccessToken,
-    authorizeChecklistItemPermission(Permissions.UPDATE_CARD),
+    checkChecklistItemPermission(PERMISSIONS.UPDATE_CARD),
     checklistController.deleteItem
 )
 
