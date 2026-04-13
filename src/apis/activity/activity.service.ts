@@ -5,9 +5,16 @@ import { Activity } from '@/entities/activity.entity'
 export class ActivityService {
     constructor(private repo: IActivityRepository) {}
 
-    async getByBoard(boardId: string, page = 1, size = 20) {
-        const offset = (page - 1) * size
-        const activities: Activity[] = await this.repo.findByBoard(boardId, size, offset)
+    async getByBoard(boardId: string, page?: number, size?: number) {
+        let activities: Activity[]
+
+        if (!size) {
+            activities = await this.repo.findByBoard(boardId)
+        } else {
+            const offset = (page! - 1) * size
+            activities = await this.repo.findByBoard(boardId, size, offset)
+        }
+
         return {
             status: Status.OK,
             message: 'Activities retrieved successfully',

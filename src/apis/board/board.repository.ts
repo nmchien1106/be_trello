@@ -244,7 +244,7 @@ class BoardRepository {
                     workspace: { workspaceMembers: { user: { id: userId } } }
                 }
             ],
-            relations: ['', 'workspace.workspaceMembers', 'workspace.workspaceMembers.user'],
+            relations: ['workspace.workspaceMembers', 'workspace.workspaceMembers.user'],
             select: {
                 id: true,
                 title: true,

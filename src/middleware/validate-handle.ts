@@ -21,17 +21,18 @@ export const validateHandle = (schema: ZodSchema) => (req: Request, res: Respons
         }
 
         if (req.method === 'GET') {
-            req.query = parseResult.data as any
+            Object.assign(req.params, parseResult.data.params)
+            Object.assign(req.query, parseResult.data.query)
         } else {
-            req.body = parseResult.data
+            Object.assign(req.body, parseResult.data)
         }
 
         next()
     } catch (err) {
         if (err instanceof ZodError) {
-            console.error('Validation failed for:', req.method, req.url);
-            console.error('Input data:', req.method === 'GET' ? req.query : req.body);
-            console.error('Zod Error Issues:', JSON.stringify(err.issues, null, 2));
+            console.error('Validation failed for:', req.method, req.url)
+            console.error('Input data:', req.method === 'GET' ? req.query : req.body)
+            console.error('Zod Error Issues:', JSON.stringify(err.issues, null, 2))
 
             const error: Record<string, string> = {}
 
@@ -42,9 +43,14 @@ export const validateHandle = (schema: ZodSchema) => (req: Request, res: Respons
                 }
             })
 
-            return res
-                .status(Status.BAD_REQUEST)
-                .json(errorResponse(Status.BAD_REQUEST, 'Validate error: One or more fields are invalid', error, 'VALIDATE_ERROR'))
+            return res.status(Status.BAD_REQUEST).json(
+                errorResponse(
+                    Status.BAD_REQUEST,
+                    'Validate error: One or more fields are invalid',
+                    error,
+                    'VALIDATE_ERROR'
+                )
+            )
         }
 
         next(err)

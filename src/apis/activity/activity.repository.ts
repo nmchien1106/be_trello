@@ -29,14 +29,19 @@ export class ActivityRepository implements IActivityRepository {
         return this.repo.findOne({ where: { id }, relations: { actor: true, board: true, card: true } })
     }
 
-    async findByBoard(boardId: string, limit = 20, offset = 0) {
-        return this.repo.find({
-            where: { boardId },
-            order: { createdAt: 'DESC' },
-            take: limit,
-            skip: offset,
-            relations: { actor: true, card: true }
-        })
+    async findByBoard(boardId: string, limit?: number, offset?: number) {
+        const query = this.repo.createQueryBuilder('activity')
+            .where('activity.boardId = :boardId', { boardId })
+            .orderBy('activity.createdAt', 'DESC')
+            .leftJoinAndSelect('activity.actor', 'actor')
+            .leftJoinAndSelect('activity.card', 'card')
+
+
+        if (limit !== undefined && offset !== undefined) {
+            query.take(limit).skip(offset)
+        }
+
+        return query.getMany()
     }
 
     async findByCard(cardId: string, limit = 20, offset = 0) {

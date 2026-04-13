@@ -7,6 +7,11 @@ import { List } from '@/entities/list.entity'
 import { Config } from '@/config/config'
 import { calcPosition } from '@/utils/calcPosition'
 
+import { EventBus } from '@/events/event-bus'
+import { DomainEvent } from '@/events/interface'
+import { EventType } from '@/enums/event-type.enum'
+import crypto from 'crypto'
+
 export class ListService {
     async createList(data: CreateListDto, userId: string) {
         if (!userId) throw { status: Status.UNAUTHORIZED, message: 'User info missing' }
@@ -32,12 +37,20 @@ export class ListService {
 
                 const savedList = await manager.save(newList)
 
+                const event: DomainEvent = {
+                    eventId: crypto.randomUUID(),
+                    type: EventType.LIST_CREATED,
+                    boardId: board.id,
+                    actorId: userId,
+                    payload: { title: savedList.title }
+                }
+                EventBus.publish(event)
+
                 return {
                     status: Status.CREATED,
                     message: 'List created successfully',
                     data: savedList
                 }
-                // --------------------
             })
         } catch (error: any) {
             throw { status: error.status || Status.BAD_REQUEST, message: error.message || 'Create list failed' }
@@ -56,6 +69,17 @@ export class ListService {
         if (!list) throw { status: Status.NOT_FOUND, message: 'List not found' }
 
         const updated = await ListRepository.updateList(id, data)
+
+        const event: DomainEvent = {
+            eventId: crypto.randomUUID(),
+            type: EventType.LIST_UPDATED,
+            boardId: list.board.id,
+            listId: id,
+            actorId: userId,
+            payload: { changes: data }
+        }
+        EventBus.publish(event)
+
         return { status: Status.OK, message: 'List updated successfully', data: updated }
     }
 
@@ -64,6 +88,17 @@ export class ListService {
         if (!list) throw { status: Status.NOT_FOUND, message: 'List not found' }
 
         await ListRepository.deleteList(id)
+
+        const event: DomainEvent = {
+            eventId: crypto.randomUUID(),
+            type: EventType.LIST_DELETED,
+            boardId: list.board.id,
+            listId: id,
+            actorId: userId,
+            payload: { title: list.title }
+        }
+        EventBus.publish(event)
+
         return { status: Status.OK, message: 'List deleted permanently' }
     }
 
@@ -90,7 +125,22 @@ export class ListService {
         )
 
         await ListRepository.updateList(listId, { position: newPosition })
+
+        const event: DomainEvent = {
+            eventId: crypto.randomUUID(),
+            type: EventType.LIST_REORDERED,
+            boardId: data.boardId,
+            listId: listId,
+            actorId: userId,
+            payload: {
+                beforeId: data.beforeId ?? null,
+                afterId: data.afterId ?? null
+            }
+        }
+        EventBus.publish(event)
+
         const updated = await ListRepository.getAllListsInBoard(data.boardId)
+
         return { status: Status.OK, message: 'List reordered successfully', data: updated }
     }
 
@@ -101,6 +151,7 @@ export class ListService {
     ) {
         const list = await ListRepository.findById(listId)
         if (!list) throw { status: Status.NOT_FOUND, message: 'List not found' }
+
         const sourceBoardId = list.board.id
 
         let newPosition: number
@@ -125,6 +176,19 @@ export class ListService {
             position: newPosition
         })
 
+        const event: DomainEvent = {
+            eventId: crypto.randomUUID(),
+            type: EventType.LIST_MOVED,
+            boardId: sourceBoardId,
+            listId: listId,
+            actorId: userId,
+            payload: {
+                fromBoardId: sourceBoardId,
+                toBoardId: data.targetBoardId
+            }
+        }
+        EventBus.publish(event)
+
         return { status: Status.OK, message: 'List moved successfully', data: updated }
     }
 
@@ -133,6 +197,16 @@ export class ListService {
         if (!sourceList) throw { status: Status.NOT_FOUND, message: 'Source list not found' }
 
         const newList = await ListRepository.duplicateList(listId, targetBoardId, title, userId)
+
+        const event: DomainEvent = {
+            eventId: crypto.randomUUID(),
+            type: EventType.LIST_DUPLICATED,
+            boardId: targetBoardId,
+            listId: newList.id,
+            actorId: userId,
+            payload: { sourceListId: listId }
+        }
+        EventBus.publish(event)
 
         return { status: Status.CREATED, message: 'List duplicated successfully', data: newList }
     }

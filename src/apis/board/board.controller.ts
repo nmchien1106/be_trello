@@ -155,7 +155,10 @@ class BoardController {
                 type: EventType.BOARD_UPDATED,
                 boardId: boardId,
                 actorId: userId,
-                payload: { title: updatedBoard.title, changes: data }
+                payload: {
+                    boardTitle: updatedBoard.title,
+                    changes: data
+                }
             }
             EventBus.publish(event)
 
@@ -189,7 +192,9 @@ class BoardController {
                 type: EventType.BOARD_ARCHIVED,
                 boardId: boardId,
                 actorId: userId,
-                payload: { title: board.title }
+                payload: {
+                    boardTitle: board.title
+                }
             }
             EventBus.publish(event)
 
@@ -223,10 +228,11 @@ class BoardController {
                 type: EventType.BOARD_RESTORED,
                 boardId: boardId,
                 actorId: userId,
-                payload: { title: board.title }
+                payload: {
+                    boardTitle: board.title
+                }
             }
             EventBus.publish(event)
-
             return res.status(Status.OK).json({
                 status: Status.OK,
                 message: 'Board reopened successfully'
@@ -279,7 +285,9 @@ class BoardController {
                 type: EventType.BOARD_DELETED,
                 boardId: boardId,
                 actorId: userId,
-                payload: { title: board.title }
+                payload: {
+                    boardTitle: board.title
+                }
             }
             EventBus.publish(event)
 
@@ -395,7 +403,16 @@ class BoardController {
                     .status(Status.OK)
                     .json(successResponse(Status.OK, 'Already a member of the board', { boardId }))
             }
-
+            const event: DomainEvent = {
+                eventId: crypto.randomUUID(),
+                type: EventType.BOARD_MEMBER_ADDED,
+                boardId,
+                actorId: userId,
+                payload: {
+                    boardTitle: (await BoardRepository.getBoardById(boardId))?.title,
+                    userName: req.user!.fullName
+                }
+            }
             await BoardRepository.addMemberToBoard(boardId, userId, role)
 
             if (type === 'invite') {
@@ -420,7 +437,7 @@ class BoardController {
         const membership = await boardMemberRepository.findOne({
             where: {
                 board: { id: boardId },
-                user: { id: user.id }
+                user: { id: user?.id }
             }
         })
         if (!membership) {
@@ -504,7 +521,10 @@ class BoardController {
                 type: EventType.BOARD_OWNER_CHANGED,
                 boardId: boardId,
                 actorId: currentOwnerId,
-                payload: { title: board.title, newOwnerId }
+                payload: {
+                    boardTitle: board.title,
+                    newOwnerId
+                }
             }
             EventBus.publish(event)
 
@@ -530,6 +550,18 @@ class BoardController {
                     )
                 }
             }
+
+            const event: DomainEvent = {
+                eventId: crypto.randomUUID(),
+                type: EventType.BOARD_MEMBER_REMOVED,
+                boardId: boardId,
+                actorId: req.user!.id,
+                payload: {
+                    boardTitle: isMember.board?.title,
+                    userName: isMember.user.fullName
+                }
+            }
+            EventBus.publish(event)
 
             await BoardRepository.removeMember(boardId, userId)
             return res.status(Status.OK).json(successResponse(Status.OK, 'Member removed successfully'))
@@ -651,8 +683,8 @@ class BoardController {
             }
             const userId = req.user.id
 
-            const { id } = req.params
-            const result = await boardService.getBoardById(id, userId)
+            const { boardId } = req.params
+            const result = await boardService.getBoardById(boardId, userId)
             return res.status(result.status).json(successResponse(result.status, result.message, result.data))
         } catch (err: any) {
             next(errorResponse(err.status || Status.INTERNAL_SERVER_ERROR, err.message))

@@ -274,6 +274,31 @@ export const boardsRegisterPath = () => {
         }
     })
 
+    //Get board archived
+    boardRegistry.registerPath({
+        method: 'get',
+        path: '/api/boards/archived',
+        tags: ['Board'],
+        summary: 'Get archived boards',
+        security: [{ bearerAuth: [] }],
+        request: {},
+        responses: {
+            200: {
+                description: 'Archived boards fetched successfully',
+                content: {
+                    'application/json': {
+                        schema: z.object({
+                            status: z.number(),
+                            message: z.string(),
+                            data: z.array(BoardResponseSchema)
+                        })
+                    }
+                }
+            }
+        }
+    })
+    
+
     // Archive board
     boardRegistry.registerPath({
         method: 'post',

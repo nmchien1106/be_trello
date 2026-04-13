@@ -5,6 +5,7 @@ export interface DomainEvent {
     type: EventType
     boardId?: string
     cardId?: string
+    listId?: string
     actorId: string
     workspaceId?: string
     payload?: any

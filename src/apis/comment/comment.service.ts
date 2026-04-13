@@ -8,60 +8,34 @@ import crypto from 'crypto'
 class CommentService {
     createComment = async (commentData: any) => {
         const comment = await CommentRepository.createComment(commentData)
-        // reload with relations
+
+        // Load đầy đủ relations: card -> list -> board
         const full = await CommentRepository.findById(comment.id)
-        if (full) {
+
+        if (full && full.card?.list?.board) {
             const evt: DomainEvent = {
                 eventId: crypto.randomUUID(),
                 type: EventType.COMMENT_CREATED,
                 boardId: full.card.list.board.id,
                 cardId: full.card.id,
                 actorId: full.user.id,
-                payload: { commentId: full.id, content: full.content }
+                payload: {
+                    commentId: full.id,
+                    content: full.content,
+                    cardName: full.card.title,
+                    listName: full.card.list.title
+                }
             }
+
             EventBus.publish(evt)
         }
-        return new CommentDTO(comment)
+
+        return new CommentDTO(full || comment)
     }
 
     getCommentsOnCard = async (cardId: string) => {
         const comments = await CommentRepository.findCommentsOnCard(cardId)
         return comments.map((comment) => new CommentDTO(comment))
-    }
-
-    deleteComment = async (commentId: string) => {
-        const existing = await CommentRepository.findById(commentId)
-        await CommentRepository.deleteComment(commentId)
-        if (existing) {
-            const evt: DomainEvent = {
-                eventId: crypto.randomUUID(),
-                type: EventType.COMMENT_DELETED,
-                boardId: (existing.card as any)?.list ? ((existing.card as any).list.board?.id ?? null) : null,
-                cardId: existing.card.id,
-                actorId: existing.user.id,
-                payload: { commentId: existing.id }
-            }
-            EventBus.publish(evt)
-        }
-        return
-    }
-
-    updateComment = async (commentId: string, commentData: any) => {
-        const updatedComment = await CommentRepository.updateComment(commentId, commentData)
-        if (updatedComment) {
-            const evt: DomainEvent = {
-                eventId: crypto.randomUUID(),
-                type: EventType.COMMENT_UPDATED,
-                boardId: (updatedComment.card as any)?.list
-                    ? ((updatedComment.card as any).list.board?.id ?? null)
-                    : null,
-                cardId: updatedComment.card.id,
-                actorId: updatedComment.user.id,
-                payload: { commentId: updatedComment.id, content: updatedComment.content }
-            }
-            EventBus.publish(evt)
-        }
-        return new CommentDTO(updatedComment)
     }
 
     getCommentById = async (commentId: string) => {
@@ -70,6 +44,56 @@ class CommentService {
             throw new Error('Comment not found')
         }
         return new CommentDTO(comment)
+    }
+
+
+    updateComment = async (commentId: string, commentData: any) => {
+        const updatedComment = await CommentRepository.updateComment(commentId, commentData)
+
+        if (updatedComment && updatedComment.card?.list?.board) {
+            const evt: DomainEvent = {
+                eventId: crypto.randomUUID(),
+                type: EventType.COMMENT_UPDATED,
+                boardId: updatedComment.card.list.board.id,
+                cardId: updatedComment.card.id,
+                actorId: updatedComment.user.id,
+                payload: {
+                    commentId: updatedComment.id,
+                    content: updatedComment.content,
+                    cardName: updatedComment.card.title,
+                    listName: updatedComment.card.list.title
+                }
+            }
+
+            EventBus.publish(evt)
+        }
+
+        return new CommentDTO(updatedComment)
+    }
+
+    deleteComment = async (commentId: string) => {
+        const existing = await CommentRepository.findById(commentId)
+
+        if (existing && existing.card?.list?.board) {
+            const evt: DomainEvent = {
+                eventId: crypto.randomUUID(),
+                type: EventType.COMMENT_DELETED,
+                boardId: existing.card.list.board.id,
+                cardId: existing.card.id,
+                actorId: existing.user.id,
+                payload: {
+                    commentId: existing.id,
+                    content: existing.content,
+                    cardName: existing.card.title,
+                    listName: existing.card.list.title
+                }
+            }
+
+            EventBus.publish(evt)
+        }
+
+        await CommentRepository.deleteComment(commentId)
+        return
     }
 }
 

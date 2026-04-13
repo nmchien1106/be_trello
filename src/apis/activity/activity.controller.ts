@@ -14,7 +14,7 @@ class ActivityController {
         try {
             const { boardId } = req.params
             const page = parseInt(req.query.page as string) || 1
-            const size = parseInt(req.query.size as string) || 20
+            const size = req.query.size ? parseInt(req.query.size as string) : undefined
 
             const result = await activityService.getByBoard(boardId, page, size)
             return res.status(result.status).json(result)
