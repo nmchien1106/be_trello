@@ -20,7 +20,7 @@ import { NotificationSubscriber } from './apis/notification/notification.subscri
 // Create Express app
 
 const app = express()
-const PORT = 3000
+const PORT = Number(process.env.PORT || 3000)
 
 let activitySubscriber: ActivitySubscriber | null = null
 let notificationSubscriber: NotificationSubscriber | null = null
@@ -49,7 +49,7 @@ app.use(morgan('dev')) // Logging middleware
 // cors
 app.use(
     cors({
-        origin: 'http://192.168.1.13:5173',
+        origin: Config.corsOrigin,
         credentials: true
     })
 )
@@ -87,5 +87,5 @@ app.use((req, res, next) => {
 app.use(ErrorHandler)
 
 app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`)
+    console.log(`Server running on port ${PORT}`)
 })
