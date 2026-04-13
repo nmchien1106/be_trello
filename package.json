@@ -41,6 +41,7 @@
     "scripts": {
         "dev": "npx nodemon",
         "build": "npx rimraf ./dist && npx tsc && npx tsc-alias",
+        "build:render": "npx rimraf ./dist && npx tsc --noCheck && npx tsc-alias",
         "start": "node dist/index.js",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
