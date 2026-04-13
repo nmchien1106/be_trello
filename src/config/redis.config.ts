@@ -1,7 +1,21 @@
 import { createClient } from 'redis'
 
+const normalizeRedisUrl = (): string => {
+    const rawUrl = (process.env.REDIS_URL || '').trim().replace(/^['"]|['"]$/g, '')
+    if (rawUrl) {
+        if (/^rediss?:\/\//i.test(rawUrl)) {
+            return rawUrl
+        }
+        return `redis://${rawUrl}`
+    }
+
+    const host = process.env.REDIS_HOST || '127.0.0.1'
+    const port = process.env.REDIS_PORT || '6379'
+    return `redis://${host}:${port}`
+}
+
 const redisClient = createClient({
-    url: process.env.REDIS_URL || 'redis://127.0.0.1:6379',
+    url: normalizeRedisUrl(),
     socket: {
         connectTimeout: 5000,
         reconnectStrategy: (retries) => {
@@ -26,6 +40,7 @@ redisClient.on('ready', () => {
 })
 ;(async () => {
     try {
+        console.log('Redis URL:', normalizeRedisUrl().replace(/:\/\/.*@/, '://***@'))
         await redisClient.connect()
     } catch (err) {
         console.error('Initial Redis connection failed:', err)
