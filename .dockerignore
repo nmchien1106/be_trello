@@ -3,3 +3,5 @@ dist
 .gitignore
 .git
 npm-debug.log
+.env
+.env.*

@@ -9,9 +9,6 @@ import { UserDTOForRelation } from '../users/user.dto'
 import notificationService from '../notification/notification.service'
 import { User } from '@/entities/user.entity'
 import { EntityType, NotificationType } from '@/enums/notification.enum'
-import { EventBus } from '@/events/event-bus'
-import { EventType } from '@/enums/event-type.enum'
-import crypto from 'crypto'
 
 class CardController {
     private getCardId(req: AuthRequest): string | undefined {
@@ -101,16 +98,7 @@ class CardController {
                     .json(errorResponse(Status.BAD_REQUEST, 'Member already added to card'))
             }
 
-            const newMember = await cardRepository.addMemberToCard(cardId, memberId)
-
-            EventBus.publish({
-                eventId: crypto.randomUUID(),
-                type: EventType.CARD_MEMBER_ASSIGNED,
-                boardId,
-                cardId,
-                actorId: req.user!.id,
-                payload: { memberId }
-            })
+            const newMember = await cardService.addMemberToCard(req.user!.id, cardId, memberId)
 
             // await notificationService.create({
             //     user: { id: memberId } as User,
@@ -165,17 +153,7 @@ class CardController {
                     .status(Status.NOT_FOUND)
                     .json(errorResponse(Status.NOT_FOUND, 'User is not member of the card'))
             }
-            await cardRepository.removeMemberFromCard(cardId, memberId)
-
-            const boardId = await cardRepository.getBoardIdFromCard(cardId)
-            EventBus.publish({
-                eventId: crypto.randomUUID(),
-                type: EventType.CARD_MEMBER_REMOVED,
-                boardId,
-                cardId,
-                actorId: req.user.id,
-                payload: { memberId }
-            })
+            await cardService.removeMemberFromCard(req.user.id, cardId, memberId)
 
             return res.status(Status.OK).json(successResponse(Status.OK, 'Member removed from card successfully'))
         } catch (err: any) {
@@ -190,7 +168,7 @@ class CardController {
             const cardId = this.getCardId(req)
             if (!cardId) return next(errorResponse(Status.BAD_REQUEST, 'Card ID is required'))
             const result = await cardService.toggleArchiveCard(req.user.id, cardId, true)
-            return res.status(result.status).json(successResponse(result.status, result.message, result.data))
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Card archived successfully', result))
         } catch (err: any) {
             next(errorResponse(err.status || 500, err.message))
         }
@@ -202,7 +180,7 @@ class CardController {
             const cardId = this.getCardId(req)
             if (!cardId) return next(errorResponse(Status.BAD_REQUEST, 'Card ID is required'))
             const result = await cardService.toggleArchiveCard(req.user.id, cardId, false)
-            return res.status(result.status).json(successResponse(result.status, result.message, result.data))
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Card unarchived successfully', result))
         } catch (err: any) {
             next(errorResponse(err.status || 500, err.message))
         }
@@ -214,7 +192,7 @@ class CardController {
             const cardId = this.getCardId(req)
             if (!cardId) return next(errorResponse(Status.BAD_REQUEST, 'Card ID is required'))
             const result = await cardService.duplicateCard(req.user.id, cardId, req.body)
-            return res.status(result.status).json(successResponse(result.status, result.message, result.data))
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Card duplicated successfully', result))
         } catch (err: any) {
             next(errorResponse(err.status || 500, err.message))
         }
@@ -226,7 +204,7 @@ class CardController {
             const cardId = this.getCardId(req)
             if (!cardId) return next(errorResponse(Status.BAD_REQUEST, 'Card ID is required'))
             const result = await cardService.reorderCard(req.user.id, cardId, req.body)
-            return res.status(result.status).json(successResponse(result.status, result.message, result.data))
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Card reordered successfully', result))
         } catch (err: any) {
             next(errorResponse(err.status || 500, err.message))
         }
@@ -238,7 +216,7 @@ class CardController {
             const cardId = this.getCardId(req)
             if (!cardId) return next(errorResponse(Status.BAD_REQUEST, 'Card ID is required'))
             const result = await cardService.moveCardToAnotherList(req.user.id, cardId, req.body)
-            return res.status(result.status).json(successResponse(result.status, result.message, result.data))
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Card moved successfully', result))
         } catch (err: any) {
             next(errorResponse(err.status || 500, err.message))
         }
@@ -255,9 +233,8 @@ class CardController {
                 targetListId,
                 beforeId,
                 afterId
-
             })
-            return res.status(result.status).json(successResponse(result.status, result.message, result.data))
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Card moved successfully', result))
         } catch (err: any) {
             next(errorResponse(err.status || 500, err.message))
         }
@@ -345,7 +322,7 @@ class CardController {
         try {
             const { id } = req.params
             if (!req.user?.id) throw { status: Status.UNAUTHORIZED, message: 'User info required' }
-            await cardService.deleteAttachment(id)
+            await cardService.deleteAttachment(id, req.user.id)
             return res.status(Status.OK).json({
                 status: Status.OK,
                 message: 'Attachment deleted successfully'
@@ -359,7 +336,7 @@ class CardController {
         try {
             if (!req.user?.id) return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
             const result = await cardService.getListOnCard(req.user.id, req.params.id)
-            return res.status(result.status).json(successResponse(result.status, result.message, result.data))
+            return res.status(Status.OK).json(successResponse(Status.OK, 'Get card list successfully', result))
         } catch (err: any) {
             next(errorResponse(err.status || Status.INTERNAL_SERVER_ERROR, err.message))
         }

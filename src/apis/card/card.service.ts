@@ -14,6 +14,7 @@ import { Attachment } from '@/entities/attachment.entity'
 import cloudinary from '@/config/cloundinary'
 import { DeepPartial } from 'typeorm'
 import cardRepository from './card.repository'
+import BoardRepository from '../board/board.repository'
 
 const attachmentRepo = AppDataSource.getRepository(Attachment)
 const cardRepo = AppDataSource.getRepository(Card)
@@ -188,6 +189,89 @@ export class CardService {
         return updated
     }
 
+    async moveCardToBoard(userId: string, cardId: string, data: any) {
+        if (!data?.targetListId) {
+            throw { status: Status.BAD_REQUEST, message: 'targetListId is required' }
+        }
+
+        return this.moveCardToAnotherList(userId, cardId, data)
+    }
+
+    async uploadCardBackground(cardId: string, file: Express.Multer.File) {
+        const card = await CardRepository.findById(cardId)
+        if (!card) throw { status: Status.NOT_FOUND, message: 'Card not found' }
+
+        if (!file?.buffer) {
+            throw { status: Status.BAD_REQUEST, message: 'Invalid file upload' }
+        }
+
+        const uploadResult = await new Promise<any>((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                reject({ status: Status.GATEWAY_TIMEOUT, message: 'Card background upload timed out' })
+            }, 30000)
+
+            const stream = cloudinary.uploader.upload_stream(
+                {
+                    folder: 'cards',
+                    public_id: `card_${cardId}_background`,
+                    resource_type: 'image',
+                    transformation: [{ width: 1600, height: 900, crop: 'limit' }]
+                },
+                (error, result) => {
+                    clearTimeout(timeout)
+                    if (error) {
+                        return reject(error)
+                    }
+                    resolve(result)
+                }
+            )
+
+            stream.end(file.buffer)
+        })
+
+        const backgroundUrl = uploadResult.secure_url || uploadResult.url
+        if (!backgroundUrl) {
+            throw { status: Status.INTERNAL_SERVER_ERROR, message: 'Failed to upload card background' }
+        }
+
+        return CardRepository.updateCard(cardId, {
+            backgroundUrl,
+            backgroundPublicId: uploadResult.public_id || `card_${cardId}_background`
+        })
+    }
+
+    async generatePresignedUrl(fileName: string, fileType: string, fileSize: number) {
+        const timestamp = Math.floor(Date.now() / 1000)
+        const folder = 'attachments'
+        const signature = (cloudinary as any).utils.api_sign_request(
+            {
+                folder,
+                tags: 'card-attachment',
+                timestamp
+            },
+            Config.cloudinaryApiSecret
+        )
+
+        return {
+            signature,
+            apiKey: Config.cloudinaryApiKey,
+            cloudName: Config.cloudinaryName,
+            timestamp,
+            folder,
+            fileName,
+            fileType,
+            fileSize
+        }
+    }
+
+    async getAttachmentsByCard(cardId: string) {
+        return attachmentRepo.find({
+            where: { card: { id: cardId } },
+            relations: ['uploadedBy'],
+            order: { createdAt: 'DESC' }
+        })
+    }
+
     async duplicateCard(userId: string, cardId: string, data: any) {
         const sourceCard = await CardRepository.findCardForDuplicate(cardId)
         if (!sourceCard) throw { status: Status.NOT_FOUND }
@@ -254,10 +338,109 @@ export class CardService {
         })
     }
 
+    async getListOnCard(userId: string, cardId: string) {
+        const list = await CardRepository.getListByCardId(cardId)
+        if (!list) {
+            throw { status: Status.NOT_FOUND, message: 'Card not found' }
+        }
+
+        return list
+    }
+
+    async getCardsDueSoon(userId: string) {
+        const now = new Date()
+        const dueSoon = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+
+        return cardRepo
+            .createQueryBuilder('card')
+            .leftJoinAndSelect('card.list', 'list')
+            .leftJoinAndSelect('list.board', 'board')
+            .leftJoin('board.boardMembers', 'boardMember')
+            .where('(board.ownerId = :userId OR boardMember.userId = :userId)', { userId })
+            .andWhere('card.isArchived = :isArchived', { isArchived: false })
+            .andWhere('card.dueDate IS NOT NULL')
+            .andWhere('card.dueDate BETWEEN :now AND :dueSoon', { now, dueSoon })
+            .orderBy('card.dueDate', 'ASC')
+            .getMany()
+    }
+
+    async getAssignedCards(userId: string, query: any) {
+        const page = Math.max(1, Number(query?.page) || 1)
+        const limit = Math.max(1, Number(query?.limit) || 10)
+        const boardId = query?.boardId as string | undefined
+        const status = (query?.status as string | undefined) || 'active'
+
+        const qb = cardRepo
+            .createQueryBuilder('card')
+            .leftJoinAndSelect('card.list', 'list')
+            .leftJoinAndSelect('list.board', 'board')
+            .innerJoin('card.cardMembers', 'cardMember')
+            .innerJoin('cardMember.user', 'assignedUser', 'assignedUser.id = :userId', { userId })
+
+        if (boardId) {
+            qb.andWhere('board.id = :boardId', { boardId })
+        }
+
+        if (status === 'archived') {
+            qb.andWhere('card.isArchived = :isArchived', { isArchived: true })
+        } else if (status === 'active') {
+            qb.andWhere('card.isArchived = :isArchived', { isArchived: false })
+        }
+
+        return qb
+            .orderBy('card.updatedAt', 'DESC')
+            .skip((page - 1) * limit)
+            .take(limit)
+            .getMany()
+    }
+
+    async globalSearch(userId: string, keyword: string) {
+        if (!keyword) {
+            return []
+        }
+
+        const wildKeyword = `%${keyword}%`
+
+        return cardRepo
+            .createQueryBuilder('card')
+            .leftJoinAndSelect('card.list', 'list')
+            .leftJoinAndSelect('list.board', 'board')
+            .leftJoin('board.boardMembers', 'boardMember')
+            .where('(board.ownerId = :userId OR boardMember.userId = :userId)', { userId })
+            .andWhere('card.isArchived = :isArchived', { isArchived: false })
+            .andWhere('(card.title ILIKE :keyword OR card.description ILIKE :keyword)', {
+                keyword: wildKeyword
+            })
+            .orderBy('card.updatedAt', 'DESC')
+            .take(10)
+            .getMany()
+    }
+
+    async getUnassignedMembers(cardId: string) {
+        const card = await cardRepo.findOne({
+            where: { id: cardId },
+            relations: ['list', 'list.board', 'cardMembers', 'cardMembers.user']
+        })
+
+        if (!card?.list?.board?.id) {
+            throw { status: Status.NOT_FOUND, message: 'Card not found' }
+        }
+
+        const boardMembers = await BoardRepository.findMemberByBoardId(card.list.board.id)
+        const assignedMemberIds = new Set((card.cardMembers || []).map((member) => member.user.id))
+
+        return boardMembers.filter((member) => !assignedMemberIds.has(member.user.id)).map((member) => member.user)
+    }
+
+    async getCardsInBoard(userId: string, boardId: string) {
+        return CardRepository.getCardsByBoardId(boardId)
+    }
+
     async addMemberToCard(userId: string, cardId: string, memberId: string) {
         const boardId = await cardRepository.getBoardIdFromCard(cardId)
 
         const newMember = await cardRepository.addMemberToCard(cardId, memberId)
+        const card = await CardRepository.findById(cardId)
 
         EventBus.publish({
             eventId: crypto.randomUUID(),
@@ -265,10 +448,34 @@ export class CardService {
             boardId,
             cardId,
             actorId: userId,
-            payload: { memberId, listName: newMember.card.list.title, cardTitle: newMember.card.title }
+            payload: {
+                memberId,
+                listName: card?.list?.title,
+                cardTitle: card?.title
+            }
         })
 
         return newMember
+    }
+
+    async removeMemberFromCard(userId: string, cardId: string, memberId: string) {
+        const boardId = await cardRepository.getBoardIdFromCard(cardId)
+
+        await cardRepository.removeMemberFromCard(cardId, memberId)
+
+        const card = await CardRepository.findById(cardId)
+        EventBus.publish({
+            eventId: crypto.randomUUID(),
+            type: EventType.CARD_MEMBER_REMOVED,
+            boardId,
+            cardId,
+            actorId: userId,
+            payload: {
+                memberId,
+                listName: card?.list?.title,
+                cardTitle: card?.title
+            }
+        })
     }
 }
 

@@ -39,6 +39,9 @@ class ActivityController {
     async getActivitiesByUser(req: Request, res: Response, next: NextFunction) {
         try {
             const userId = req.user?.id
+            if (!userId) {
+                return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+            }
             const page = parseInt(req.query.page as string) || 1
             const size = parseInt(req.query.size as string) || 20
 

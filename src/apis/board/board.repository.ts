@@ -67,7 +67,6 @@ class BoardRepository {
                 }
             })
         } catch (error: any) {
-            console.error('Error deleting board:', error.message)
             throw error
         }
     }

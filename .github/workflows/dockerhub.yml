@@ -1,0 +1,71 @@
+name: Build and Deploy Backend Image
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/kanby-backend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/kanby-backend:${{ github.sha }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            sudo mkdir -p /opt/kanby
+            cat > /opt/kanby/docker-compose.dockerhub.yml <<'EOF'
+            services:
+              backend:
+                image: ${{ secrets.DOCKERHUB_USERNAME }}/kanby-backend:latest
+                container_name: kanby-backend
+                env_file:
+                  - /opt/kanby/backend/.env.production
+                ports:
+                  - "3000:3000"
+                restart: unless-stopped
+
+              frontend:
+                image: ${{ secrets.DOCKERHUB_USERNAME }}/kanby-frontend:latest
+                container_name: kanby-frontend
+                depends_on:
+                  - backend
+                ports:
+                  - "8080:80"
+                restart: unless-stopped
+            EOF
+            cd /opt/kanby
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+            docker compose -f docker-compose.dockerhub.yml pull
+            docker compose -f docker-compose.dockerhub.yml up -d --remove-orphans

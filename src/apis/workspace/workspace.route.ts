@@ -40,7 +40,7 @@ router
     .route('/:workspaceId/archive')
     .post(
         verifyAccessToken,
-        checkWorkspacePermission(PERMISSIONS.MANAGE_WORKSPACE_PERMISSIONS),
+        checkWorkspacePermission(PERMISSIONS.UPDATE_WORKSPACE),
         WorkspaceController.archiveWorkspace
     )
 
@@ -88,7 +88,7 @@ router
     .route('/:workspaceId/share-link')
     .post(
         verifyAccessToken,
-        checkWorkspacePermission(PERMISSIONS.MANAGE_WORKSPACE_PERMISSIONS),
+        checkWorkspacePermission(PERMISSIONS.ADD_MEMBER_TO_WORKSPACE),
         WorkspaceController.createShareLink
     )
 

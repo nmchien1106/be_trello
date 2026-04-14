@@ -47,7 +47,6 @@ const Resolvers = {
 
     fromCardId: async (req: AuthRequest): Promise<PermissionContext> => {
         const cardId = req.params.cardId || req.body.cardId || req.query.cardId || req.params.id
-        console.log(cardId)
         if (!cardId) return null
         const card = await cardRepository.findById(cardId)
         return card ? { boardId: card.list.board.id } : null
@@ -139,13 +138,12 @@ export const authorize = (requiredPermission: string, resolver: ContextResolver)
             let hasPermission: boolean = false
             if (boardId) hasPermission = await canUserAccess(user.id, requiredPermission, { boardId })
             if (workspaceId) hasPermission = await canUserAccess(user.id, requiredPermission, { workspaceId })
+
             if (!hasPermission) {
-                console.log('Permission check:', { userId: user.id, requiredPermission, context, hasPermission })
                 return next(errorResponse(Status.FORBIDDEN, 'You do not have permission to access this resource'))
             }
             next()
         } catch (err) {
-            console.log(err)
             return next(errorResponse(Status.FORBIDDEN, 'You do not have permission to access this resource'))
         }
     }

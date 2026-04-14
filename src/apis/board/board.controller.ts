@@ -34,6 +34,17 @@ const workspaceRepo = AppDataSource.getRepository(Workspace)
 const boardService = new BoardService()
 
 class BoardController {
+    private parseCopyCardFlag(value: unknown, defaultValue = true): boolean {
+        if (typeof value === 'boolean') return value
+        if (typeof value === 'number') return value === 1
+        if (typeof value === 'string') {
+            const normalized = value.trim().toLowerCase()
+            if (['1', 'true', 'yes', 'y'].includes(normalized)) return true
+            if (['0', 'false', 'no', 'n'].includes(normalized)) return false
+        }
+        return defaultValue
+    }
+
     public seedTemplates = async (req: AuthRequest, res: Response) => {
         try {
             const boardRepo = AppDataSource.getRepository(Board)
@@ -193,6 +204,9 @@ class BoardController {
             const { boardId } = req.params
             const data = req.body
             const userId = req.user?.id
+            if (!userId) {
+                return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+            }
 
             const updatedBoard = await BoardRepository.updateBoard(boardId, data)
             if (!updatedBoard) {
@@ -226,6 +240,9 @@ class BoardController {
         try {
             const { boardId } = req.params
             const userId = req.user?.id
+            if (!userId) {
+                return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+            }
 
             const board = await BoardRepository.getBoardById(boardId)
             if (!board) {
@@ -261,6 +278,9 @@ class BoardController {
         try {
             const { boardId } = req.params
             const userId = req.user?.id
+            if (!userId) {
+                return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+            }
 
             const board = await BoardRepository.getBoardById(boardId)
             if (!board) {
@@ -322,6 +342,9 @@ class BoardController {
         try {
             const { boardId } = req.params
             const userId = req.user?.id
+            if (!userId) {
+                return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+            }
 
             const board = await BoardRepository.getBoardById(boardId)
             if (!board) {
@@ -485,6 +508,9 @@ class BoardController {
 
     async createShareLink(req: AuthRequest, res: Response, next: NextFunction) {
         const user = req.user
+        if (!user?.id) {
+            return next(errorResponse(Status.UNAUTHORIZED, 'User info missing'))
+        }
 
         const boardId = req.params.boardId
         const board = BoardRepository.getBoardById(boardId)
@@ -495,7 +521,7 @@ class BoardController {
         const membership = await boardMemberRepository.findOne({
             where: {
                 board: { id: boardId },
-                user: { id: user?.id }
+                user: { id: user.id }
             }
         })
         if (!membership) {
@@ -822,6 +848,8 @@ class BoardController {
 
             const userId = req.user.id
             const { boardId } = req.params
+            const copyCard = this.parseCopyCardFlag(req.query.copyCard ?? req.body?.copyCard, true)
+            const selectedCategory = typeof req.body?.category === 'string' ? req.body.category.trim() : ''
 
             const board = await boardRepo.findOne({
                 where: { id: boardId, isArchived: false },
@@ -844,6 +872,7 @@ class BoardController {
                     manager.create(Board, {
                         title: board.title,
                         description: board.description,
+                        category: selectedCategory || board.category,
                         permissionLevel: board.permissionLevel,
                         backgroundPath: board.backgroundPath,
                         backgroundPublicId: board.backgroundPublicId,
@@ -884,7 +913,7 @@ class BoardController {
                         ) ?? []
                 )
 
-                if (cardsToCreate.length > 0) {
+                if (copyCard && cardsToCreate.length > 0) {
                     await manager.save(cardsToCreate)
                 }
             })
@@ -903,7 +932,9 @@ class BoardController {
                 successResponse(Status.CREATED, 'Board template created from board successfully', {
                     id: templateBoard.id,
                     title: templateBoard.title,
-                    isTemplate: true
+                    category: templateBoard.category,
+                    isTemplate: true,
+                    copiedCards: copyCard
                 })
             )
         } catch (err) {
@@ -915,7 +946,7 @@ class BoardController {
         try {
             const { title, workspaceId } = req.body
             const { templateId } = req.params
-            const copyCard = req.query.copyCard === '1'
+            const copyCard = this.parseCopyCardFlag(req.query.copyCard ?? req.body?.copyCard, true)
             const userId = req.user!.id
 
             const template = await BoardRepository.findTemplateById(templateId, copyCard)
@@ -973,12 +1004,15 @@ class BoardController {
                                     position: card.position,
                                     priority: card.priority,
                                     dueDate: card.dueDate,
-                                    list: listMap.get(list.id)!
+                                    list: listMap.get(list.id)!,
+                                    createdBy: { id: userId }
                                 })
                             ) ?? []
                     )
 
-                    savedCards = await manager.save(cardsToCreate)
+                    if (cardsToCreate.length > 0) {
+                        savedCards = await manager.save(cardsToCreate)
+                    }
                 }
 
                 await manager.save(
@@ -1004,6 +1038,8 @@ class BoardController {
                     backgroundPublicId: savedBoard!.backgroundPublicId,
                     ownerId: userId,
                     workspaceId,
+                    copiedCards: copyCard,
+                    copiedCardCount: savedCards.length,
                     createdAt: savedBoard!.createdAt,
                     updatedAt: savedBoard!.updatedAt
                 }
@@ -1041,13 +1077,11 @@ class BoardController {
             member.isStarred = !member.isStarred
             await boardMemberRepo.save(member)
 
-            return res
-                .status(Status.OK)
-                .json(
-                    successResponse(Status.OK, member.isStarred ? 'Board starred' : 'Board unstarred', {
-                        isStarred: member.isStarred
-                    })
-                )
+            return res.status(Status.OK).json(
+                successResponse(Status.OK, member.isStarred ? 'Board starred' : 'Board unstarred', {
+                    isStarred: member.isStarred
+                })
+            )
         } catch (err) {
             next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to toggle star', err))
         }

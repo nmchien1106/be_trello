@@ -58,6 +58,10 @@ export const canUserAccess = async (
         ...(boardId && { boardId })
     })
 
+    console.log(memberships)
+    console.log(memberships[0].role.permissions)
+    console.log(permission)
+
     if (memberships.length == 0) {
         return false
     }

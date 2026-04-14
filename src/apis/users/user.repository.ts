@@ -1,6 +1,7 @@
 import { User } from '@/entities/user.entity'
 import AppDataSource from '@/config/typeorm.config'
 import { Role } from '@/entities/role.entity'
+import { FindOptionsWhere } from 'typeorm'
 
 class UserRepository {
     private repo = AppDataSource.getRepository(User)
@@ -48,7 +49,7 @@ class UserRepository {
     findByEmailAsync = async (email: string | undefined): Promise<User | null> => {
         return this.repo.findOneBy({ email })
     }
-    findUserBy = async (query: Partial<User>) => {
+    findUserBy = async (query: FindOptionsWhere<User>) => {
         return this.repo.findOne({ where: query, relations: ['roles'] })
     }
 
