@@ -381,11 +381,16 @@ class BoardController {
             }
 
             const updatedBoard = await boardService.uploadBoardBackground(boardId, req.file as Express.Multer.File)
-            return res.status(Status.OK).json(
-                successResponse(Status.OK, 'Board background uploaded successfully', updatedBoard)
-            )
+            return res
+                .status(Status.OK)
+                .json(successResponse(Status.OK, 'Board background uploaded successfully', updatedBoard))
         } catch (err: any) {
-            next(errorResponse(err.status || Status.INTERNAL_SERVER_ERROR, err.message || 'Failed to upload board background'))
+            next(
+                errorResponse(
+                    err.status || Status.INTERNAL_SERVER_ERROR,
+                    err.message || 'Failed to upload board background'
+                )
+            )
         }
     }
 
