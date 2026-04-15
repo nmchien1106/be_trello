@@ -6,6 +6,7 @@ import {
     CreateCardSchema,
     CreateAttachmentSchema,
     ReorderCardSchema,
+    ReorderCardListSchema,
     DuplicateCardSchema,
     MoveCardToBoardSchema,
     AddMemberToCard,
@@ -93,7 +94,7 @@ route.post(
     '/:cardId/reorder-list',
     verifyAccessToken,
     checkCardPermission(PERMISSIONS.UPDATE_CARD),
-    validateHandle(ReorderCardSchema),
+    validateHandle(ReorderCardListSchema),
     cardController.reorderCardList
 )
 

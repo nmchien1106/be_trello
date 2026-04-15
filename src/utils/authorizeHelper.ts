@@ -27,40 +27,59 @@ export const canUserAccess = async (
 ) => {
     const { workspaceId, boardId } = context || {}
 
-    // FOR ONLY READ
-    // if (boardId && typeof permission === 'string') {
-    //     const board = await DataSource.getRepository(Board).findOne({
-    //         where: { id: boardId },
-    //         relations: ['workspace']
-    //     })
+    if (boardId && typeof permission === 'string') {
+        const board = await DataSource.getRepository(Board).findOne({
+            where: { id: boardId },
+            relations: ['workspace']
+        })
 
-    //     if (board) {
-    //         if (board.permissionLevel === 'public' && permission.endsWith(':read')) {
-    //             return true
-    //         }
+        if (board) {
+            if (board.permissionLevel === 'public' && permission === PERMISSIONS.READ_BOARD) {
+                return true
+            }
 
-    //         if (board.permissionLevel === 'workspace' && board.workspace?.id) {
-    //             const wsMember = await DataSource.getRepository(WorkspaceMembers).findOne({
-    //                 where: {
-    //                     user: { id: userId },
-    //                     workspace: { id: board.workspace.id },
-    //                     status: 'accepted'
-    //                 }
-    //             })
+            if (board.permissionLevel === 'workspace' && board.workspace?.id) {
+                const sensitivePermissions = [
+                    PERMISSIONS.UPDATE_BOARD_MEMBER_ROLE,
+                    PERMISSIONS.REMOVE_MEMBER_FROM_BOARD,
+                    PERMISSIONS.DELETE_BOARD,
+                    PERMISSIONS.UPDATE_BOARD,
+                    PERMISSIONS.ADD_MEMBER_TO_BOARD,
+                    PERMISSIONS.REVOKE_LINK,
+                    PERMISSIONS.MANAGE_BOARD,
+                    PERMISSIONS.UPDATE_BOARD_SETTINGS
+                ]
 
-    //             if (wsMember) {
-    //                 return true
-    //             }
-    //         }
-    //     }
-    // }
+                if (!sensitivePermissions.includes(permission as any)) {
+                    const wsMember = await DataSource.getRepository(WorkspaceMembers).findOne({
+                        where: {
+                            user: { id: userId },
+                            workspace: { id: board.workspace.id },
+                            status: 'accepted'
+                        }
+                    })
+
+                    if (wsMember) {
+                        return true
+                    }
+                }
+            }
+        }
+    }
 
     const memberships = await getMembership(userId, {
         ...(workspaceId && { workspaceId }),
         ...(boardId && { boardId })
     })
 
+    console.log(`[DEBUG] User ${userId} checking permission "${permission}":`, {
+        context: { workspaceId, boardId },
+        memberships: memberships.map((m) => ({ scope: m.scope, role: m.role.name })),
+        found: memberships.length > 0
+    })
+
     if (memberships.length == 0) {
+        console.log(`[DEBUG] No memberships found for user ${userId}`)
         return false
     }
     const priority = {
@@ -73,10 +92,12 @@ export const canUserAccess = async (
 
     for (const membership of memberships) {
         const hasPerm = await roleHashPermissions(membership.role, permission)
+        console.log(`[DEBUG] Role ${membership.role.name} has permission "${permission}": ${hasPerm}`)
         if (hasPerm) {
             return true
         }
     }
+    console.log(`[DEBUG] User ${userId} does not have permission "${permission}"`)
     return false
 }
 
@@ -90,7 +111,6 @@ const getMembership = async (userId: string, context?: { workspaceId?: string; b
             where: { user: { id: userId }, board: { id: boardId } },
             relations: ['role', 'role.permissions']
         })
-        console.log('Board Member:', boardMember)
 
         if (boardMember) {
             memberships.push({

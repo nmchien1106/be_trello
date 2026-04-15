@@ -5,6 +5,7 @@ import { EventType } from '@/enums/event-type.enum'
 import crypto from 'crypto'
 import { CreateBoardDto } from './board.dto'
 import { Status } from '@/types/response'
+import cloudinary from '@/config/cloundinary'
 
 export class BoardService {
     async getPublicBoards() {
@@ -87,5 +88,48 @@ export class BoardService {
         } catch (error: any) {
             throw { status: Status.BAD_REQUEST, message: error.message }
         }
+    }
+
+    async uploadBoardBackground(boardId: string, file: Express.Multer.File) {
+        const board = await BoardRepository.getBoardById(boardId)
+        if (!board) throw { status: Status.NOT_FOUND, message: 'Board not found' }
+
+        if (!file?.buffer) {
+            throw { status: Status.BAD_REQUEST, message: 'Invalid file upload' }
+        }
+
+        const uploadResult = await new Promise<any>((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                reject({ status: Status.GATEWAY_TIMEOUT, message: 'Board background upload timed out' })
+            }, 30000)
+
+            const stream = cloudinary.uploader.upload_stream(
+                {
+                    folder: 'boards',
+                    public_id: `board_${boardId}_background`,
+                    resource_type: 'image',
+                    transformation: [{ width: 1500, height: 500, crop: 'limit' }]
+                },
+                (error, result) => {
+                    clearTimeout(timeout)
+                    if (error) {
+                        return reject(error)
+                    }
+                    resolve(result)
+                }
+            )
+
+            stream.end(file.buffer)
+        })
+
+        const backgroundUrl = uploadResult.secure_url || uploadResult.url
+        if (!backgroundUrl) {
+            throw { status: Status.INTERNAL_SERVER_ERROR, message: 'Failed to upload board background' }
+        }
+
+        return BoardRepository.updateBoard(boardId, {
+            backgroundPath: backgroundUrl,
+            backgroundPublicId: uploadResult.public_id || `board_${boardId}_background`
+        })
     }
 }

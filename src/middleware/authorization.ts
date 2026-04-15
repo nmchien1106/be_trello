@@ -138,14 +138,6 @@ export const authorize = (requiredPermission: string, resolver: ContextResolver)
             let { workspaceId, boardId } = context
 
             let hasPermission: boolean = false
-            if (boardId && workspaceId == undefined) {
-                boardRepository.getBoardById(boardId).then((board) => {
-                    if (board) {
-                        console.log(board)
-                        workspaceId = board.workspace.id
-                    }
-                })
-            }
 
             if (boardId) hasPermission = await canUserAccess(user.id, requiredPermission, { boardId })
             if (workspaceId) hasPermission = await canUserAccess(user.id, requiredPermission, { workspaceId })

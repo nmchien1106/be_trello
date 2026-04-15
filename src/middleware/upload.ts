@@ -2,23 +2,6 @@ import multer from 'multer'
 import cloudinary from '@/config/cloundinary'
 import CloudinaryStorage from 'multer-storage-cloudinary'
 
-
-
-const BoardCoverStorage = new CloudinaryStorage({
-    cloudinary: multer.memoryStorage(),
-    params: async (req, file) => {
-        const { boardId } = req.params
-        const publicId = `board_${boardId}_cover`
-        const fileExtension = file.mimetype.split('/')[1]
-        return {
-            folder: 'boards',
-            public_id: publicId,
-            allowed_formats: ['jpg', 'jpeg', 'png'],
-            transformation: [{ width: 1500, height: 500, crop: 'limit' }]
-        }
-    }
-})
-
 export const AvatarUpload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 2 * 1024 * 1024 },
@@ -32,7 +15,7 @@ export const AvatarUpload = multer({
 })
 
 export const BoardUpload = multer({
-    storage: BoardCoverStorage,
+    storage: multer.memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
         if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {

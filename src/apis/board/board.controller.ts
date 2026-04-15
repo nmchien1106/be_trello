@@ -380,18 +380,12 @@ class BoardController {
                 return next(errorResponse(Status.BAD_REQUEST, 'No file uploaded'))
             }
 
-            const { path, filename } = req.file as any
-            const updatedBoard = await BoardRepository.updateBoard(boardId, {
-                backgroundPath: path,
-                backgroundPublicId: filename
-            })
-            return res.status(Status.OK).json({
-                status: Status.OK,
-                message: 'Board background uploaded successfully',
-                data: updatedBoard
-            })
-        } catch (err) {
-            next(errorResponse(Status.INTERNAL_SERVER_ERROR, 'Failed to upload board background', err))
+            const updatedBoard = await boardService.uploadBoardBackground(boardId, req.file as Express.Multer.File)
+            return res.status(Status.OK).json(
+                successResponse(Status.OK, 'Board background uploaded successfully', updatedBoard)
+            )
+        } catch (err: any) {
+            next(errorResponse(err.status || Status.INTERNAL_SERVER_ERROR, err.message || 'Failed to upload board background'))
         }
     }
 
@@ -563,18 +557,41 @@ class BoardController {
     updateMemberRole = async (req: AuthRequest, res: Response, next: NextFunction) => {
         const { boardId, userId } = req.params
         const { roleName } = req.body
+        const currentUserId = req.user!.id
+
         if (!boardId || !userId || !roleName) {
             return next(errorResponse(Status.BAD_REQUEST, 'boardId, userId and roleName are required'))
         }
+
         try {
-            const isMember = await BoardRepository.findMemberByUserId(boardId, userId)
-            if (!isMember) {
+            // Verify that the current user is a board member (not just workspace member)
+            const currentUserMember = await BoardRepository.findMemberByUserId(boardId, currentUserId)
+            if (!currentUserMember) {
+                return next(errorResponse(Status.FORBIDDEN, 'You are not a member of this board'))
+            }
+
+            // Check that the current user is a board admin
+            if (currentUserMember.role.name !== 'board_admin') {
+                return next(errorResponse(Status.FORBIDDEN, 'Only board admins can change member roles'))
+            }
+
+            // Verify the target user exists as a board member
+            const targetMember = await BoardRepository.findMemberByUserId(boardId, userId)
+            if (!targetMember) {
                 return next(errorResponse(Status.NOT_FOUND, 'User is not a member of the board'))
             }
+
+            // Get the new role
             const newRole = await roleRepo.findOne({ where: { name: roleName } })
             if (!newRole) {
                 return next(errorResponse(Status.NOT_FOUND, 'Role not found'))
             }
+
+            // Prevent removing board admin from board (only allow changing role between board_admin and board_member)
+            if ((targetMember.role.name === 'board_admin' || roleName === 'board_admin') && currentUserId === userId) {
+                return next(errorResponse(Status.FORBIDDEN, 'You cannot change your own admin status'))
+            }
+
             await BoardRepository.updateMemberRole(boardId, userId, roleName)
             return res.status(Status.OK).json(successResponse(Status.OK, 'Member role updated successfully'))
         } catch (err) {

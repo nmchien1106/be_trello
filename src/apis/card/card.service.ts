@@ -140,12 +140,7 @@ export class CardService {
         const before = data.beforeId ? await CardRepository.getCardById(data.beforeId) : null
         const after = data.afterId ? await CardRepository.getCardById(data.afterId) : null
 
-        const newPosition = await calcPosition(
-            before?.position ?? null,
-            after?.position ?? null,
-            data.targetListId,
-            'card'
-        )
+        const newPosition = await calcPosition(before?.position ?? null, after?.position ?? null, data.listId, 'card')
 
         const updated = await CardRepository.updateCard(cardId, { position: newPosition })
 
@@ -168,8 +163,20 @@ export class CardService {
         const targetList = await ListRepository.findById(data.targetListId)
         if (!targetList) throw { status: Status.NOT_FOUND }
 
+        // Calculate position based on beforeId and afterId
+        const before = data.beforeId ? await CardRepository.getCardById(data.beforeId) : null
+        const after = data.afterId ? await CardRepository.getCardById(data.afterId) : null
+
+        const newPosition = await calcPosition(
+            before?.position ?? null,
+            after?.position ?? null,
+            data.targetListId,
+            'card'
+        )
+
         const updated = await CardRepository.updateCard(cardId, {
-            list: { id: targetList.id }
+            list: { id: targetList.id },
+            position: newPosition
         })
 
         EventBus.publish({

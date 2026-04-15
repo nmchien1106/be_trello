@@ -63,6 +63,12 @@ export const ReorderCardSchema = z.object({
     listId: z.string().uuid().describe('ID của List đích (bắt buộc để xác định context)')
 })
 
+export const ReorderCardListSchema = z.object({
+    beforeId: z.string().nullable().optional().describe('ID của card đứng trước (nếu có, null nếu ở đầu list)'),
+    afterId: z.string().nullable().optional().describe('ID của card đứng sau (nếu có, null nếu ở cuối list)'),
+    targetListId: z.string().uuid().describe('ID của List đích (bắt buộc để xác định context)')
+})
+
 export const MoveCardToBoardSchema = z.object({
     targetBoardId: z.string().min(1).describe('ID của Board đích'),
     targetListId: z.string().min(1).describe('ID của List đích thuộc Board đích'),
