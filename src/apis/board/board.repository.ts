@@ -21,7 +21,7 @@ class BoardRepository {
     }
 
     getBoardById = async (boardId: string): Promise<Board | null> => {
-        return this.repo.findOne({ where: { id: boardId }, relations: ['owner'] })
+        return this.repo.findOne({ where: { id: boardId }, relations: ['owner', 'workspace'] })
     }
     updateBoard = async (boardId: string, updateData: Partial<Board>): Promise<Board | null> => {
         if (!boardId) {

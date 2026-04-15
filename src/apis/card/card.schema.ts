@@ -25,27 +25,27 @@ export const CreateCardSchema = z.object({
 })
 
 export const UpdateCardSchema = z.object({
-    title: z.string().min(1, "Title is required").max(100, "Title must be less than 100 characters").optional(),
-    description: z.string().optional()
-})
-
-export const CreateAttachmentParamsSchema = z.object({
-    id: z.string().min(1, 'Invalid card ID')
-})
-
-
-export const CreateAttachmentBodySchema = z.object({
-    fileUrl: z.string().url(),
-    fileName: z.string(),
-    publicId: z.string().optional()
+    title: z.string().min(1, 'Title is required').max(100, 'Title must be less than 100 characters').optional(),
+    description: z.string().optional(),
+    dueDate: z
+        .string()
+        .optional()
+        .nullable()
+        .refine(
+            (val) => {
+                if (val === undefined || val === null || val === '') return true
+                const t = Date.parse(val)
+                return !Number.isNaN(t)
+            },
+            { message: 'Invalid date format (use ISO string)' }
+        )
 })
 
 export const CreateAttachmentSchema = z.object({
-    params: z.object({
-        cardId: z.string().min(1, 'Invalid card ID')
-    })
+    fileUrl: z.string().url('Invalid file URL'),
+    fileName: z.string().min(1, 'File name is required'),
+    publicId: z.string().optional()
 })
-
 
 export const AttachmentSchema = z.object({
     id: z.string().uuid(),

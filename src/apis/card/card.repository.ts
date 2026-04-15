@@ -96,7 +96,8 @@ class CardRepository {
 
     findMemberById = async (cardId: string, memberId: string): Promise<CardMembers | null> => {
         return await this.cardMemberRepo.findOne({
-            where: { card: { id: cardId }, user: { id: memberId } }
+            where: { card: { id: cardId }, user: { id: memberId } },
+            relations: ['card', 'user']
         })
     }
 
@@ -131,13 +132,13 @@ class CardRepository {
     }
 
     async findCardWithBoard(id: string) {
-        console.log('findCardWithBoard called with ID:', id);
+        console.log('findCardWithBoard called with ID:', id)
         const card = await this.repo.findOne({
             where: { id },
             relations: ['list', 'list.board']
-        });
-        console.log('findCardWithBoard result:', card ? 'found' : 'not found');
-        return card;
+        })
+        console.log('findCardWithBoard result:', card ? 'found' : 'not found')
+        return card
     }
 
     async findCardForDuplicate(id: string) {

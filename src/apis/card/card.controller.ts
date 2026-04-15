@@ -92,6 +92,7 @@ class CardController {
             }
 
             const result = await cardRepository.findMemberById(cardId, memberId)
+            console.log(result)
             if (result) {
                 return res
                     .status(Status.BAD_REQUEST)
@@ -99,16 +100,6 @@ class CardController {
             }
 
             const newMember = await cardService.addMemberToCard(req.user!.id, cardId, memberId)
-
-            // await notificationService.create({
-            //     user: { id: memberId } as User,
-            //     message: 'You have been added to a card',
-            //     type: NotificationType.CARD_ASSIGNED,
-            //     actionUrl: `/card/${cardId}`,
-            //     actor: { id: req.user?.id } as User,
-            //     entityType: EntityType.CARD,
-            //     entityId: cardId,
-            // })
 
             return res
                 .status(Status.CREATED)
@@ -281,12 +272,18 @@ class CardController {
 
     createAttachment = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
-            const { id } = req.params
+            const { cardId } = req.params
             const { fileUrl, fileName, publicId } = req.body
             if (!fileUrl || !fileName) {
                 return next(errorResponse(Status.BAD_REQUEST, 'Missing required fields'))
             }
-            const attachment = await cardService.uploadAttachmentFromUrl(id, fileUrl, fileName, req.user!.id, publicId)
+            const attachment = await cardService.uploadAttachmentFromUrl(
+                cardId,
+                fileUrl,
+                fileName,
+                req.user!.id,
+                publicId
+            )
             return res.status(Status.OK).json({
                 status: Status.OK,
                 message: 'Attachment uploaded successfully',

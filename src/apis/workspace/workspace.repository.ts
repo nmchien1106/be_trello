@@ -131,15 +131,43 @@ export class WorkspaceRepository {
         )
     }
 
-    async getBoardsInWorkspace(workspaceId: string): Promise<Board[]> {
+    async getBoardsInWorkspace(workspaceId: string, userId: string): Promise<Board[]> {
         const workspace = await this.workspaceRepo.findOne({
             where: { id: workspaceId },
-            relations: ['boards', 'boards.workspace']
+            relations: [
+                'boards',
+                'boards.workspace',
+                'boards.boardMembers',
+                'boards.boardMembers.user',
+                'workspaceMembers',
+                'workspaceMembers.user'
+            ]
         })
         if (!workspace) {
             throw new Error('Workspace not found')
         }
-        return workspace.boards
+
+        const isWorkspaceMember = workspace.workspaceMembers.some(
+            (member) => member.user?.id === userId && member.status === 'accepted'
+        )
+
+        return workspace.boards.filter((board) => {
+            const isBoardMember = board.boardMembers?.some((member) => member.user?.id === userId)
+
+            if (board.permissionLevel === 'public') {
+                return true
+            }
+
+            if (board.permissionLevel === 'workspace') {
+                return isWorkspaceMember || !!isBoardMember
+            }
+
+            if (board.permissionLevel === 'private') {
+                return !!isBoardMember
+            }
+
+            return false
+        })
     }
 
     async findMemberByUserId(workspaceId: string, userId: string) {

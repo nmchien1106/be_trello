@@ -30,7 +30,7 @@ route.get(
     verifyAccessToken,
     checkBoardPermission(PERMISSIONS.READ_BOARD),
     cardController.getCardsInBoard
-) // SCRUM-162
+)
 
 // Create a new card
 route.post(

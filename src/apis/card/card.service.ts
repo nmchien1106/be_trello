@@ -71,7 +71,7 @@ export class CardService {
         Object.assign(card, {
             title: data.title ?? card.title,
             description: data.description ?? card.description,
-            dueDate: data.dueDate ? new Date(data.dueDate) : card.dueDate,
+            dueDate: data.dueDate === undefined ? card.dueDate : data.dueDate === null ? null : new Date(data.dueDate),
             labels: data.labels ?? card.labels,
             priority: data.priority ?? card.priority,
             isArchived: data.isArchived ?? card.isArchived
@@ -429,7 +429,16 @@ export class CardService {
         const boardMembers = await BoardRepository.findMemberByBoardId(card.list.board.id)
         const assignedMemberIds = new Set((card.cardMembers || []).map((member) => member.user.id))
 
-        return boardMembers.filter((member) => !assignedMemberIds.has(member.user.id)).map((member) => member.user)
+        return boardMembers
+            .filter((member) => !assignedMemberIds.has(member.user.id))
+            .map((member) => ({
+                userId: member.user.id,
+                username: member.user.username,
+                avatarUrl: member.user.avatarUrl,
+                fullName: member.user.fullName,
+                email: member.user.email,
+                role: member.role?.name || 'board_member'
+            }))
     }
 
     async getCardsInBoard(userId: string, boardId: string) {

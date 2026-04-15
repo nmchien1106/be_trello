@@ -22,6 +22,7 @@ import cardRepository from '@/apis/card/card.repository'
 import checklistRepository from '@/apis/checklist/checklist.repository'
 import { canUserAccess } from '@/utils/authorizeHelper'
 import { Permission } from '@/enums/permissions.enum'
+import boardRepository from '@/apis/board/board.repository'
 
 type PermissionContext = { workspaceId?: string; boardId?: string } | null
 type ContextResolver = (req: AuthRequest) => Promise<PermissionContext> | PermissionContext
@@ -134,8 +135,18 @@ export const authorize = (requiredPermission: string, resolver: ContextResolver)
             if (!context) {
                 return next(errorResponse(Status.BAD_REQUEST, 'Invalid request context'))
             }
-            const { workspaceId, boardId } = context
+            let { workspaceId, boardId } = context
+
             let hasPermission: boolean = false
+            if (boardId && workspaceId == undefined) {
+                boardRepository.getBoardById(boardId).then((board) => {
+                    if (board) {
+                        console.log(board)
+                        workspaceId = board.workspace.id
+                    }
+                })
+            }
+
             if (boardId) hasPermission = await canUserAccess(user.id, requiredPermission, { boardId })
             if (workspaceId) hasPermission = await canUserAccess(user.id, requiredPermission, { workspaceId })
 

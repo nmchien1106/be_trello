@@ -1,8 +1,0 @@
-services:
-    - type: web
-      name: trello-backend
-      runtime: node
-      plan: free
-      buildCommand: npm install --include=dev && npm run build:render
-      startCommand: npm run start
-      autoDeploy: true

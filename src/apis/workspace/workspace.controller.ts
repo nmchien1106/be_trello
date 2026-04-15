@@ -254,7 +254,7 @@ class WorkspaceController {
                 return next(errorResponse(Status.UNAUTHORIZED, 'Authentication required'))
             }
             const workspaceId = req.params.workspaceId
-            const boards = await repo.getBoardsInWorkspace(workspaceId)
+            const boards = await repo.getBoardsInWorkspace(workspaceId, user.id)
             return res.status(Status.OK).json(successResponse(Status.OK, 'Get all boards in workspace', boards))
         } catch (err) {
             next(err)

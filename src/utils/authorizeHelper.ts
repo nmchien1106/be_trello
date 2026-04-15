@@ -1,9 +1,10 @@
-import { Permission } from '@/enums/permissions.enum'
+import { Permission, PERMISSIONS } from '@/enums/permissions.enum'
 import DataSource from '@/config/typeorm.config'
 import { BoardMembers } from '@/entities/board-member.entity'
 import { WorkspaceMembers } from '@/entities/workspace-member.entity'
 import { Role } from '@/entities/role.entity'
 import { Board } from '@/entities/board.entity'
+import { Console } from 'console'
 
 export const checkBoardAccess = async (userId: string, boardId: string, permission: Permission) => {}
 export const checkWorkspaceAccess = async (userId: string, workspaceId: string, permission: Permission) => {}
@@ -26,41 +27,38 @@ export const canUserAccess = async (
 ) => {
     const { workspaceId, boardId } = context || {}
 
-    if (boardId && typeof permission === 'string') {
-        const board = await DataSource.getRepository(Board).findOne({
-            where: { id: boardId },
-            relations: ['workspace']
-        })
+    // FOR ONLY READ
+    // if (boardId && typeof permission === 'string') {
+    //     const board = await DataSource.getRepository(Board).findOne({
+    //         where: { id: boardId },
+    //         relations: ['workspace']
+    //     })
 
-        if (board) {
-            if (board.permissionLevel === 'public') {
-                return true
-            }
+    //     if (board) {
+    //         if (board.permissionLevel === 'public' && permission.endsWith(':read')) {
+    //             return true
+    //         }
 
-            if (board.permissionLevel === 'workspace' && board.workspace?.id) {
-                const wsMember = await DataSource.getRepository(WorkspaceMembers).findOne({
-                    where: {
-                        user: { id: userId },
-                        workspace: { id: board.workspace.id },
-                        status: 'accepted'
-                    }
-                })
+    //         if (board.permissionLevel === 'workspace' && board.workspace?.id) {
+    //             const wsMember = await DataSource.getRepository(WorkspaceMembers).findOne({
+    //                 where: {
+    //                     user: { id: userId },
+    //                     workspace: { id: board.workspace.id },
+    //                     status: 'accepted'
+    //                 }
+    //             })
 
-                if (wsMember) {
-                    return true
-                }
-            }
-        }
-    }
+    //             if (wsMember) {
+    //                 return true
+    //             }
+    //         }
+    //     }
+    // }
 
     const memberships = await getMembership(userId, {
         ...(workspaceId && { workspaceId }),
         ...(boardId && { boardId })
     })
-
-    console.log(memberships)
-    console.log(memberships[0].role.permissions)
-    console.log(permission)
 
     if (memberships.length == 0) {
         return false
@@ -92,6 +90,7 @@ const getMembership = async (userId: string, context?: { workspaceId?: string; b
             where: { user: { id: userId }, board: { id: boardId } },
             relations: ['role', 'role.permissions']
         })
+        console.log('Board Member:', boardMember)
 
         if (boardMember) {
             memberships.push({
@@ -106,7 +105,7 @@ const getMembership = async (userId: string, context?: { workspaceId?: string; b
             where: { user: { id: userId }, workspace: { id: workspaceId }, status: 'accepted' },
             relations: ['role', 'role.permissions']
         })
-
+        console.log('Workspace Member:', workspaceMember)
         if (workspaceMember) {
             memberships.push({
                 role: workspaceMember.role,
